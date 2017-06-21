@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
     {%if valid%}
-    <p>Hello, user of token {{id}}! </p>
+    <p>Hello, user of token {{id}} and JWT token {{user_jwt}}! </p>
     <div>
         <p> View the status of your jobs... </p>
         {% for job in user_jobs %}

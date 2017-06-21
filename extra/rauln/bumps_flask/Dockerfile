@@ -1,12 +1,18 @@
-FROM python:2.7
+FROM ubuntu:16.04
 
-WORKDIR ~/.bumps_web
+RUN apt-get update && apt-get install -y python-pip python-dev libssl-dev
 
-ADD . ~/.bumps_web
+COPY requirements.txt /usr/src/app/
+RUN pip install --no-cache-dir -r /usr/src/app/requirements.txt
 
-RUN pip install -r requirements.txt
+COPY setup.py /usr/src/app
+COPY app /usr/src/app
 
-EXPOSE 80
-ENV FLASK_APP bumps_flask/server.py
+EXPOSE 5000
 
-CMD ["flask run", "bumps_flask/server.py"]
+WORKDIR /usr/src/app
+
+ENV FLASK_APP=server.py
+ENV FLASK_DEBUG=1
+
+CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]

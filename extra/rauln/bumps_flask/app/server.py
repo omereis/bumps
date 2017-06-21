@@ -2,17 +2,21 @@ from __future__ import print_function
 import os
 import requests
 import random
-from flask import Flask, url_for, render_template, redirect, send_from_directory
+from flask import  jsonify, url_for, render_template, redirect, send_from_directory
 from flask import request as flask_request
 from werkzeug.utils import secure_filename
-
-from app import app, redis_store, redis_dummy, auth
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity
+from app import app, redis_store, redis_dummy, jwt
 from app.api import api, generate_user_token
 
 
 # Set the allowed file upload extensions
 ALLOWED_EXT = set(['txt', 'pdf', 'png'])
 
+
+# Testing user_tokens and JWT tokens,
+# make a simple map between them to keep track for now
+token_map = {}
 
 def allowed_file(filename):
     '''
@@ -47,21 +51,24 @@ def uploaded_file(filename):
 
 
 @app.route('/login', methods=['GET', 'POST'])
-def login(id=None, valid=False, user_jobs=None):
+def login():
     '''
     Validates a resource token and assigns a JWT token
     for expiration, authentication (...)
     '''
+    global token_map
+
     if flask_request.method == 'POST':
         t = flask_request.form['token']
         if t in redis_dummy:
-            return render_template('service.html', id=t, valid=True, user_jobs=redis_dummy[t])
+            return render_template('service.html', id=t, valid=True,
+                user_jobs=redis_dummy[t], user_jwt=token_map[t])
         else:
             return render_template('service.html', id=t, valid=False)
 
 
 @app.route('/register', methods=['GET', 'POST'])
-def tokenizer(token=None):
+def tokenizer():
     '''
     Generates a resource token for accessing bumps functionality
     based on available resources, priority (...)
@@ -70,12 +77,16 @@ def tokenizer(token=None):
     todo: implement an existing, secure token generator
     '''
 
+    global token_map
     login = generate_user_token()
+    jwt_token = create_access_token(identity=login)
     redis_dummy[login] = []
-    return render_template('tokenizer.html', token=login)
+    token_map[login] = jwt_token
+    return render_template('tokenizer.html', token=login, jwt_token=jwt_token)
 
 
 @app.route('/submit', methods=['POST'])
+@jwt_required
 def submit_job(job=None):
     return render_template('fit.html', job=job)
 

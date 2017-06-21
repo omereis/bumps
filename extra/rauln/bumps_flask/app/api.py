@@ -2,7 +2,8 @@ import json
 import random
 from flask import request as flask_request
 from flask_restful import Resource, Api, abort
-from app import app, redis_store, redis_dummy, auth
+from app import app, redis_store, redis_dummy
+from database import User
 
 # Set RESTful API using flask_restful
 api = Api(app)
@@ -20,6 +21,18 @@ def generate_user_token():
 #     def get(self):
 #         login_token = generate_user_token()
 #         return json.dumps({'token_id': login_token})
+
+
+class Register(Resource):
+    '''
+    Assigns JWT token on a per-user_token basis
+    User is then expected to send the JWT with each subsequent API call
+    '''
+    def post(self):
+        post_data = flask_request.get_json()
+        # Check to see if current user_token is already in DB?
+        user_token = post_data.get('user_token')
+
 
 
 # Move this to database.py?
@@ -68,5 +81,6 @@ class JobList(Resource):
 
 
 # api.add_resource(resource_tokens, '/token_gen')
+api.add_resource(Register, '/register')
 api.add_resource(JobList, '/jobs')
 api.add_resource(Jobs, '/jobs/<user_token>')
