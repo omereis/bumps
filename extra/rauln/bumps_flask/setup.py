@@ -6,8 +6,10 @@ setup(
     include_package_date=True,
     install_requires=[
         'flask',
-        'flask_redis',
-        'flask_restful',
-        'requests'
+        'flask-redis',
+        'flask-restful',
+        'requests',
+        'Flask-JWT-Extended',
+        'bumps'
     ],
 )
