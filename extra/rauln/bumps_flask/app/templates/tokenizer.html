@@ -1,9 +1,0 @@
-{% extends "base.html" %}
-{% block content %}
-    <form action="{{url_for('index')}}" method="GET">
-    <h4> Your token is: {{token}} </h4>
-    <h4> Your JWT auth is: {{jwt_token}} </h4>
-    <p><input type="submit" value="Back"/></p>
-    </form>
-
-{% endblock %}

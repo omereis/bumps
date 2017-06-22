@@ -5,11 +5,12 @@ setup(
     packages=['bumps_flask'],
     include_package_date=True,
     install_requires=[
+        'bumps',
         'flask',
+        'Flask-JWT-Extended',
         'flask-redis',
         'flask-restful',
-        'requests',
-        'Flask-JWT-Extended',
-        'bumps'
+        'Flask-WTF',
+        'requests'
     ],
 )
