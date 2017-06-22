@@ -1,0 +1,5 @@
+todo
+*.pyc
+*.egg
+*.egg-info
+bumps_flask/static
