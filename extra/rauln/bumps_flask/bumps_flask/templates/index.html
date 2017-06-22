@@ -1,13 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
+    {% if jwt_id %}
+    <h4> You are logged in as {{ jwt_id }}.</h4>
+    <form action = "{{url_for('dashboard')}}" method="GET">
+        <p> View your jobs and submit new jobs.
+        <input type="submit" value="Go" /></p>
+    </form>
+
+    {% else %}
     <h4> Welcome. Please use your user token to sign in or request a new user token.</h4>
-    <form action = "{{url_for('login')}}" method = "POST">
-        <p>Enter your token: <input type="text" name="token"/>
-        <input type="submit" value="Submit" /></p>
+    <form action = "{{url_for('dashboard')}}" method = "POST">
+        <p> {{form.csrf_token}} {{form.token.label}} {{form.token(size=20)}}
+        <input type="submit" value="Submit" /> </p>
     </form>
 
     <form action = "{{url_for('tokenizer')}}" method="GET">
         <p> Don't have access?
         <input type="submit" value="Request" /></p>
     </form>
+
+    {% endif %}
 {% endblock %}

@@ -1,32 +1,69 @@
 from __future__ import print_function
-import os
-import requests
-import random
-import datetime
-from flask import url_for, render_template, redirect,\
-    send_from_directory, make_response
+import os, requests, random, datetime
+
+from flask import url_for, render_template, redirect, send_from_directory, make_response
 from flask import request as flask_request
+
 from werkzeug.utils import secure_filename
-from flask_jwt_extended import jwt_required, create_access_token,\
-    get_jwt_identity, get_jwt_claims, set_access_cookies
+
+from flask_jwt_extended import jwt_required, jwt_optional, get_jwt_identity, get_jwt_claims, set_access_cookies
 
 from bumps_flask import app, redis_store, redis_dummy, jwt
-from bumps_flask.api import api, redis_dummy, generate_user_token
+from bumps_flask.api import api, redis_dummy, create_user_token, register_token
+from bumps_flask.forms import TokenForm
 
 
 # Set the allowed file upload extensions
 ALLOWED_EXT = ('xml')
 
-# Testing user_tokens and JWT tokens,
-# make a simple map between them to keep track for now
-token_map = {}
 
-def allowed_file(filename):
+@app.route('/')
+@jwt_optional
+def index(jwt_id=None):
+    jwt_id = get_jwt_identity()
+    print(jwt_id)
+    if jwt_id:
+        return render_template('index.html', jwt_id=jwt_id)
+
+    form = TokenForm()
+    if form.validate_on_submit():
+        user_token = form.token.data
+        redirect(url_for('dashboard'), user_token=user_token, jwt_id=jwt_id)
+
+    else:
+        return render_template('index.html', form=form)
+
+
+@app.route('/api/dashboard', methods=['GET', 'POST'])
+@jwt_required
+def dashboard():
     '''
-    Boolean function which checks to see if POSTed file is allowed
-    based on extension
+    Validates a resource token and assigns a JWT token
+    for expiration, authentication (...)
     '''
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
+    user_token = get_jwt_identity()
+    if user_token in redis_dummy:
+        if flask_request.method == 'POST' and user_token == flask_request.form.get('token'):
+            return render_template('dashboard.html', id=user_token, valid=True, user_jobs=redis_dummy[user_token])
+        elif flask_request.method == 'GET':
+            return render_template('dashboard.html', id=user_token, valid=True, user_jobs=redis_dummy[user_token])
+        return """That's not your token... (Clear cookies?)"""
+    return render_template('dashboard.html', id=user_token, valid=False)
+
+
+@app.route('/register', methods=['GET'])
+def tokenizer():
+    '''
+    Uses the API to create a unique user_token which is
+    then associated to an authorization JWT token
+    and saved as a cookie by the client
+    '''
+
+    user_token = create_user_token()
+    jwt_token = register_token(user_token)
+    response = make_response(render_template('tokenizer.html', token=user_token))
+    set_access_cookies(response, jwt_token)
+    return response
 
 
 @app.route('/api/upload', methods=['POST'])
@@ -58,63 +95,56 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
-@app.route('/api/dashboard', methods=['GET', 'POST'])
-@jwt_required
-def login():
-    '''
-    Validates a resource token and assigns a JWT token
-    for expiration, authentication (...)
-
-    todo: Cleanup
-          Move api operations to api module
-    '''
-    global token_map  # DEBUG
-
-    if flask_request.method == 'POST':
-        t = flask_request.form['token']
-        if t in redis_dummy:
-            print(get_jwt_claims())
-            return render_template('service.html', id=t, valid=True,
-                user_jobs=redis_dummy[t], user_jwt=token_map[t])
-        else:
-            return render_template('service.html', id=t, valid=False)
-    else:
-        t = get_jwt_identity()
-        if t in redis_dummy:
-            return render_template('service.html', id=t, valid=True,
-                user_jobs=redis_dummy[t], user_jwt=token_map[t])
-        else:
-            return render_template('service.html', id=t, valid=False)
-
-
-@app.route('/auth_token', methods=['GET'])
-def tokenizer():
-    '''
-    Generates a resource token for accessing bumps functionality
-    based on available resources, priority (...)
-
-    todo: check resources before providing token
-    todo: implement an existing, secure token generator
-    '''
-    login_token = generate_user_token()
-    jwt_token = create_access_token(identity=login_token)
-
-    # Create the dummy db with key=user_token, value=[user_jobs]
-    redis_dummy[login_token] = []
-    # Create the dummy db with key=user_token, value=jwt_token
-    token_map[login_token] = jwt_token
-    # Build the response, create the cookie and send it
-    r = make_response(render_template('tokenizer.html', token=login_token))
-    set_access_cookies(r, jwt_token)
-    return r
-
-
 @app.route('/api/submit', methods=['GET', 'POST'])
 @jwt_required
 def submit_job(job=None, submitted=False):
-    return render_template('fit.html', job=job, submitted=submitted)
+    return render_template('service.html', job=job, submitted=submitted)
 
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+def allowed_file(filename):
+    '''
+    Boolean function which checks to see if POSTed file is allowed
+    based on extension
+    '''
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
+
+
+# The following functions define the responses for JWT failure.
+
+
+@jwt.expired_token_loader
+def expired_token_callback():
+    '''
+    Function to call when an invalid token accesses a protected endpoint.
+    '''
+
+    return render_template('error.html', reason='Your token has expired.'), 401
+
+
+@jwt.unauthorized_loader
+def unauthorized_token_callback(error):
+    '''
+    Function to call when a request with no JWT accesses a protected endpoint
+    Takes one argument - an error string indicating why the request in unauthorized
+    '''
+
+    return render_template('error.html', reason=error), 401
+
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    '''
+    Function to call when an invalid token accesses a protected endpoint
+    Takes one argument - an error string indicating why the token is invalid
+    '''
+
+    return render_template('error.html', reason=error), 401
+
+
+@jwt.revoked_token_loader
+def revoked_token_callback():
+    '''
+    Function to call when a revoked token accesses a protected endpoint
+    '''
+
+    return render_template('error.html', reason='Your token has been revoked.'), 401

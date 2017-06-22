@@ -1,5 +1,5 @@
-import sys
+import sys, os
 
-sys.path.insert(0, '/user/app_user/bumps_flask/app')
+sys.path.insert(0, os.path.join('..', os.getcwd()))
 
-from . import app as application
+from bumps_flask import app as application

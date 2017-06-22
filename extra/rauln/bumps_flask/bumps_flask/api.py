@@ -1,38 +1,35 @@
-import json
-import random
-import datetime
+import json, random, datetime, uuid
 from flask import jsonify, url_for, redirect
 from flask import request as flask_request
 from flask_restful import Resource, Api, abort
+from flask_jwt_extended import create_access_token
 from bumps_flask import app, redis_store, redis_dummy, jwt
-
-# from bumps_flask.views import token_map  # DEBUG
 
 # Set RESTful API using flask_restful
 api = Api(app)
 
 
-@jwt.user_claims_loader
-def add_claims_to_jwt(identity):
+def create_user_token():
     '''
-    Function wrapped with the ability to add JSON-serializable
-    claims to the headers of the soon-to-be-created JWT token
+    Generates a user access token for identification
     '''
 
-    return json.dumps({
-        'iat': str(datetime.datetime.utcnow()),
-        'exp': str(datetime.datetime.utcnow() + datetime.timedelta(minutes=5)),
-        'extra_headers': ''
-    })
+    return str(uuid.uuid4())
 
 
-def generate_user_token():
+def register_token(user_token):
     '''
-    Generates a resource access token for logging in
-    Todo: Use an actual safe token generator
+    Generates a resource token for accessing bumps functionality
+    based on available resources, priority (...)
+
+    todo: check resources before providing token
+    todo: implement an existing, secure token generator
     '''
-    candidate = ''.join([random.choice('aeiou12345') for i in xrange(5)])
-    return candidate
+    jwt_token = create_access_token(identity=user_token)
+
+    # Create the dummy db with key=user_token, value=[user_jobs]
+    redis_dummy[user_token] = []
+    return jwt_token
 
 
 class Register(Resource):
@@ -98,6 +95,20 @@ class JobList(Resource):
         job_id = json_data['job']
         redis_dummy[user_token].append(job_id)
         return '', 201
+
+
+@jwt.user_claims_loader
+def add_claims_to_jwt(identity):
+    '''
+    Function wrapped with the ability to add JSON-serializable
+    claims to the headers of the soon-to-be-created JWT token
+    '''
+
+    return json.dumps({
+        'iat': str(datetime.datetime.utcnow()),
+        'exp': str(datetime.datetime.utcnow() + datetime.timedelta(minutes=5)),
+        'extra_headers': ''
+    })
 
 
 # api.add_resource(resource_tokens, '/token_gen')

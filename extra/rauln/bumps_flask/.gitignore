@@ -3,3 +3,4 @@ todo
 *.egg
 *.egg-info
 bumps_flask/static
+.bumps_folder
