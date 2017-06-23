@@ -6,22 +6,31 @@ from flask import request as flask_request
 
 from werkzeug.utils import secure_filename
 
-from flask_jwt_extended import jwt_required, jwt_optional, get_jwt_identity, get_jwt_claims, set_access_cookies
+from flask_jwt_extended import jwt_required, jwt_optional, get_jwt_identity,\
+get_jwt_claims, set_access_cookies, jwt_refresh_token_required
 
-from bumps_flask import app, redis_store, redis_dummy, jwt
-from bumps_flask.api import api, redis_dummy, create_user_token, register_token
-from bumps_flask.forms import TokenForm
+from bumps_flask import app, rdb, jwt
+from bumps_flask.api import api, create_user_token, register_token
+from bumps_flask.forms import TokenForm, LineForm, OptimizerForm
 
 
 # Set the allowed file upload extensions
 ALLOWED_EXT = ('xml')
 
+USERS_H = 'user_tokens'  # DEBUG
+
 
 @app.route('/')
 @jwt_optional
 def index(jwt_id=None):
+    '''
+    View for the main landing page. Works as a simple authentication page.
+    User can request a new UID(), which will also assign to him/her a
+    JWT token which must be sent in every subsequent request to the
+    server in order to maintain a session.
+    '''
     jwt_id = get_jwt_identity()
-    print(jwt_id)
+
     if jwt_id:
         return render_template('index.html', jwt_id=jwt_id)
 
@@ -38,22 +47,22 @@ def index(jwt_id=None):
 @jwt_required
 def dashboard():
     '''
-    Validates a resource token and assigns a JWT token
-    for expiration, authentication (...)
+    View for the user's dashboard. They can see their running/completed jobs
+    and submit new jobs if possible based on their assigned resources.
     '''
     user_token = get_jwt_identity()
-    if user_token in redis_dummy:
-        if flask_request.method == 'POST' and user_token == flask_request.form.get('token'):
-            return render_template('dashboard.html', id=user_token, valid=True, user_jobs=redis_dummy[user_token])
-        elif flask_request.method == 'GET':
-            return render_template('dashboard.html', id=user_token, valid=True, user_jobs=redis_dummy[user_token])
-        return """That's not your token... (Clear cookies?)"""
+    if rdb.exists(USERS_H, user_token):
+        if flask_request.method == 'POST' and user_token == flask_request.form.get('token') or flask_request.method == 'GET':
+            return render_template('dashboard.html', id=user_token, valid=True, user_jobs=rdb.get(USERS_H, user_token))
+        return """That's not your token... (Clear cookies?)"""  # DEBUG
     return render_template('dashboard.html', id=user_token, valid=False)
 
 
 @app.route('/register', methods=['GET'])
 def tokenizer():
     '''
+    View for showing the user their unique ID, which they should store
+    in order to refresh their JWT.
     Uses the API to create a unique user_token which is
     then associated to an authorization JWT token
     and saved as a cookie by the client
@@ -61,9 +70,28 @@ def tokenizer():
 
     user_token = create_user_token()
     jwt_token = register_token(user_token)
+    refresh_token = register_token(user_token, refresh=True)
     response = make_response(render_template('tokenizer.html', token=user_token))
     set_access_cookies(response, jwt_token)
     return response
+
+
+@app.route('/api/fit', methods=['GET', 'POST'])
+@jwt_required
+def fit_job(job=None, submitted=False):
+    '''
+    View
+    '''
+    l_form = LineForm()
+    o_form = OptimizerForm()
+    if l_form.validate_on_submit():
+        return redirect(url_for('results'))
+
+    return render_template('service.html', job=job, submitted=submitted, l_form=l_form, o_form=o_form)
+
+@app.route('/api/results')
+def display_results():
+    return render_template('results.html')
 
 
 @app.route('/api/upload', methods=['POST'])
@@ -95,12 +123,6 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
-@app.route('/api/submit', methods=['GET', 'POST'])
-@jwt_required
-def submit_job(job=None, submitted=False):
-    return render_template('service.html', job=job, submitted=submitted)
-
-
 def allowed_file(filename):
     '''
     Boolean function which checks to see if POSTed file is allowed
@@ -109,7 +131,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
 
 
-# The following functions define the responses for JWT failure.
+# The following functions define the responses for JWT auth failure.
 
 
 @jwt.expired_token_loader

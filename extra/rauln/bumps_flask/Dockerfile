@@ -31,6 +31,7 @@ RUN pip install --no-cache-dir -r ../requirements.txt
 
 # Copy app files to the container
 COPY setup.py /home/app_user/bumps_flask
+COPY config.py /home/app_user/bumps_flask
 COPY bumps_flask/static static
 COPY bumps_flask/templates templates
 COPY bumps_flask/*.py ./
@@ -50,6 +51,10 @@ USER app_user
 
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
+# DEV
+ENV FLASK_DEBUG=1
+# DEV
+ENV BUMPS_FLASK_DEV=1
 
 # Launch the app
 CMD ["python", "-m", "flask", "run", "--host=0.0.0.0", "--port=5000"]

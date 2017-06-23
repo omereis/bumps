@@ -4,13 +4,13 @@
     <p>Hello, user of token {{id}}! </p>
     <div>
         <p> View the status of your jobs... </p>
-        {% for job in user_jobs %}
+        {% for job in user_jobs.split(',') %}
             <p> {{job}} ... RUNNING/ERROR/COMPLETE (view button here) </p>
         {% endfor %}
     </div>
 
     <div>
-        Submit another job... <form style="display:inline;" action="{{url_for('submit_job')}}" method="POST"> <input type="submit" value="Go"/>
+        Submit a new job... <form style="display:inline;" action="{{url_for('fit_job')}}" method="POST"> <input type="submit" value="Go"/>
         </form>
     </div>
 

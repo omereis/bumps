@@ -5,7 +5,17 @@
     {% if submitted %}
     <p> Your file was uploaded succesfully. You can access it <a href="{{url_for('uploaded_file')}}/{{filename}}"> here. </a></p>
     {% endif %}
-
+    <br>
+    <p> TESTING: Fitting with a straight line as described in the <a href="http://bumps.readthedocs.io/en/latest/tutorial/curvefit/curve.html"> bumps docs </a></p>
+    <form action = "{{url_for('display_results')}}" method = "GET">
+        <p> {{l_form.csrf_token}} {{l_form.m.label}} {{l_form.m}} </p>
+        <p> {{l_form.x.label}} {{l_form.x}}</p>
+        <p> {{l_form.b.label}} {{l_form.b}}</p>
+        <p> {{o_form.optimizer}}</p>
+        <input type="submit" value="Submit" /> </p>
+    </form>
+    <br>
+    <p><b> -- or -- </b></p>
     <p> Upload data: </p>
     <form action="{{url_for('upload_file')}}" method="POST" enctype = "multipart/form-data">
         <p><input type="file" name="file" />
