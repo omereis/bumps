@@ -1,4 +1,4 @@
-import os
+import os, datetime
 
 class Config(object):
     MAX_CONTENT_LENGHT = 16 * 1024 * 1024  # 16MB
@@ -10,14 +10,17 @@ class ProductionConfig(Config):
     # JWT_PUBLIC_KEY =
     # JWT_ALGORITHM =
     # JWT_SESSION_COOKIE =
-    pass
+    JWT_COOKIE_SECURE = True
+    JWT_COOKIE_CSRF_PROTECT = True
 
 
 class DevelopmentConfig(Config):
     UPLOAD_FOLDER = os.path.join(os.getcwd(), '.bumps_folder')
-    REDIS_URL = 'redis://localhost:6379'
-    JWT_COOKIE_SECURE = False
+    REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+
     JWT_COOKIE_CSRF_PROTECT = False
-    JWT_SESSION_COOKIE = False
+    JWT_SESSION_COOKIE = True
     JWT_TOKEN_LOCATION = 'cookies'
     JWT_ACCESS_COOKIE_PATH = '/'
+    JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(seconds=5)
+    JWT_REFRESH_TOKEN_EXPIRES = datetime.timedelta(minutes=5)

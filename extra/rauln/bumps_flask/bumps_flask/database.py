@@ -26,6 +26,7 @@ class Database(object):
         Attempt to set :value: to an existing :key: in :_hash:,
         and if catching a KeyError exception then start a new :_hash:
         '''
+        
         try:
             value_str = self.get(_hash, key)
             value_str = value_str + ', {}'.format(value)

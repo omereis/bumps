@@ -1,5 +1,4 @@
 from os import environ
-from collections import defaultdict
 from flask import Flask
 from flask_redis import FlaskRedis
 from flask_jwt_extended import JWTManager
@@ -15,7 +14,7 @@ jwt = JWTManager(app)
 rdb = Database(FlaskRedis(app))
 
 # Set app configs
-if environ.get('BUMPS_FLASK_DEV') == '1':
+if environ.get('BUMPS_FLASK_DEV', '0') == '1':
     app.config.from_object('config.DevelopmentConfig')
     rdb.flushall()  # DANGER!!
 else:

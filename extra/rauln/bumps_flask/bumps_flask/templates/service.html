@@ -7,11 +7,24 @@
     {% endif %}
     <br>
     <p> TESTING: Fitting with a straight line as described in the <a href="http://bumps.readthedocs.io/en/latest/tutorial/curvefit/curve.html"> bumps docs </a></p>
-    <form action = "{{url_for('display_results')}}" method = "GET">
-        <p> {{l_form.csrf_token}} {{l_form.m.label}} {{l_form.m}} </p>
-        <p> {{l_form.x.label}} {{l_form.x}}</p>
-        <p> {{l_form.b.label}} {{l_form.b}}</p>
+    <form action = "" method = "POST">
+        {{ l_form.csrf_token }}
+        <table>
+            <tr>
+                {% for field in l_form %}
+                <td>  {{field.label}} {{field(size=30)}} </td>
+                    {% if field.errors %}
+                    <td><ul class=errors>
+                    {% for error in field.errors %}
+                        <li><font color="red">{{ error }}</font></li>
+                    {% endfor %}
+                    </ul></td>
+                    {% endif %}
+            </tr>
+                {% endfor %}
+        </table>
         <p> {{o_form.optimizer}}</p>
+
         <input type="submit" value="Submit" /> </p>
     </form>
     <br>

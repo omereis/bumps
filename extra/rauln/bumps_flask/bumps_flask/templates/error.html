@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
+
     <h3> You are not authorized to access this page... </h3>
     <p> Reason: {{reason}} </p>
+
 
     <form action="{{url_for('index')}}" method="GET">
         <p><input type="submit" value="Home"/></p>

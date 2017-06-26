@@ -4,7 +4,6 @@ from wtforms.validators import DataRequired
 
 from bumps_flask import rdb
 
-
 class TokenForm(FlaskForm):
     token = StringField('Enter your token: ', validators=[DataRequired()])
     def validate_token(form, field):

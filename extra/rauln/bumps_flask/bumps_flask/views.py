@@ -7,7 +7,7 @@ from flask import request as flask_request
 from werkzeug.utils import secure_filename
 
 from flask_jwt_extended import jwt_required, jwt_optional, get_jwt_identity,\
-get_jwt_claims, set_access_cookies, jwt_refresh_token_required
+get_jwt_claims, set_access_cookies, set_refresh_cookies, jwt_refresh_token_required
 
 from bumps_flask import app, rdb, jwt
 from bumps_flask.api import api, create_user_token, register_token
@@ -29,16 +29,23 @@ def index(jwt_id=None):
     JWT token which must be sent in every subsequent request to the
     server in order to maintain a session.
     '''
-    jwt_id = get_jwt_identity()
 
+    # Will return None if the current user does not have a JWT (cookie/header)
+    jwt_id = get_jwt_identity()
+    print('JWT id: ', jwt_id)
+
+    # The user already has a valid JWT, let them move along
     if jwt_id:
         return render_template('index.html', jwt_id=jwt_id)
 
+    # Get the WTForm and validate the user token
     form = TokenForm()
     if form.validate_on_submit():
-        user_token = form.token.data
-        redirect(url_for('dashboard'), user_token=user_token, jwt_id=jwt_id)
+        print('FORM data: ', form.token.data)
+        redirect(url_for('dashboard', user_token=form.token.data))
 
+    # If the user does not yet have a JWT token and has not filled the form,
+    # display they main login page
     else:
         return render_template('index.html', form=form)
 
@@ -50,15 +57,10 @@ def dashboard():
     View for the user's dashboard. They can see their running/completed jobs
     and submit new jobs if possible based on their assigned resources.
     '''
-    user_token = get_jwt_identity()
-    if rdb.exists(USERS_H, user_token):
-        if flask_request.method == 'POST' and user_token == flask_request.form.get('token') or flask_request.method == 'GET':
-            return render_template('dashboard.html', id=user_token, valid=True, user_jobs=rdb.get(USERS_H, user_token))
-        return """That's not your token... (Clear cookies?)"""  # DEBUG
-    return render_template('dashboard.html', id=user_token, valid=False)
+    user_token=get_jwt_identity()
+    return render_template('dashboard.html', user_token=user_token, user_jobs=rdb.get(USERS_H, user_token))
 
-
-@app.route('/register', methods=['GET'])
+@app.route('/register')
 def tokenizer():
     '''
     View for showing the user their unique ID, which they should store
@@ -68,11 +70,13 @@ def tokenizer():
     and saved as a cookie by the client
     '''
 
+    # Create a UID
     user_token = create_user_token()
-    jwt_token = register_token(user_token)
-    refresh_token = register_token(user_token, refresh=True)
+    jwt_token = register_token(user_token, auth_token=True)
+    refresh_token = register_token(user_token, auth_token=False, refresh_token=True)
     response = make_response(render_template('tokenizer.html', token=user_token))
     set_access_cookies(response, jwt_token)
+    set_refresh_cookies(response, refresh_token)
     return response
 
 
@@ -80,7 +84,6 @@ def tokenizer():
 @jwt_required
 def fit_job(job=None, submitted=False):
     '''
-    View
     '''
     l_form = LineForm()
     o_form = OptimizerForm()
@@ -94,6 +97,25 @@ def display_results():
     return render_template('results.html')
 
 
+@app.route('/api/refresh')
+@jwt_refresh_token_required
+def refresh():
+    form = TokenForm()
+
+    if form.validate_on_submit():
+        if form.token.data == get_jwt_identity():
+            jwt_token = register_token(form.token.data, auth_token=True)
+            response = make_response(render_template(url_for('index')))
+            set_access_cookies(response, jwt_token)
+            return response
+
+        else:
+            render_template('refresh.html', form=form, error=True)
+
+    else:
+        return render_template('refresh.html', form=form, error=False)
+
+
 @app.route('/api/upload', methods=['POST'])
 @jwt_required
 def upload_file():
@@ -101,6 +123,7 @@ def upload_file():
     Function which handles file uploads to the server.
     Checks for the existance of a pre-defined upload folder and creates one if not found.
     '''
+
     file_to_upload = flask_request.files['file']
     if file_to_upload and allowed_file(file_to_upload.filename):
         # Parse the filename to make sure it is safe
@@ -133,17 +156,16 @@ def allowed_file(filename):
 
 # The following functions define the responses for JWT auth failure.
 
-
 @jwt.expired_token_loader
 def expired_token_callback():
     '''
-    Function to call when an invalid token accesses a protected endpoint.
+    Function to call when an expired token accesses a protected endpoint
     '''
 
-    return render_template('error.html', reason='Your token has expired.'), 401
-
+    return redirect(url_for('refresh'))
 
 @jwt.unauthorized_loader
+@jwt_refresh_token_required
 def unauthorized_token_callback(error):
     '''
     Function to call when a request with no JWT accesses a protected endpoint
@@ -151,7 +173,6 @@ def unauthorized_token_callback(error):
     '''
 
     return render_template('error.html', reason=error), 401
-
 
 @jwt.invalid_token_loader
 def invalid_token_callback(error):

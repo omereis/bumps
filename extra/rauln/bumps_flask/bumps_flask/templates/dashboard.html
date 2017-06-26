@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-    {%if valid%}
-    <p>Hello, user of token {{id}}! </p>
+
+    <p>Hello, user of token {{id}}!</p>
     <div>
         <p> View the status of your jobs... </p>
-        {% for job in user_jobs.split(',') %}
+        {% for job in user_jobs.strip().split(',') %}
             <p> {{job}} ... RUNNING/ERROR/COMPLETE (view button here) </p>
         {% endfor %}
     </div>
@@ -18,10 +18,4 @@
         <p><input type="submit" value="Back"/></p>
     </form>
 
-    {%else%}
-    <p>Sorry, token {{id}} is not a valid token! </p>
-    <form action="{{url_for('index')}}" method="GET">
-        <p><input type="submit" value="Back"/></p>
-    </form>
-    {%endif%}
 {% endblock %}

@@ -3,7 +3,7 @@ import msgpack as msg
 from flask import jsonify, url_for, redirect, render_template
 from flask import request as flask_request
 from flask_restful import Resource, Api, abort
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required
 from bumps_flask import app, rdb, jwt
 
 # Set RESTful API using flask_restful
@@ -17,7 +17,7 @@ def create_user_token():
     return str(uuid.uuid4())
 
 
-def register_token(user_token, refresh=False):
+def register_token(user_token, auth_token, refresh_token=False):
     '''
     Generates a resource token for accessing bumps functionality
     based on available resources, priority (...)
@@ -25,12 +25,17 @@ def register_token(user_token, refresh=False):
     todo: check resources before providing token
     todo: implement an existing, secure token generator
     '''
-    jwt_token = create_access_token(identity=user_token)
-    rdb.set('user_tokens', user_token, json.dumps(''))
-    if refresh:
-        refresh_token = create_refresh_token(identity=user_token)
-        return (jwt_token, refresh_token)
-    return (jwt_token)
+
+    if auth_token:
+        jwt_id = create_access_token(identity=user_token)
+        rdb.set('user_tokens', user_token, json.dumps(''))
+        return jwt_id
+
+    if refresh_token:
+        refresh_id = create_refresh_token(identity=user_token)
+        return refresh_id
+
+    return Exception
 
 
 # Move this to database.py?
@@ -92,11 +97,10 @@ def add_claims_to_jwt(identity):
 
     return json.dumps({
         'iat': str(datetime.datetime.utcnow()),
-        'exp': str(datetime.datetime.utcnow() + datetime.timedelta(minutes=1)),
+        'exp': str(datetime.datetime.utcnow() + datetime.timedelta(minutes=0, seconds=10)),
         'extra_headers': ''
     })
 
 
 api.add_resource(JobList, '/api/jobs', '/api/jobs.<string:_format>')
 api.add_resource(Jobs, '/api/jobs/<user_token>')
-# api.add_resource(BumpsJob, 'api/bumps')

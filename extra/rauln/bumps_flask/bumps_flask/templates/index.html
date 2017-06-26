@@ -2,7 +2,7 @@
 {% block content %}
     {% if jwt_id %}
     <h4> You are logged in as {{ jwt_id }}.</h4>
-    <form action = "{{url_for('dashboard')}}" method="GET">
+    <form action = "{{url_for('dashboard')}}" method="POST">
         <p> View your jobs and submit new jobs.
         <input type="submit" value="Go" /></p>
     </form>
@@ -10,7 +10,7 @@
     {% else %}
     <h4> Welcome. Please use your user token to sign in or request a new user token.</h4>
     <form action = "{{url_for('dashboard')}}" method = "POST">
-        <p> {{form.csrf_token}} {{form.token.label}} {{form.token(size=20)}}
+        <p> {{form.csrf_token}} {{form.token.label}} {{form.token}}
         <input type="submit" value="Submit" /> </p>
     </form>
 
