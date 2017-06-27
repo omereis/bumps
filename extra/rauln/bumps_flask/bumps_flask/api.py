@@ -28,7 +28,7 @@ def register_token(user_token, auth_token, refresh_token=False):
 
     if auth_token:
         jwt_id = create_access_token(identity=user_token)
-        rdb.set('user_tokens', user_token, json.dumps(''))
+        rdb.set('user_tokens', user_token, '')
         return jwt_id
 
     if refresh_token:

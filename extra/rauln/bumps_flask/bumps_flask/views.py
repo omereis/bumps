@@ -1,5 +1,5 @@
-from __future__ import print_function
-import os, requests, random, datetime
+from __future__ import print_function  # DEBUG
+import os, requests, random, datetime, json
 
 from flask import url_for, render_template, redirect, send_from_directory, make_response
 from flask import request as flask_request
@@ -7,15 +7,12 @@ from flask import request as flask_request
 from werkzeug.utils import secure_filename
 
 from flask_jwt_extended import jwt_required, jwt_optional, get_jwt_identity,\
-get_jwt_claims, set_access_cookies, set_refresh_cookies, jwt_refresh_token_required
+get_jwt_claims, jwt_refresh_token_required, set_access_cookies
 
 from bumps_flask import app, rdb, jwt
 from bumps_flask.api import api, create_user_token, register_token
-from bumps_flask.forms import TokenForm, LineForm, OptimizerForm
+from bumps_flask.forms import TokenForm, LineForm, OptimizerForm, UploadForm, FitForm
 
-
-# Set the allowed file upload extensions
-ALLOWED_EXT = ('xml')
 
 USERS_H = 'user_tokens'  # DEBUG
 
@@ -32,7 +29,6 @@ def index(jwt_id=None):
 
     # Will return None if the current user does not have a JWT (cookie/header)
     jwt_id = get_jwt_identity()
-    print('JWT id: ', jwt_id)
 
     # The user already has a valid JWT, let them move along
     if jwt_id:
@@ -41,8 +37,9 @@ def index(jwt_id=None):
     # Get the WTForm and validate the user token
     form = TokenForm()
     if form.validate_on_submit():
-        print('FORM data: ', form.token.data)
-        redirect(url_for('dashboard', user_token=form.token.data))
+        if not rdb.exists('user_tokens', form.token.data):
+            return render_template('error.html', reason='Not a valid token.')
+        redirect(url_for('dashboard'))
 
     # If the user does not yet have a JWT token and has not filled the form,
     # display they main login page
@@ -58,7 +55,7 @@ def dashboard():
     and submit new jobs if possible based on their assigned resources.
     '''
     user_token=get_jwt_identity()
-    return render_template('dashboard.html', user_token=user_token, user_jobs=rdb.get(USERS_H, user_token))
+    return render_template('dashboard.html', id=user_token, user_jobs=rdb.get(USERS_H, user_token))
 
 @app.route('/register')
 def tokenizer():
@@ -73,47 +70,61 @@ def tokenizer():
     # Create a UID
     user_token = create_user_token()
     jwt_token = register_token(user_token, auth_token=True)
-    refresh_token = register_token(user_token, auth_token=False, refresh_token=True)
+    # refresh_token = register_token(user_token, auth_token=False, refresh_token=True)
     response = make_response(render_template('tokenizer.html', token=user_token))
     set_access_cookies(response, jwt_token)
-    set_refresh_cookies(response, refresh_token)
     return response
 
 
 @app.route('/api/fit', methods=['GET', 'POST'])
 @jwt_required
-def fit_job(job=None, submitted=False):
+def fit_job():
     '''
     '''
-    l_form = LineForm()
-    o_form = OptimizerForm()
-    if l_form.validate_on_submit():
-        return redirect(url_for('results'))
+    f_form = FitForm()
+    if f_form.validate_on_submit():
+        # runjob(f_form.data)
+        return render_template('service.html', results=True, data=f_form.data)
 
-    return render_template('service.html', job=job, submitted=submitted, l_form=l_form, o_form=o_form)
+    return render_template('service.html', job=job, f_form=f_form)
 
-@app.route('/api/results')
-def display_results():
-    return render_template('results.html')
+@app.route('/api/results', methods=['GET', 'POST'])
+def display_results(data=None):
 
+    # This should be in another module
+    data = flask_request.form
 
-@app.route('/api/refresh')
-@jwt_refresh_token_required
-def refresh():
-    form = TokenForm()
+    payload = {
+        'x': map(int, data['line-x'].strip().split(',')),
+        'y': map(float, data['line-y'].strip().split(',')),
+        'dy': map(float, data['line-dy'].strip().split(',')),
+        'm': data['line-m'],
+        'b': data['line-b'],
+        'fit': data['optimizer-optimizer'],
+        'steps': data['steps-steps']}
 
-    if form.validate_on_submit():
-        if form.token.data == get_jwt_identity():
-            jwt_token = register_token(form.token.data, auth_token=True)
-            response = make_response(render_template(url_for('index')))
-            set_access_cookies(response, jwt_token)
-            return response
+    # run_script(build_script(payload))
 
-        else:
-            render_template('refresh.html', form=form, error=True)
+    return render_template('results.html', data=payload)
 
-    else:
-        return render_template('refresh.html', form=form, error=False)
+#
+# @app.route('/api/refresh')
+# @jwt_refresh_token_required
+# def refresh():
+#     form = TokenForm()
+#
+#     if form.validate_on_submit():
+#         if form.token.data == get_jwt_identity():
+#             jwt_token = register_token(form.token.data, auth_token=True)
+#             response = make_response(render_template(url_for('index')))
+#             set_access_cookies(response, jwt_token)
+#             return response
+#
+#         else:
+#             render_template('refresh.html', form=form, error=True)
+#
+#     else:
+#         return render_template('refresh.html', form=form, error=False)
 
 
 @app.route('/api/upload', methods=['POST'])
@@ -133,7 +144,7 @@ def upload_file():
             os.mkdir(app.config.get('UPLOAD_FOLDER'))
         # Finally, save the uploaded file in the upload folder
         file_to_upload.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return redirect(url_for('submit_job'))
+        return redirect(url_for('fit_job', submitted=True))
     return 'Error uploading file... Make sure you are uploading a .xml file.'
 
 
@@ -146,14 +157,6 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
-def allowed_file(filename):
-    '''
-    Boolean function which checks to see if POSTed file is allowed
-    based on extension
-    '''
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
-
-
 # The following functions define the responses for JWT auth failure.
 
 @jwt.expired_token_loader
@@ -161,11 +164,10 @@ def expired_token_callback():
     '''
     Function to call when an expired token accesses a protected endpoint
     '''
-
-    return redirect(url_for('refresh'))
+    return render_template('error.html', reason="Expired token"), 401
 
 @jwt.unauthorized_loader
-@jwt_refresh_token_required
+# @jwt_refresh_token_required
 def unauthorized_token_callback(error):
     '''
     Function to call when a request with no JWT accesses a protected endpoint
@@ -181,8 +183,13 @@ def invalid_token_callback(error):
     Takes one argument - an error string indicating why the token is invalid
     '''
 
-    return render_template('error.html', reason=error), 401
-
+    # return render_template('error.html', reason=error), 401
+    user_token = get_jwt_identity()
+    jwt_token = register_token(user_token, auth_token=True)
+    # refresh_token = register_token(user_token, auth_token=False, refresh_token=True)
+    response = make_response(redirect(url_for('index')))
+    set_access_cookies(response, jwt_token)
+    return response
 
 @jwt.revoked_token_loader
 def revoked_token_callback():

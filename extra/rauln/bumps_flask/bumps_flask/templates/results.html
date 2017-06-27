@@ -3,6 +3,12 @@
 
 <h4> Results </h4>
 
+{% if data %}
+    {% for key in data.keys() %}
+        <p>{{key}}: {{data[key]}} </p>
+    {% endfor %}
+{% endif %}
+
 
 
 <form action="{{url_for('dashboard')}}" method="GET">

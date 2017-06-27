@@ -1,43 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
+    {% if not results %}
     <h4> Time to work with some data</h4>
 
-    {% if submitted %}
-    <p> Your file was uploaded succesfully. You can access it <a href="{{url_for('uploaded_file')}}/{{filename}}"> here. </a></p>
-    {% endif %}
     <br>
     <p> TESTING: Fitting with a straight line as described in the <a href="http://bumps.readthedocs.io/en/latest/tutorial/curvefit/curve.html"> bumps docs </a></p>
-    <form action = "" method = "POST">
-        {{ l_form.csrf_token }}
-        <table>
-            <tr>
-                {% for field in l_form %}
-                <td>  {{field.label}} {{field(size=30)}} </td>
-                    {% if field.errors %}
-                    <td><ul class=errors>
-                    {% for error in field.errors %}
-                        <li><font color="red">{{ error }}</font></li>
-                    {% endfor %}
-                    </ul></td>
-                    {% endif %}
-            </tr>
-                {% endfor %}
-        </table>
-        <p> {{o_form.optimizer}}</p>
+    <form action="" method="POST"
+        {{f_form.hidden_tag()}}
+        <p>{% for field in f_form if field.widget.input_type != 'hidden' %}
+                {% if field.errors %}
+                    {{field}}
+                    <span style="color: red;">{% for _, error in field.errors.iteritems() %}{{ error }}{% endfor %}</span>
+                {% else %}
+                    {{ field }}
+                {% endif %}
+        </p>{% endfor %}
 
         <input type="submit" value="Submit" /> </p>
     </form>
     <br>
-    <p><b> -- or -- </b></p>
-    <p> Upload data: </p>
-    <form action="{{url_for('upload_file')}}" method="POST" enctype = "multipart/form-data">
-        <p><input type="file" name="file" />
-        <input type="submit" style="margin-bottom: 20px; margin-top: 20px;" /></p>
-    </form>
 
     <p> (This should show up if a user has a fit job running:) Check the status of your fit. </p>
 
     <p> (This should show up if a fit job has finished running:) Check the results of your fit. </p>
+
+
+
+    {% else %}
+
+    {% endif %}
 
     <form action="{{url_for('dashboard')}}" method="GET">
         <p><input type="submit" value="Back"/></p>

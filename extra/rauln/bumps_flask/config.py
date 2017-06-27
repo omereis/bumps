@@ -10,9 +10,7 @@ class ProductionConfig(Config):
     # JWT_PUBLIC_KEY =
     # JWT_ALGORITHM =
     # JWT_SESSION_COOKIE =
-    JWT_COOKIE_SECURE = True
-    JWT_COOKIE_CSRF_PROTECT = True
-
+    pass
 
 class DevelopmentConfig(Config):
     UPLOAD_FOLDER = os.path.join(os.getcwd(), '.bumps_folder')
@@ -22,5 +20,5 @@ class DevelopmentConfig(Config):
     JWT_SESSION_COOKIE = True
     JWT_TOKEN_LOCATION = 'cookies'
     JWT_ACCESS_COOKIE_PATH = '/'
-    JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(seconds=5)
-    JWT_REFRESH_TOKEN_EXPIRES = datetime.timedelta(minutes=5)
+    # JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(seconds=5)
+    # JWT_REFRESH_TOKEN_EXPIRES = datetime.timedelta(minutes=5)
