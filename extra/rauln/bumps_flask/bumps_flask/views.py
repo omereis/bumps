@@ -36,9 +36,13 @@ def index(jwt_id=None):
 
     # Get the WTForm and validate the user token
     form = TokenForm()
+    if form.is_submitted():
+        print('Submitted')
+        print('Errors: ', form.errors)
+
     if form.validate_on_submit():
-        if not rdb.exists('user_tokens', form.token.data):
-            return render_template('error.html', reason='Not a valid token.')
+        print(form.token.data)
+        return render_template('error.html', reason='Not a valid token.')
         redirect(url_for('dashboard'))
 
     # If the user does not yet have a JWT token and has not filled the form,
@@ -55,7 +59,7 @@ def dashboard():
     and submit new jobs if possible based on their assigned resources.
     '''
     user_token=get_jwt_identity()
-    return render_template('dashboard.html', id=user_token, user_jobs=rdb.get(USERS_H, user_token))
+    return render_template('dashboard.html', id=user_token, user_jobs=rdb.hget(user_token, 'jobs'))
 
 @app.route('/register')
 def tokenizer():
@@ -86,7 +90,7 @@ def fit_job():
         # runjob(f_form.data)
         return render_template('service.html', results=True, data=f_form.data)
 
-    return render_template('service.html', job=job, f_form=f_form)
+    return render_template('service.html', f_form=f_form)
 
 @app.route('/api/results', methods=['GET', 'POST'])
 def display_results(data=None):
@@ -95,9 +99,9 @@ def display_results(data=None):
     data = flask_request.form
 
     payload = {
-        'x': map(int, data['line-x'].strip().split(',')),
-        'y': map(float, data['line-y'].strip().split(',')),
-        'dy': map(float, data['line-dy'].strip().split(',')),
+        'x': [int(float(i)) for i in data['line-x'].strip().split(',')],
+        'y': [float(i) for i in data['line-y'].strip().split(',')],
+        'dy': [float(i) for i in data['line-dy'].strip().split(',')],
         'm': data['line-m'],
         'b': data['line-b'],
         'fit': data['optimizer-optimizer'],
@@ -183,13 +187,15 @@ def invalid_token_callback(error):
     Takes one argument - an error string indicating why the token is invalid
     '''
 
-    # return render_template('error.html', reason=error), 401
     user_token = get_jwt_identity()
-    jwt_token = register_token(user_token, auth_token=True)
-    # refresh_token = register_token(user_token, auth_token=False, refresh_token=True)
-    response = make_response(redirect(url_for('index')))
-    set_access_cookies(response, jwt_token)
-    return response
+    if user_token:
+        jwt_token = register_token(user_token, auth_token=True)
+        # refresh_token = register_token(user_token, auth_token=False, refresh_token=True)
+        response = make_response(redirect(url_for('index')))
+        set_access_cookies(response, jwt_token)
+        return response
+
+    return render_template('error.html', reason=error), 401
 
 @jwt.revoked_token_loader
 def revoked_token_callback():

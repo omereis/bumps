@@ -11,22 +11,31 @@ class Database(object):
     def __init__(self, redis_db):
         self.db = redis_db
 
-    def exists(self, key, value):
+    def hexists(self, key, value):
         return self.db.hexists(key, value)
 
-    def get(self, _hash, key):
+    def exists(self, key):
+        return self.db.exists(key)
+
+    def hget(self, _hash, key):
         return loads(self.db.hget(_hash, key))
 
-    def get_all(self, _hash):
+    def get(self, key):
+        return self.db.get(key)
+
+    def hget_all(self, _hash):
         return {key: self.get(_hash, key) for key in self.db.hkeys(_hash)}
 
+    def get_all(self):
+        return self.db.scan(0)[1]
 
-    def set(self, _hash, key, value):
+
+    def hset(self, _hash, key, value):
         '''
         Attempt to set :value: to an existing :key: in :_hash:,
         and if catching a KeyError exception then start a new :_hash:
         '''
-        
+
         try:
             value_str = self.get(_hash, key)
             value_str = value_str + ', {}'.format(value)

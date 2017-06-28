@@ -4,12 +4,12 @@
     <h4> Time to work with some data</h4>
 
     <br>
-    <p> TESTING: Fitting with a straight line as described in the <a href="http://bumps.readthedocs.io/en/latest/tutorial/curvefit/curve.html"> bumps docs </a></p>
-    <form action="" method="POST"
-        {{f_form.hidden_tag()}}
+    <p> TESTING: Fitting with a straight line as described in the <a href="http://bumps.readthedocs.io/en/latest/tutorial/curvefit/curve.html"> bumps docs </a>.</p>
+    <form action="{{ url_for('display_results') }}" method="POST"
+        {{ f_form.hidden_tag() }}
         <p>{% for field in f_form if field.widget.input_type != 'hidden' %}
                 {% if field.errors %}
-                    {{field}}
+                    {{ field }}
                     <span style="color: red;">{% for _, error in field.errors.iteritems() %}{{ error }}{% endfor %}</span>
                 {% else %}
                     {{ field }}

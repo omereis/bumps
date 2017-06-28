@@ -10,6 +10,8 @@ class ProductionConfig(Config):
     # JWT_PUBLIC_KEY =
     # JWT_ALGORITHM =
     # JWT_SESSION_COOKIE =
+    # JWT_COOKIE_SECURE = True
+    # JWT_COOKIE_CSRF_PROTECT = True
     pass
 
 class DevelopmentConfig(Config):

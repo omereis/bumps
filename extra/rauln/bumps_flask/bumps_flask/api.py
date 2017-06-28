@@ -3,7 +3,7 @@ import msgpack as msg
 from flask import jsonify, url_for, redirect, render_template
 from flask import request as flask_request
 from flask_restful import Resource, Api, abort
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required
+from flask_jwt_extended import create_access_token, create_refresh_token
 from bumps_flask import app, rdb, jwt
 
 # Set RESTful API using flask_restful
@@ -28,7 +28,7 @@ def register_token(user_token, auth_token, refresh_token=False):
 
     if auth_token:
         jwt_id = create_access_token(identity=user_token)
-        rdb.set('user_tokens', user_token, '')
+        rdb.hset(user_token, 'jobs', '')
         return jwt_id
 
     if refresh_token:
@@ -38,7 +38,6 @@ def register_token(user_token, auth_token, refresh_token=False):
     return Exception
 
 
-# Move this to database.py?
 class Jobs(Resource):
     '''
     Things jobs should be able to do:
@@ -52,9 +51,9 @@ class Jobs(Resource):
         '''
         Returns the jobs associated with the specified user_token
         '''
-        if not rdb.exists('user_tokens', user_token):
+        if not rdb.hexists('user_tokens', user_token):
             abort(404, message="Token {} does not exist".format(user_token))
-        return jsonify({user_token: rdb.get('user_tokens', user_token)})
+        return jsonify({user_token: rdb.hget(user_token, 'jobs')})
 
     def delete(self, user_token, job_id):
         '''
@@ -67,24 +66,24 @@ class Jobs(Resource):
         '''
         Updates a job given a token endpoint user_token and the specific job_id
         '''
-        # redis_store.hset('user_tokens', user_token, ...)
         return jsonify({user_token: job_id}), 201
 
 
 class JobList(Resource):
-    def get(self, _hash='user_tokens', _format='json'):
+    def get(self, _format='json'):
         if not _format or _format == 'html':
-            return ', '.join([rdb.get(_hash, user_token) for user_token in rdb.get_all(_hash).values()])
-        return jsonify(rdb.get_all(_hash))
+            pass
+            # return ', '.join([rdb.hget(_ha) for user_token in rdb.get_all(_hash).values()])
+        return jsonify(rdb.get_all())
 
 
     def post(self):
         json_data = flask_request.get_json()
         user_token = json_data['token']
-        if not rdb.exists('user_tokens', user_token):
+        if not rdb.exists(user_token):
             abort(404, message="Token {} does not exist".format(user_token))
         job_id = json_data['job']
-        rdb.set('user_tokens', user_token, job_id)
+        redb.hset(user_token, 'jobs', job_id)
         return '', 201
 
 
