@@ -3,3 +3,4 @@
 *.egg-info
 bumps_flask/static
 .bumps_folder
+slurm_test/

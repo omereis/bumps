@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+
+<p> -TEST- Upload your model.py and run it -TEST- </p>
+<form action="" method="POST" enctype="multipart/form-data">
+    {{ form.csrf_token }}
+    {% for field in form if field.widget.input_type != 'hidden' %}
+        {% if field.errors %}
+            {{ field }} <span style="color: red;">{% for _, error in field.errors.iteritems() %}{{ error }}{% endfor %}</span>
+        {% else %}
+            {{ field }}
+        {% endif %}
+    {% endfor %}
+
+    <input type="submit" value="Upload" /> </p>
+</form>
+
+<form action="{{url_for('dashboard')}}" method="GET">
+    <p><input type="submit" value="Back"/></p>
+</form>
+
+{% endblock %}

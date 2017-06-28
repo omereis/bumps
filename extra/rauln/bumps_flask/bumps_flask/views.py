@@ -1,7 +1,7 @@
 from __future__ import print_function  # DEBUG
 import os, requests, random, datetime, json
 
-from flask import url_for, render_template, redirect, send_from_directory, make_response
+from flask import url_for, render_template, redirect, send_from_directory, make_response, flash
 from flask import request as flask_request
 
 from werkzeug.utils import secure_filename
@@ -10,7 +10,7 @@ from flask_jwt_extended import jwt_required, jwt_optional, get_jwt_identity,\
 get_jwt_claims, jwt_refresh_token_required, set_access_cookies
 
 from bumps_flask import app, rdb, jwt
-from bumps_flask.api import api, create_user_token, register_token
+from bumps_flask.api import api, create_user_token, register_token, process_request_form
 from bumps_flask.forms import TokenForm, LineForm, OptimizerForm, UploadForm, FitForm
 
 
@@ -19,7 +19,7 @@ USERS_H = 'user_tokens'  # DEBUG
 
 @app.route('/')
 @jwt_optional
-def index(jwt_id=None):
+def index():
     '''
     View for the main landing page. Works as a simple authentication page.
     User can request a new UID(), which will also assign to him/her a
@@ -32,17 +32,11 @@ def index(jwt_id=None):
 
     # The user already has a valid JWT, let them move along
     if jwt_id:
-        return render_template('index.html', jwt_id=jwt_id)
+        return redirect(url_for('dashboard'))
 
     # Get the WTForm and validate the user token
     form = TokenForm()
-    if form.is_submitted():
-        print('Submitted')
-        print('Errors: ', form.errors)
-
     if form.validate_on_submit():
-        print(form.token.data)
-        return render_template('error.html', reason='Not a valid token.')
         redirect(url_for('dashboard'))
 
     # If the user does not yet have a JWT token and has not filled the form,
@@ -58,7 +52,7 @@ def dashboard():
     View for the user's dashboard. They can see their running/completed jobs
     and submit new jobs if possible based on their assigned resources.
     '''
-    user_token=get_jwt_identity()
+    user_token = get_jwt_identity()
     return render_template('dashboard.html', id=user_token, user_jobs=rdb.hget(user_token, 'jobs'))
 
 @app.route('/register')
@@ -74,7 +68,6 @@ def tokenizer():
     # Create a UID
     user_token = create_user_token()
     jwt_token = register_token(user_token, auth_token=True)
-    # refresh_token = register_token(user_token, auth_token=False, refresh_token=True)
     response = make_response(render_template('tokenizer.html', token=user_token))
     set_access_cookies(response, jwt_token)
     return response
@@ -82,36 +75,74 @@ def tokenizer():
 
 @app.route('/api/fit', methods=['GET', 'POST'])
 @jwt_required
-def fit_job():
+def fit_job(results=False):
     '''
     '''
-    f_form = FitForm()
-    if f_form.validate_on_submit():
-        # runjob(f_form.data)
-        return render_template('service.html', results=True, data=f_form.data)
+    form = FitForm()
+    if form.validate_on_submit():
+        # payload = json.loads(process_request_form(form.data))
+        payload = form.data
+        return render_template(url_for('display_results'), data=payload)
 
-    return render_template('service.html', f_form=f_form)
+    return render_template('service.html', form=form)
 
 @app.route('/api/results', methods=['GET', 'POST'])
 def display_results(data=None):
+    '''
+    '''
 
-    # This should be in another module
     data = flask_request.form
-
-    payload = {
-        'x': [int(float(i)) for i in data['line-x'].strip().split(',')],
-        'y': [float(i) for i in data['line-y'].strip().split(',')],
-        'dy': [float(i) for i in data['line-dy'].strip().split(',')],
-        'm': data['line-m'],
-        'b': data['line-b'],
-        'fit': data['optimizer-optimizer'],
-        'steps': data['steps-steps']}
-
     # run_script(build_script(payload))
 
-    return render_template('results.html', data=payload)
+    return render_template('results.html', data=data)
 
-#
+@app.route('/api/upload', methods=['GET', 'POST'])
+@jwt_required
+def upload():
+    '''
+    Function which handles file uploads to the server.
+    '''
+
+    form = UploadForm()
+    if form.validate_on_submit():
+        # Convenient variables
+        folder = app.config.get('UPLOAD_FOLDER')
+        user_token = get_jwt_identity()
+
+        # Get the file form data
+        f = form.script.data
+
+        # Sanitize the filename
+        filename = secure_filename(f.filename)
+
+        # Convenient variable
+        dest = os.path.join(folder, 'fit_problems', user_token)
+
+        # Make sure the upload folder exists beforehand
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+
+        # Save the uploaded file
+        f.save(os.path.join(dest, filename))
+
+        # Process the file, mark it as received and redirect user
+        # run_fitjob(dest)
+        rdb.hset(user_token, 'jobs', filename)
+        flash('File uploaded successfully!')
+        return redirect(url_for('dashboard'))
+
+    else:
+        return render_template('upload.html', form=form)
+
+@app.route('/api/uploaded_file/<filename>')
+@jwt_required
+def uploaded_file(filename):
+    '''
+    Sends a previously uploaded file to the browser
+    '''
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
 # @app.route('/api/refresh')
 # @jwt_refresh_token_required
 # def refresh():
@@ -130,35 +161,6 @@ def display_results(data=None):
 #     else:
 #         return render_template('refresh.html', form=form, error=False)
 
-
-@app.route('/api/upload', methods=['POST'])
-@jwt_required
-def upload_file():
-    '''
-    Function which handles file uploads to the server.
-    Checks for the existance of a pre-defined upload folder and creates one if not found.
-    '''
-
-    file_to_upload = flask_request.files['file']
-    if file_to_upload and allowed_file(file_to_upload.filename):
-        # Parse the filename to make sure it is safe
-        filename = secure_filename(file_to_upload.filename)
-        # Create the upload folder if it does not exist yet
-        if not os.path.exists(app.config.get('UPLOAD_FOLDER')):
-            os.mkdir(app.config.get('UPLOAD_FOLDER'))
-        # Finally, save the uploaded file in the upload folder
-        file_to_upload.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return redirect(url_for('fit_job', submitted=True))
-    return 'Error uploading file... Make sure you are uploading a .xml file.'
-
-
-@app.route('/api/uploaded_file/<filename>')
-@jwt_required
-def uploaded_file(filename):
-    '''
-    Sends a previously uploaded file to the browser
-    '''
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 # The following functions define the responses for JWT auth failure.

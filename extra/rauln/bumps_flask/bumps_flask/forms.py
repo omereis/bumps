@@ -1,9 +1,14 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileRequired, FileField, FileAllowed
-from wtforms import StringField, IntegerField, FloatField, SelectField, FormField
+from wtforms import StringField, IntegerField, FloatField, SelectField,\
+    FormField, DateTimeField, BooleanField
 from wtforms.validators import DataRequired
 
 from bumps_flask import rdb
+
+
+class ContactForm():
+    email = StringField('Email address', validators=[], default='me@example.com')
 
 class TokenForm(FlaskForm):
     '''
@@ -16,13 +21,13 @@ class TokenForm(FlaskForm):
         Validation consists of checking whether or not the submitted
         value corresponds to an existing database token
         '''
-        if not rdb.exists(field.data):
+        if not rdb.sismember('users', field.data):
             raise ValidationError('Token \"'+field.data+'\" does not exist in the database.')
 
 class UploadForm(FlaskForm):
-    upload = FileField('', validators=[
+    script = FileField('', validators=[
         FileRequired(),
-        FileAllowed(['xml'], 'XML only!')])
+        FileAllowed(['xml', 'py'], '.xml or .py only!')])
 
 
 class StepForm(FlaskForm):
@@ -53,6 +58,21 @@ class OptimizerForm(FlaskForm):
                              ('amoeba', 'Nelder-Mead Simplex')
                              ], validators=[DataRequired()], default='lm')
 
+
+
+class SlurmForm(FlaskForm):
+    '''
+    Modeled after https://byuhpc.github.io/BYUJobScriptGenerator/
+    '''
+
+    limit_node = BooleanField(label='Limit this job to one node?')
+    n_cores = IntegerField(label='Number of processor cores across all nodes:', validators=[DataRequired()], default=1)
+    n_gpus = IntegerField(label='Number of GPUs: ', validators=[DataRequired()], default=1)
+    memory_per_core = IntegerField(label='memory per processor core: ', validators=[DataRequired()], default=1)
+    mem_unit = SelectField(choices=[('gb', 'GB'), ('mb', 'MB')], default='gb')
+    walltime = DateTimeField(format='%H:%M:%S')
+    jobname = StringField(validators=[])
+
 class FitForm(FlaskForm):
     '''
     Test form for performing a linear curve fit.
@@ -64,4 +84,6 @@ class FitForm(FlaskForm):
     optimizer = FormField(OptimizerForm)
     upload = FileField('Model file upload: ', validators=[
         FileAllowed(['xml'], 'XML files only!')])
-        # , FileRequired(message='A proper model field is required.')])
+
+    slurm = FormField(SlurmForm)
+    # email = FormField(ContactForm)

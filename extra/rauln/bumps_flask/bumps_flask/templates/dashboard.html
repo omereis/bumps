@@ -1,18 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes> {% for message in messages %}
+                <li>{{ message }}</li>{% endfor %}
+            </ul> {% endif %}
+    {% endwith %}
 
     <p>Hello, user of token {{id}}!</p>
     <div>
+        {% if user_jobs %}
         <p> View the status of your jobs... </p>
-        {% for job in user_jobs.strip().split(',') %}
-            <p> {{job}} ... RUNNING/ERROR/COMPLETE (view button here) </p>
-        {% endfor %}
+            {% for job in user_jobs %}
+                <form action="/api/jobs/{{job}}" method="GET">
+                    <p> {{job}} ... RUNNING/ERROR/COMPLETE <input type="submit" value="View"/> </p>
+                </form>
+            {% endfor %}
+
+        {% else %}
+        <p> You currently have no jobs running. </p>
+        {% endif %}
     </div>
 
     <div>
-        Submit a new job... <form style="display:inline;" action="{{url_for('fit_job')}}" method="GET"> <input type="submit" value="Go"/>
-        </form>
+        <p>Submit a new job... <form style="display:inline;" action="{{url_for('fit_job')}}" method="GET"> <input type="submit" value="Go"/></form></p>
+        <br>
+        <p>Upload a model file... <form style="display:inline;" action="{{url_for('upload')}}" method="GET"> <input type="submit" value="Go"/></form></p>
     </div>
+    <br>
 
     <form action="{{url_for('index')}}" method="GET">
         <p><input type="submit" value="Back"/></p>

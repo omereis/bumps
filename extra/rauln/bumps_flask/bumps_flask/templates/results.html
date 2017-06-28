@@ -5,7 +5,9 @@
 
 {% if data %}
     {% for key in data.keys() %}
-        <p>{{key}}: {{data[key]}} </p>
+        {% if 'csrf_token' not in key %}
+            <p>{{key}}: {{data[key]}} </p>
+        {% endif %}
     {% endfor %}
 {% endif %}
 

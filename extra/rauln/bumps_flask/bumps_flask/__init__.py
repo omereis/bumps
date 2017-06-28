@@ -16,7 +16,7 @@ rdb = Database(FlaskRedis(app))
 # Set app configs
 if environ.get('BUMPS_FLASK_DEV', '0') == '1':
     app.config.from_object('config.DevelopmentConfig')
-    rdb.flushall()  # DANGER!!
+    # rdb.flushall()  # DANGER!!
 else:
     app.config.from_object('config.ProductionConfig')
 

@@ -14,7 +14,7 @@ def create_user_token():
     Generates a user access token for identification
     '''
 
-    return str(uuid.uuid4())
+    return str(uuid.uuid4()).split('-')[0]
 
 
 def register_token(user_token, auth_token, refresh_token=False):
@@ -28,7 +28,7 @@ def register_token(user_token, auth_token, refresh_token=False):
 
     if auth_token:
         jwt_id = create_access_token(identity=user_token)
-        rdb.hset(user_token, 'jobs', '')
+        rdb.sadd('users', user_token)
         return jwt_id
 
     if refresh_token:
@@ -36,6 +36,19 @@ def register_token(user_token, auth_token, refresh_token=False):
         return refresh_id
 
     return Exception
+
+
+def process_request_form(request):
+    payload = {
+        'x': [int(float(i)) for i in request['line-x'].strip().split(',')],
+        'y': [float(i) for i in request['line-y'].strip().split(',')],
+        'dy': [float(i) for i in request['line-dy'].strip().split(',')],
+        'm': request['line-m'],
+        'b': request['line-b'],
+        'fit': request['optimizer-optimizer'],
+        'steps': request['steps-steps']}
+
+    return jsonify(payload)
 
 
 class Jobs(Resource):
@@ -51,7 +64,7 @@ class Jobs(Resource):
         '''
         Returns the jobs associated with the specified user_token
         '''
-        if not rdb.hexists('user_tokens', user_token):
+        if not rdb.sismember('users', user_token):
             abort(404, message="Token {} does not exist".format(user_token))
         return jsonify({user_token: rdb.hget(user_token, 'jobs')})
 
@@ -59,14 +72,13 @@ class Jobs(Resource):
         '''
         Deletes a specific job_id for a given user_token
         '''
-        # redis_store.hdel()
         return '', 204
 
     def put(self, user_token, job_id):
         '''
         Updates a job given a token endpoint user_token and the specific job_id
         '''
-        return jsonify({user_token: job_id}), 201
+        # return jsonify({user_token: job_id}), 201
 
 
 class JobList(Resource):
@@ -80,7 +92,7 @@ class JobList(Resource):
     def post(self):
         json_data = flask_request.get_json()
         user_token = json_data['token']
-        if not rdb.exists(user_token):
+        if not rdb.sismember('users', user_token):
             abort(404, message="Token {} does not exist".format(user_token))
         job_id = json_data['job']
         redb.hset(user_token, 'jobs', job_id)

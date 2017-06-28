@@ -12,12 +12,14 @@ class ProductionConfig(Config):
     # JWT_SESSION_COOKIE =
     # JWT_COOKIE_SECURE = True
     # JWT_COOKIE_CSRF_PROTECT = True
+    # UPLOAD_FOLDER = os.path.join(os.getcwd(), '.bumps_folder')
+
     pass
 
 class DevelopmentConfig(Config):
     UPLOAD_FOLDER = os.path.join(os.getcwd(), '.bumps_folder')
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
-
+    WTF_CSRF_ENABLED = False
     JWT_COOKIE_CSRF_PROTECT = False
     JWT_SESSION_COOKIE = True
     JWT_TOKEN_LOCATION = 'cookies'
