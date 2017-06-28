@@ -7,13 +7,13 @@
             </ul> {% endif %}
     {% endwith %}
 
-    <p>Hello, user of token {{id}}!</p>
+    <p>Hello, user of token {{ id }}!</p>
     <div>
-        {% if user_jobs %}
+        {% if jobs %}
         <p> View the status of your jobs... </p>
-            {% for job in user_jobs %}
-                <form action="/api/jobs/{{job}}" method="GET">
-                    <p> {{job}} ... RUNNING/ERROR/COMPLETE <input type="submit" value="View"/> </p>
+            {% for row in jobs %}
+                <form action="/api/jobs/{{ id }}/{{ job }}" method="GET">
+                    <p> Job #{{ row[0] }} with script "{{ row[1] }}" ... RUNNING/ERROR/COMPLETE <input type="submit" value="View"/> </p>
                 </form>
             {% endfor %}
 

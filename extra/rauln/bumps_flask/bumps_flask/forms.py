@@ -7,14 +7,12 @@ from wtforms.validators import DataRequired
 from bumps_flask import rdb
 
 
-class ContactForm():
-    email = StringField('Email address', validators=[], default='me@example.com')
-
 class TokenForm(FlaskForm):
     '''
     Form which handles user login validation at the landing page
     and anywhere else.
     '''
+
     token = StringField('Enter your token: ', validators=[DataRequired()])
     def validate_token(form, field):
         '''
@@ -41,6 +39,7 @@ class LineForm(FlaskForm):
     The idea is to test handling data and running a simple fit
     on the server.
     '''
+
     x = StringField(label='x: ', validators=[DataRequired(message='Missing x values.')], default='1,2,3,4,5,6')
     y = StringField(label='y: ', validators=[DataRequired(message='Missing y values.')], default='2.1,4.0,6.3,8.03,9.6,11.9')
     dy = StringField(label='dy: ', validators=[DataRequired(message='Missing dy values.')], default='0.05,0.05,0.2,0.05,0.2,0.2')
@@ -86,4 +85,4 @@ class FitForm(FlaskForm):
         FileAllowed(['xml'], 'XML files only!')])
 
     slurm = FormField(SlurmForm)
-    # email = FormField(ContactForm)
+    email = StringField(label='Email address', validators=[], default='me@example.com')

@@ -43,6 +43,11 @@ class Database(object):
         else:
             self.db.hset(_hash, key, dumps([value]))
 
+
+    def hincr(self, _hash, key, n):
+        self.db.hincrby(_hash, key, n)
+
+
     ##################
     # String commands
     ##################

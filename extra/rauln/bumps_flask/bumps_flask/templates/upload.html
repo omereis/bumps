@@ -6,7 +6,7 @@
     {{ form.csrf_token }}
     {% for field in form if field.widget.input_type != 'hidden' %}
         {% if field.errors %}
-            {{ field }} <span style="color: red;">{% for _, error in field.errors.iteritems() %}{{ error }}{% endfor %}</span>
+            {{ field }} <span style="color: red;">{% for error in field.errors %}{{ error }}{% endfor %}</span>
         {% else %}
             {{ field }}
         {% endif %}

@@ -53,7 +53,15 @@ def dashboard():
     and submit new jobs if possible based on their assigned resources.
     '''
     user_token = get_jwt_identity()
-    return render_template('dashboard.html', id=user_token, user_jobs=rdb.hget(user_token, 'jobs'))
+    user_scripts = rdb.hget(user_token, 'model_files')
+    if rdb.hget(user_token, 'job_n'):
+        user_jobs = [i for i in xrange(int(rdb.hget(user_token, 'job_n')))]
+        zipped = zip(user_jobs, user_scripts)
+
+    else:
+        zipped=None
+
+    return render_template('dashboard.html', id=user_token, jobs=zipped)
 
 @app.route('/register')
 def tokenizer():
@@ -127,7 +135,8 @@ def upload():
 
         # Process the file, mark it as received and redirect user
         # run_fitjob(dest)
-        rdb.hset(user_token, 'jobs', filename)
+        rdb.hset(user_token, 'model_files', filename)
+        rdb.hincr(user_token, 'job_n', 1)
         flash('File uploaded successfully!')
         return redirect(url_for('dashboard'))
 
