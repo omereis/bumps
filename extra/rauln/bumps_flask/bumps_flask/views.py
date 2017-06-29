@@ -1,5 +1,8 @@
-from __future__ import print_function  # DEBUG
-import os, requests, random, datetime, json
+import os
+import requests
+import random
+import datetime
+import json
 
 from flask import url_for, render_template, redirect, send_from_directory, make_response, flash
 from flask import request as flask_request
@@ -7,7 +10,7 @@ from flask import request as flask_request
 from werkzeug.utils import secure_filename
 
 from flask_jwt_extended import jwt_required, jwt_optional, get_jwt_identity,\
-get_jwt_claims, jwt_refresh_token_required, set_access_cookies
+    get_jwt_claims, jwt_refresh_token_required, set_access_cookies
 
 from bumps_flask import app, rdb, jwt
 from bumps_flask.api import api, create_user_token, register_token, process_request_form
@@ -59,9 +62,10 @@ def dashboard():
         zipped = zip(user_jobs, user_scripts)
 
     else:
-        zipped=None
+        zipped = None
 
     return render_template('dashboard.html', id=user_token, jobs=zipped)
+
 
 @app.route('/register')
 def tokenizer():
@@ -76,7 +80,10 @@ def tokenizer():
     # Create a UID
     user_token = create_user_token()
     jwt_token = register_token(user_token, auth_token=True)
-    response = make_response(render_template('tokenizer.html', token=user_token))
+    response = make_response(
+        render_template(
+            'tokenizer.html',
+            token=user_token))
     set_access_cookies(response, jwt_token)
     return response
 
@@ -94,6 +101,7 @@ def fit_job(results=False):
 
     return render_template('service.html', form=form)
 
+
 @app.route('/api/results', methods=['GET', 'POST'])
 def display_results(data=None):
     '''
@@ -103,6 +111,7 @@ def display_results(data=None):
     # run_script(build_script(payload))
 
     return render_template('results.html', data=data)
+
 
 @app.route('/api/upload', methods=['GET', 'POST'])
 @jwt_required
@@ -143,6 +152,7 @@ def upload():
     else:
         return render_template('upload.html', form=form)
 
+
 @app.route('/api/uploaded_file/<filename>')
 @jwt_required
 def uploaded_file(filename):
@@ -171,7 +181,6 @@ def uploaded_file(filename):
 #         return render_template('refresh.html', form=form, error=False)
 
 
-
 # The following functions define the responses for JWT auth failure.
 
 @jwt.expired_token_loader
@@ -180,6 +189,7 @@ def expired_token_callback():
     Function to call when an expired token accesses a protected endpoint
     '''
     return render_template('error.html', reason="Expired token"), 401
+
 
 @jwt.unauthorized_loader
 # @jwt_refresh_token_required
@@ -190,6 +200,7 @@ def unauthorized_token_callback(error):
     '''
 
     return render_template('error.html', reason=error), 401
+
 
 @jwt.invalid_token_loader
 def invalid_token_callback(error):
@@ -208,10 +219,12 @@ def invalid_token_callback(error):
 
     return render_template('error.html', reason=error), 401
 
+
 @jwt.revoked_token_loader
 def revoked_token_callback():
     '''
     Function to call when a revoked token accesses a protected endpoint
     '''
 
-    return render_template('error.html', reason='Your token has been revoked.'), 401
+    return render_template(
+        'error.html', reason='Your token has been revoked.'), 401

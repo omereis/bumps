@@ -48,6 +48,7 @@ USER app_user
 # DEV
 ENV FLASK_APP=bumps_flask FLASK_DEBUG=1 BUMPS_FLASK_DEV=1
 
+
 # Launch the app
 # CMD ["mod_wsgi-express", "start-server", "--host", "0.0.0.0", "--port", "5000", "bumps_flask.wsgi"]
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]

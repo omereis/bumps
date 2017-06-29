@@ -1,5 +1,7 @@
-import json, random, datetime, uuid
-import msgpack as msg
+import json
+import random
+import datetime
+import uuid
 from flask import jsonify, url_for, redirect, render_template
 from flask import request as flask_request
 from flask_restful import Resource, Api, abort
@@ -8,6 +10,7 @@ from bumps_flask import app, rdb, jwt
 
 # Set RESTful API using flask_restful
 api = Api(app)
+
 
 def create_user_token():
     '''
@@ -60,6 +63,7 @@ class Jobs(Resource):
         Print their information
         Stop their work
     '''
+
     def get(self, user_token):
         '''
         Returns the jobs associated with the specified user_token
@@ -83,11 +87,14 @@ class Jobs(Resource):
 
 class JobList(Resource):
     def get(self, _format='json'):
-        if not _format or _format == 'html':
-            pass
-            # return ', '.join([rdb.hget(_ha) for user_token in rdb.get_all(_hash).values()])
-        return jsonify(rdb.get_all())
 
+        r_dict = {}
+        for user in rdb.get_jobs():
+            r_dict[user] = rdb.hget(user, 'job_n')
+
+        if _format == 'html':
+            return '''{}'''.format(r_dict)
+        return jsonify(r_dict)
 
     def post(self):
         json_data = flask_request.get_json()

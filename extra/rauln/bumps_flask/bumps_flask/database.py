@@ -17,17 +17,14 @@ class Database(object):
     def hexists(self, key, value):
         return self.db.hexists(key, value)
 
-
     def hget(self, _hash, key):
         if self.db.hget(_hash, key):
             return loads(self.db.hget(_hash, key))
 
         return None
 
-
     def hget_all(self, _hash):
         return {key: self.get(_hash, key) for key in self.db.hkeys(_hash)}
-
 
     def hset(self, _hash, key, value):
         '''
@@ -43,10 +40,8 @@ class Database(object):
         else:
             self.db.hset(_hash, key, dumps([value]))
 
-
     def hincr(self, _hash, key, n):
         self.db.hincrby(_hash, key, n)
-
 
     ##################
     # String commands
@@ -55,10 +50,8 @@ class Database(object):
     def exists(self, key):
         return self.db.exists(key)
 
-
     def get(self, key):
         return self.db.get(key)
-
 
     ##################
     # Set commands
@@ -67,17 +60,22 @@ class Database(object):
     def sadd(self, _set, value):
         return self.db.sadd(_set, value)
 
-
     def sismember(self, _set, value):
         return self.db.sismember(_set, value)
-
 
     ##################
     # Admin
     ##################
 
     def get_all(self):
-        return ', '.join(self.db.scan(0)[1])
+        return self.db.scan(0)[1]
+
+    def get_jobs(self):
+        r_list = []
+        for db in self.get_all():
+            if 'users' not in db:
+                r_list.append(db)
+        return r_list
 
     def flushall(self):  # DEV
         self.db.flushall()

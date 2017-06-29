@@ -4,5 +4,8 @@ services:
     build: .
     ports:
     - "8888:5000"
-  redis:
+    links:
+    - "redis_db"
+
+  redis_db:
     image: redis
