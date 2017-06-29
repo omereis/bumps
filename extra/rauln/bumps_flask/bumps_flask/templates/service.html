@@ -1,11 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
 
+    {% if results %}
+    <h4> Results </h4>
+
+    {% if data %}
+        {% for key in data.keys() %}
+            {% if 'csrf_token' not in key %}
+                <p>{{key}}: {{data[key]}} </p>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% else %}
+
     <h4> Time to work with some data</h4>
 
     <br>
     <p> TESTING: Fitting with a straight line as described in the <a href="http://bumps.readthedocs.io/en/latest/tutorial/curvefit/curve.html"> bumps docs </a>.</p>
-    <form action="{{ url_for('display_results' )}}" method="POST">
+    <form action="" method="POST">
         {{ form.hidden_tag() }}
         <p>{% for field in form if field.widget.input_type != 'hidden' %}
                 {% if field.errors %}
@@ -28,8 +40,10 @@
     {% endif %}
     #}
 
+    {% endif %}
     <form action="{{url_for('dashboard')}}" method="GET">
         <p><input type="submit" value="Back"/></p>
     </form>
+
 
 {% endblock %}

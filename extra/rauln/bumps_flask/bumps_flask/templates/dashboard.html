@@ -13,7 +13,7 @@
         <p> View the status of your jobs... </p>
             {% for row in jobs %}
                 <form action="/api/jobs/{{ id }}/{{ job }}" method="GET">
-                    <p> Job #{{ row[0] }} with script "{{ row[1] }}" ... RUNNING/ERROR/COMPLETE <input type="submit" value="View"/> </p>
+                    <p> Job #{{ row[0] }} with script "{{ row[1] }}" ... RUNNING/PENDING/ERROR/COMPLETE <input type="submit" value="View"/> </p>
                 </form>
             {% endfor %}
 
@@ -23,9 +23,9 @@
     </div>
 
     <div>
-        <p style="display:inline;">Submit a new job... <form action="{{url_for('fit_job')}}" method="GET"> <input type="submit" value="Go"/></form></p>
+        <p>Submit a new job... <form action="{{url_for('fit_job')}}" method="GET"> <input style="display:inline;" type="submit" value="Go"/></form></p>
         <br>
-        <p style="display:inline;" >Upload a model file... <form action="{{url_for('upload')}}" method="GET"> <input type="submit" value="Go"/></form></p>
+        <p><b> TEST </b>Upload a model file...<b> TEST </b> <form action="{{url_for('upload')}}" method="GET"> <input style="display:inline;" type="submit" value="Go"/></form></p>
     </div>
     <br>
 

@@ -9,13 +9,19 @@ else:
     import subprocess
 
 
-def build_slurm_script(file_dest, _input, _output):
+def parse_commands():
+    pass
+
+
+def build_slurm_script(file_dest, _input):
     '''
     Parse given _input into a slurm script at _output
     '''
 
-    with open(file_dest, 'w') as f:
-        f.write('#!/bin/sh\n')
+    with open(os.path.join(file_dest, 'test.sh'), 'w+') as f:
+        f.write('#!/bin/bash\n')
+        f.write('#SBATCH {}\n'.format('test'))
+        f.write('\n'.join(['{}...{}'.format(key, _input[key]) for key in _input]))
 
 
 def execute_slurm_script(script):

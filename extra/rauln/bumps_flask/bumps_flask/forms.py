@@ -1,10 +1,11 @@
+from datetime import time
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileRequired, FileField, FileAllowed
 from wtforms import StringField, IntegerField, FloatField, SelectField,\
     FormField, DateTimeField, BooleanField
 from wtforms.validators import DataRequired
 
-from bumps_flask import rdb
+from . import rdb
 
 
 class TokenForm(FlaskForm):
@@ -82,7 +83,7 @@ class LineForm(FlaskForm):
 
 class OptimizerForm(FlaskForm):
     '''Corresponds to the bumps CLI command --fit'''
-    optimizer = SelectField('Fit Optimizer', choices=[
+    fitter = SelectField('Fit Optimizer', choices=[
         ('lm', 'Levenberg Marquardt'),
         ('newton', 'Quasi-Newton BFGS'),
         ('de', 'Differential Evolution'),
@@ -99,19 +100,16 @@ class SlurmForm(FlaskForm):
     limit_node = BooleanField(label='Limit this job to one node?')
     n_cores = IntegerField(
         label='Number of processor cores across all nodes:',
-        validators=[
-            DataRequired()],
-        default=1)
+        validators=[DataRequired()], default=1)
     n_gpus = IntegerField(
         label='Number of GPUs: ',
-        validators=[
-            DataRequired()],
-        default=1)
-    memory_per_core = IntegerField(
-        label='memory per processor core: ', validators=[
-            DataRequired()], default=1)
+        validators=[DataRequired()], default=1)
+    mem_per_core = IntegerField(
+        label='memory per processor core: ',
+        validators=[DataRequired()], default=1)
     mem_unit = SelectField(choices=[('gb', 'GB'), ('mb', 'MB')], default='gb')
-    walltime = DateTimeField(format='%H:%M:%S')
+    walltime = DateTimeField(format='%H:%M:%S',
+        default=time(0, 30, 0))
     jobname = StringField(validators=[])
 
 

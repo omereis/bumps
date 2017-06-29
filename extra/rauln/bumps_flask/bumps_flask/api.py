@@ -2,11 +2,13 @@ import json
 import random
 import datetime
 import uuid
+import os
+from werkzeug.utils import secure_filename
 from flask import jsonify, url_for, redirect, render_template
 from flask import request as flask_request
 from flask_restful import Resource, Api, abort
 from flask_jwt_extended import create_access_token, create_refresh_token
-from bumps_flask import app, rdb, jwt
+from . import app, rdb, jwt
 
 # Set RESTful API using flask_restful
 api = Api(app)
@@ -41,17 +43,78 @@ def register_token(user_token, auth_token, refresh_token=False):
     return Exception
 
 
-def process_request_form(request):
-    payload = {
-        'x': [int(float(i)) for i in request['line-x'].strip().split(',')],
-        'y': [float(i) for i in request['line-y'].strip().split(',')],
-        'dy': [float(i) for i in request['line-dy'].strip().split(',')],
-        'm': request['line-m'],
-        'b': request['line-b'],
-        'fit': request['optimizer-optimizer'],
-        'steps': request['steps-steps']}
+def setup_job(user, data=None, filename=None, _file=None):
+    # Convenient variable
+    folder = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', user)
 
-    return jsonify(payload)
+    # Make sure the upload folder exists beforehand
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    # If an upload file was provided...
+    if _file:
+        # Get the file form data
+        f = _file
+        filename = _file.filename
+        # Sanitize the filename
+        filename = secure_filename(filename)
+        # Save the uploaded file
+        f.save(os.path.join(folder, filename))
+
+    else:
+        # Sanitize the filename
+        filename = secure_filename(filename)
+        # Create the file to prepare it for the queue
+        with open(os.path.join(folder, filename), 'w') as f:
+            f.write(data)
+
+    rdb.hset(user, 'model_files', filename)
+    rdb.hincr(user, 'job_n', 1)
+
+    return folder
+
+def process_request_form(request):
+    response = {'errors': []}
+    for form in request:
+
+        if 'optimizer' == form:
+            response['fit'] = request[form]['fitter']
+
+        elif 'steps' == form:
+            response['steps'] = request[form]['steps']
+
+        elif 'email' == form:
+            response['email'] = request[form]
+
+        # Catch the slurm related variables here
+        elif 'slurm' == form:
+            for key in request[form]:
+                if 'limit_node' == key:
+                    response['limit_node'] = request[form][key]
+                elif 'n_cores' == key:
+                    response['n_cores'] = request[form][key]
+                elif 'n_gpus' == key:
+                    response['n_gpus'] = request[form][key]
+                elif 'mem_per_core' == key:
+                    response['mem_per_core'] = request[form][key]
+                elif 'mem_unit' == key:
+                    response['mem_unit'] = request[form][key]
+                elif 'walltime' == key:
+                    response['walltime'] = request[form][key]
+                elif 'jobname' == key:
+                    response['jobname']  = request[form][key]
+                else:
+                    response['errors'].append(key)
+
+        # Catch the line-fitting related variables here
+        elif 'line' == form:
+            response['x'] = [int(float(i)) for i in request[form]['x'].strip().split(',')]
+            response['y'] = [float(i) for i in request[form]['y'].strip().split(',')]
+            response['dy'] = [float(i) for i in request[form]['dy'].strip().split(',')]
+            response['m'] = request[form]['m']
+            response['b'] = request[form]['b']
+
+    return response
 
 
 class Jobs(Resource):
