@@ -1,6 +1,7 @@
 *.pyc
 *.egg
 *.egg-info
+*.rdb
 bumps_flask/static
 .bumps_folder
 slurm_test/

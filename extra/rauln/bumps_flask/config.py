@@ -1,4 +1,6 @@
-import os, datetime
+import os
+import datetime
+
 
 class Config(object):
     MAX_CONTENT_LENGHT = 16 * 1024 * 1024  # 16MB
@@ -15,6 +17,7 @@ class ProductionConfig(Config):
     # UPLOAD_FOLDER = os.path.join(os.getcwd(), '.bumps_folder')
 
     pass
+
 
 class DevelopmentConfig(Config):
     UPLOAD_FOLDER = os.path.join(os.getcwd(), '.bumps_folder')

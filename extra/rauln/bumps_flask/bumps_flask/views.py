@@ -4,14 +4,19 @@ import random
 import datetime
 import json
 
-from flask import url_for, render_template, redirect, send_from_directory, make_response, flash
+from flask import url_for, render_template, redirect, \
+    send_from_directory, make_response, flash
+
 from flask import request as flask_request
 
-from flask_jwt_extended import jwt_required, jwt_optional, get_jwt_identity,\
-    get_jwt_claims, jwt_refresh_token_required, set_access_cookies
+from flask_jwt_extended import jwt_required, jwt_optional,\
+    get_jwt_identity, get_jwt_claims, jwt_refresh_token_required,\
+    set_access_cookies
 
 from . import app, rdb, jwt
-from .api import api, create_user_token, register_token, process_request_form, setup_job
+from .api import api, create_user_token, register_token, \
+    process_request_form, setup_job
+
 from .forms import TokenForm, LineForm, OptimizerForm, UploadForm, FitForm
 from .slurm_handler import build_slurm_script
 
@@ -55,7 +60,9 @@ def dashboard():
     possible based on their assigned resources.
     '''
     user_token = get_jwt_identity()
-    user_scripts = rdb.hget(user_token, 'model_files')
+    user_scripts = rdb.hget(user_token, 'job_files')
+
+    # Zip together job numbers and job files if possible to display in template
     if rdb.hget(user_token, 'job_n'):
         user_jobs = [i for i in xrange(int(rdb.hget(user_token, 'job_n')))]
         zipped = zip(user_jobs, user_scripts)
@@ -93,7 +100,8 @@ def fit_job(results=False):
     form = FitForm()
     if form.validate_on_submit():
         payload = (process_request_form(form.data))
-        dest = setup_job(user=get_jwt_identity(), data='', filename='test.sh')
+        dest = setup_job(user=get_jwt_identity(), data='',
+                         filename=get_jwt_identity() + '.sh')
         build_slurm_script(dest, payload)
         return render_template('service.html', data=payload, results=True)
 
@@ -107,7 +115,7 @@ def display_results():
     # run_script(build_script(payload))
     print(flask_request.form)
     return render_template('results.html',
-                            payload=flask_request.form.get('payload'))
+                           payload=flask_request.form.get('payload'))
 
 
 @app.route('/api/upload', methods=['GET', 'POST'])

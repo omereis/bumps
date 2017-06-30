@@ -1,5 +1,4 @@
 from json import loads, dumps
-# from msgpack import loads, dumps
 
 
 class Database(object):
