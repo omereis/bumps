@@ -9,20 +9,19 @@ else:
     import subprocess
 
 
-def line_handler(f, _input):
+def line_handler(_file, _input):
     '''
     TEST function to handle building the line FitProblem script TEST
     '''
-
-    f.write('\nfrom bumps.names import *\n\n')
-    f.write('''def line(x, m, b=0):\n\treturn m * x + b\n\n''')
+    _file.write('\nfrom bumps.names import *\n\n')
+    _file.write('''def line(x, m, b=0):\n\treturn m * x + b\n\n''')
 
     for key in _input:
-        f.write('{} = {}\n'.format(key, _input[key]))
+        _file.write('{} = {}\n'.format(key, _input[key]))
 
-    f.write('''\nM = Curve(line,x,y,dy,m=2,b=2)\nM.m.range(0,4)\nM.b.range(-5,5)\n''')
+    _file.write('''\nM = Curve(line,x,y,dy,m=2,b=2)\nM.m.range(0,4)\nM.b.range(-5,5)\n''')
 
-    f.write('\nproblem = FitProblem(M)\n')
+    _file.write('\nproblem = FitProblem(M)\n')
 
 
 def parse_commands(slurm_dict):
@@ -33,8 +32,9 @@ def parse_commands(slurm_dict):
 
     output_s = '#!/bin/bash\n\n'
 
-    # Handle the commands which are formatted differently and remove them
+    # Handle the commands which are formatted differently
     for key in slurm_dict:
+        print(key)
         if key == 'n_gpus':
             output_s += '#SBATCH --gres=gpu:{}\n'.format(slurm_dict[key])
 
@@ -45,31 +45,27 @@ def parse_commands(slurm_dict):
             output_s += '#SBATCH -J "{}"\n'.format(slurm_dict[key])
 
         elif key == '--mem-per-cpu' or key == 'mem_unit':
-            # Handle these in the end, since they should be as one
+            # Handle these in the end, since they should be as one in the slurm command
             pass
 
         else:
             output_s += '#SBATCH {}={}\n'.format(key, slurm_dict[key])
 
-    # Handle the mem-per-cpu and mem_unit heres
+    # Handle the mem-per-cpu and mem_unit here
     output_s += '#SBATCH --mem-per-cpu={}{}\n'.format(
         slurm_dict['--mem-per-cpu'], slurm_dict['mem_unit'])
 
+    print(output_s)
     return output_s
 
 
-def build_slurm_script(file_dest, _input):
+def build_slurm_script(_file, _input):
     '''
     Parse given _input into a slurm script at _output
     '''
 
-    with open(file_dest, 'w+') as f:
-        slurm_commands = parse_commands(_input)
-        f.write(slurm_commands)
-        del _input
-
-        line_handler(f, _input)  # DEBUG
-        # execute_slurm_script(file_dest)  # DEBUG
+    slurm_commands = parse_commands(_input)
+    _file.write(slurm_commands)
 
 
 def execute_slurm_script(script):

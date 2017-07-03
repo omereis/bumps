@@ -9,6 +9,9 @@ from wtforms_components import TimeField
 from . import rdb
 
 
+# Consider that --remote is implied, -- parallel, notify, queue and time
+# are
+
 class TokenForm(FlaskForm):
     '''
     Form which handles user login validation at the landing page
@@ -33,12 +36,71 @@ class UploadForm(FlaskForm):
         FileAllowed(['xml', 'py'], '.xml or .py only!')])
 
 
+# Forms for translating to CLI commands for bumps itself
+##########
+class ChiForm(FlaskForm):
+    '''Corresponds to the bumps CLI command --chisq'''
+    pass
+
+
 class StepForm(FlaskForm):
     '''Corresponds to the bumps CLI command --steps'''
     steps = IntegerField(
         label='steps: ',
         validators=[DataRequired(message='Missing steps...')],
         default=100)
+
+
+class StepMonitorForm(FlaskForm):
+    pass
+
+
+class StartForm(FlaskForm):
+    '''Corresponds to the bumps CLI command --starts'''
+    starts = IntegerField(
+        label='starts: ',
+        validators=[Optional()]
+    )
+
+
+class PlotStyleForm(FlaskForm):
+    '''Corresponds to the bumps CLI command --plot'''
+    pass
+
+
+class NoiseForm(FlaskForm):
+    '''Corresponds to the bumps CLI command --noise'''
+    pass
+
+
+class CovarianceForm(FlaskForm):
+    '''Corresponds to the bumps CLI command --cov'''
+    pass
+
+
+class ResumeFitForm(FlaskForm):
+    '''Corresponds to the bumps CLI command --resume'''
+    pass
+
+
+# Netwon-Mead specific forms
+
+# Differential Evolution specific forms
+
+# DREAMS specific forms
+
+
+##########
+
+class OptimizerForm(FlaskForm):
+    '''Corresponds to the bumps CLI command --fit'''
+    fitter = SelectField('Fit Optimizer', choices=[
+        ('lm', 'Levenberg Marquardt'),
+        ('newton', 'Quasi-Newton BFGS'),
+        ('de', 'Differential Evolution'),
+        ('dream', 'DREAM'),
+        ('amoeba', 'Nelder-Mead Simplex')
+    ], validators=[DataRequired()], default='lm')
 
 
 class LineForm(FlaskForm):
@@ -70,17 +132,6 @@ class LineForm(FlaskForm):
         default=2.0)
 
 
-class OptimizerForm(FlaskForm):
-    '''Corresponds to the bumps CLI command --fit'''
-    fitter = SelectField('Fit Optimizer', choices=[
-        ('lm', 'Levenberg Marquardt'),
-        ('newton', 'Quasi-Newton BFGS'),
-        ('de', 'Differential Evolution'),
-        ('dream', 'DREAM'),
-        ('amoeba', 'Nelder-Mead Simplex')
-    ], validators=[DataRequired()], default='lm')
-
-
 class SlurmForm(FlaskForm):
     '''
     Modeled after https://byuhpc.github.io/BYUJobScriptGenerator/
@@ -96,7 +147,7 @@ class SlurmForm(FlaskForm):
     mem_per_core = IntegerField(
         label='memory per processor core: ',
         validators=[DataRequired()], default=1)
-        
+
     mem_unit = SelectField(choices=[('G', 'GB'), ('M', 'MB')], default='G')
     walltime = TimeField(default=time(0, 30, 0))
     jobname = StringField(validators=[Optional()])

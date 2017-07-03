@@ -46,7 +46,7 @@ USER app_user
 
 # Set the environment variables for Flask
 # DEV
-ENV FLASK_APP=bumps_flask FLASK_DEBUG=1 BUMPS_FLASK_DEV=1 REDIS_URL=redis://redis_db:6379
+ENV FLASK_APP=bumps_flask FLASK_DEBUG=1 BUMPS_FLASK_DEV=1 REDIS_URL=redis://redis:6379
 
 
 # Launch the app

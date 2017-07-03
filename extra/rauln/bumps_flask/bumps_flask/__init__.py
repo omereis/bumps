@@ -13,6 +13,13 @@ jwt = JWTManager(app)
 # Set Redis db
 rdb = Database(FlaskRedis(app))
 
+# Not working currently (just hangs)
+try:
+    rdb.ping()
+except:
+    print("Redis isn't running. try `/etc/init.d/redis-server restart`")
+    exit(0)
+
 # Set app configs
 if environ.get('BUMPS_FLASK_DEV', '0') == '1':
     app.config.from_object('config.DevelopmentConfig')

@@ -11,9 +11,9 @@
     <div>
         {% if jobs %}
         <p> View the status of your jobs... </p>
-            {% for row in jobs %}
+            {% for job in jobs %}
                 <form action="/api/jobs/{{ id }}/{{ job }}" method="GET">
-                    <p> Job #{{ row[0] }} with script "{{ row[1] }}" ... RUNNING/PENDING/ERROR/COMPLETE <input type="submit" value="View"/> </p>
+                    <p> Job "{{ job }}" ... RUNNING/PENDING/ERROR/COMPLETE <input type="submit" value="View"/> </p>
                 </form>
             {% endfor %}
 

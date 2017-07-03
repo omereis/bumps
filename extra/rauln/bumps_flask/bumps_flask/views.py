@@ -18,7 +18,6 @@ from .api import api, create_user_token, register_token, \
     process_request_form, setup_job
 
 from .forms import TokenForm, LineForm, OptimizerForm, UploadForm, FitForm
-from .slurm_handler import build_slurm_script, line_handler
 
 USERS_H = 'user_tokens'  # DEBUG
 
@@ -28,9 +27,9 @@ USERS_H = 'user_tokens'  # DEBUG
 def index():
     '''
     View for the main landing page. Works as a simple authentication page.
-    User can request a new UID(), which will also assign to him/her a
-    JWT token which must be sent in every subsequent request to the
-    server in order to maintain a "session".
+    User can request a new UID (user token), which will also assign to them a
+    JWT auth token which must be sent in every subsequent request to the
+    server in order to maintain a sort of session.
     '''
 
     # Will return None if the current user does not have a JWT (cookie/header)
@@ -61,15 +60,8 @@ def dashboard():
     '''
     user_token = get_jwt_identity()
     user_data = rdb.hget('users', user_token)
-    # Zip together job numbers and job files if possible to display in template
-    # if rdb.hget(user_token, 'job_n'):
-    #     user_jobs = [i for i in xrange(int(rdb.hget(user_token, 'job_n')))]
-    #     zipped = zip(user_jobs, user_scripts)
-
-    # else:
-    zipped = None
-
-    return render_template('dashboard.html', id=user_token, jobs=zipped)
+    print(user_data)
+    return render_template('dashboard.html', id=user_token, jobs=user_data[0]['jobs'])
 
 
 @app.route('/register')
@@ -99,10 +91,7 @@ def fit_job(results=False):
     form = FitForm()
     if form.validate_on_submit():
         payload = (process_request_form(form.data))
-        dest = setup_job(user=get_jwt_identity(), data='',
-                         filename=get_jwt_identity() + '.sh')
-        build_slurm_script(dest, payload['slurm'])
-        line_handler(dest, payload['line'])  # DEBUG
+        setup_job(user=get_jwt_identity(), data=payload)
         return render_template('service.html', data=payload, results=True)
 
     return render_template('service.html', form=form)

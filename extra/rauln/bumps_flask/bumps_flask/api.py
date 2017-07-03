@@ -10,6 +10,7 @@ from flask_restful import Resource, Api, abort
 from flask_jwt_extended import create_access_token, create_refresh_token
 
 from .database import User, BumpsJob
+from .slurm_handler import build_slurm_script, line_handler
 from . import app, rdb, jwt
 
 
@@ -37,11 +38,11 @@ def register_token(user_token):
 
     jwt_id = create_access_token(identity=user_token)
     user = User(user_token=user_token)
-    rdb.hset('users', user_token, json.dumps(user.__dict__))
+    rdb.hset('users', user_token, user.__dict__)
     return jwt_id
 
 
-def setup_job(user, data=None, filename=None, _file=None):
+def setup_job(user, data, filename=None, _file=None):
     # Convenient variable
     folder = os.path.join(
         app.config.get('UPLOAD_FOLDER'),
@@ -64,12 +65,12 @@ def setup_job(user, data=None, filename=None, _file=None):
 
     else:
         # Sanitize the filename
-        filename = secure_filename(filename)
+        filename = secure_filename('{}_{}.sh'.format(user, random.randint(1, 100)))  # DEBUG
         # Create the file to prepare it for the queue
-        with open(os.path.join(folder, filename), 'w') as f:
-            f.write(data)
-
-    return os.path.join(folder, filename)
+        destination = os.path.join(folder, filename)
+        with open(destination, 'w') as f:
+            build_slurm_script(f, data['slurm'])
+            line_handler(f, data['line'])  # DEBUG
 
 
 def process_request_form(request):
@@ -141,13 +142,13 @@ class Jobs(Resource):
     def get(self, job_id=None, _format='json'):
         if job_id:
             if _format == 'html':
-                return '''{}'''.format(rbd.hget('jobs', job_id))
+                return '''{}'''.format(rdb.hget('jobs', job_id))
 
             return jsonify(rdb.hget('jobs', job_id))
 
         else:
             if _format == 'html':
-                return '''{}'''.format(rbd.get_jobs())
+                return '''{}'''.format(rdb.get_jobs())
 
             return jsonify(rdb.get_jobs())
 
@@ -186,9 +187,10 @@ class Users(Resource):
             return jsonify(rdb.get_users())
 
     def post(self):
+        # Add jobs to users
         json_data = flask_request.get_json()
         try:
-            user = User (user_token=json_data['user_token'])
+            user = User(user_token=json_data['user_token'])
         except KeyError:
             return make_response(json.dumps({'error':'not a proper job definition'}), 400)
 

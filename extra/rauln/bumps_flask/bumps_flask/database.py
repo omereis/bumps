@@ -23,7 +23,7 @@ class Database(object):
         return None
 
     def hget_all(self, _hash):
-        return {key: self.get(_hash, key) for key in self.db.hkeys(_hash)}
+        return {key: self.hget(_hash, key) for key in self.db.hkeys(_hash)}
 
     def hset(self, _hash, key, value):
         '''
@@ -66,6 +66,9 @@ class Database(object):
     # Admin
     ##################
 
+    def ping(self):
+        return self.db.ping()
+
     def get_all(self):
         return self.db.scan(0)[1]
 
@@ -80,9 +83,10 @@ class Database(object):
 
 
 class User(object):
-    def __init__(self, user_token=None, jobs=[]):
+    def __init__(self, user_token=None, jobs=[], n_jobs=0):
         self.user_token = user_token
         self.jobs = jobs  # Should be a list of BumpsJobs
+        self.n_jobs = n_jobs
 
     def get_jobs(self):
         return self.jobs
