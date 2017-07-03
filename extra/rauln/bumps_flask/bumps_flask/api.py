@@ -8,7 +8,10 @@ from flask import jsonify, url_for, redirect, render_template
 from flask import request as flask_request
 from flask_restful import Resource, Api, abort
 from flask_jwt_extended import create_access_token, create_refresh_token
+
+from .database import User, BumpsJob
 from . import app, rdb, jwt
+
 
 # Set RESTful API using flask_restful
 api = Api(app)
@@ -22,7 +25,7 @@ def create_user_token():
     return str(uuid.uuid4()).split('-')[0]
 
 
-def register_token(user_token, auth_token, refresh_token=False):
+def register_token(user_token):
     '''
     Generates a resource token for accessing bumps functionality
     based on available resources, priority (...)
@@ -31,16 +34,11 @@ def register_token(user_token, auth_token, refresh_token=False):
     todo: implement an existing, secure token generator
     '''
 
-    if auth_token:
-        jwt_id = create_access_token(identity=user_token)
-        rdb.sadd('users', user_token)
-        return jwt_id
 
-    if refresh_token:
-        refresh_id = create_refresh_token(identity=user_token)
-        return refresh_id
-
-    return Exception
+    jwt_id = create_access_token(identity=user_token)
+    user = User(user_token=user_token)
+    rdb.hset('users', user_token, json.dumps(user.__dict__))
+    return jwt_id
 
 
 def setup_job(user, data=None, filename=None, _file=None):
@@ -70,9 +68,6 @@ def setup_job(user, data=None, filename=None, _file=None):
         # Create the file to prepare it for the queue
         with open(os.path.join(folder, filename), 'w') as f:
             f.write(data)
-
-    rdb.hset(user, 'job_files', filename)
-    rdb.hincr(user, 'job_n', 1)
 
     return os.path.join(folder, filename)
 
@@ -135,6 +130,7 @@ def process_request_form(request):
 
 class Jobs(Resource):
     '''
+    Post a job, get a job!
     Things jobs should be able to do:
         Be submitted
         Be deleted
@@ -142,47 +138,61 @@ class Jobs(Resource):
         Print their information
         Stop their work
     '''
+    def get(self, job_id=None, _format='json'):
+        if job_id:
+            if _format == 'html':
+                return '''{}'''.format(rbd.hget('jobs', job_id))
 
-    def get(self, user_token):
-        '''
-        Returns the jobs associated with the specified user_token
-        '''
-        if not rdb.sismember('users', user_token):
-            abort(404, message="Token {} does not exist".format(user_token))
-        return jsonify({user_token: rdb.hget(user_token, 'jobs')})
+            return jsonify(rdb.hget('jobs', job_id))
 
-    def delete(self, user_token, job_id):
-        '''
-        Deletes a specific job_id for a given user_token
-        '''
-        return '', 204
+        else:
+            if _format == 'html':
+                return '''{}'''.format(rbd.get_jobs())
 
-    def put(self, user_token, job_id):
-        '''
-        Updates a job given a token endpoint user_token and the specific job_id
-        '''
-        # return jsonify({user_token: job_id}), 201
-
-
-class JobList(Resource):
-    def get(self, _format='json'):
-
-        r_dict = {}
-        for user in rdb.get_jobs():
-            r_dict[user] = rdb.hget(user, 'job_n')
-
-        if _format == 'html':
-            return '''{}'''.format(r_dict)
-        return jsonify(r_dict)
+            return jsonify(rdb.get_jobs())
 
     def post(self):
         json_data = flask_request.get_json()
-        user_token = json_data['token']
-        if not rdb.sismember('users', user_token):
-            abort(404, message="Token {} does not exist".format(user_token))
-        job_id = json_data['job']
-        redb.hset(user_token, 'jobs', job_id)
-        return '', 201
+        try:
+            job = BumpsJob(
+                _id=random.randint(0, 100),  # Debug
+                name=json_data['name'],
+                origin=flask_request.remote_addr,
+                date=str(datetime.datetime.utcnow()),
+                #priority = get_priority(),
+                #notify= get_notify(),?
+                )
+
+        except KeyError:
+            return make_response(json.dumps({'error':'not a proper job definition'}), 400)
+
+        rdb.hset('jobs', _id, json.dumps(job.__dict__))
+
+        return jsonify({'job_data': job.__dict__})
+
+
+class Users(Resource):
+    def get(self, user_id=None, _format='json'):
+        if user_id:
+            if _format == 'html':
+                return '''{}'''.format(rdb.hget('users', user_id))
+
+            return jsonify(rdb.hget('users', user_id))
+
+        else:
+            if _format == 'html':
+                return '''{}'''.format(rdb.get_users())
+
+            return jsonify(rdb.get_users())
+
+    def post(self):
+        json_data = flask_request.get_json()
+        try:
+            user = User (user_token=json_data['user_token'])
+        except KeyError:
+            return make_response(json.dumps({'error':'not a proper job definition'}), 400)
+
+        rdb.hset('users', user_token, json.dumps(user.get_job()))
 
 
 @jwt.user_claims_loader
@@ -199,5 +209,5 @@ def add_claims_to_jwt(identity):
     })
 
 
-api.add_resource(JobList, '/api/jobs', '/api/jobs.<string:_format>')
-api.add_resource(Jobs, '/api/jobs/<user_token>')
+api.add_resource(Jobs, '/api/jobs', '/api/jobs.<string:_format>', '/api/jobs/<int:job_id>.<string:_format>')
+api.add_resource(Users, '/api/users', '/api/users.<string:_format>', '/api/users/<string:user_id>.<string:_format>')

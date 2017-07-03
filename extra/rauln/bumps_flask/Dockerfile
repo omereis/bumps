@@ -27,7 +27,7 @@ COPY requirements.txt /home/app_user/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
 
 # Include mod_wsgi to run Flask behind Apache in this container
-RUN pip install mod_wsgi
+# RUN pip install mod_wsgi
 
 # Copy app files to the container
 COPY ./ /home/app_user/bumps_flask
@@ -46,7 +46,7 @@ USER app_user
 
 # Set the environment variables for Flask
 # DEV
-ENV FLASK_APP=bumps_flask FLASK_DEBUG=1 BUMPS_FLASK_DEV=1
+ENV FLASK_APP=bumps_flask FLASK_DEBUG=1 BUMPS_FLASK_DEV=1 REDIS_URL=redis://redis_db:6379
 
 
 # Launch the app

@@ -18,7 +18,7 @@ from .api import api, create_user_token, register_token, \
     process_request_form, setup_job
 
 from .forms import TokenForm, LineForm, OptimizerForm, UploadForm, FitForm
-from .slurm_handler import build_slurm_script
+from .slurm_handler import build_slurm_script, line_handler
 
 USERS_H = 'user_tokens'  # DEBUG
 
@@ -30,7 +30,7 @@ def index():
     View for the main landing page. Works as a simple authentication page.
     User can request a new UID(), which will also assign to him/her a
     JWT token which must be sent in every subsequent request to the
-    server in order to maintain a session.
+    server in order to maintain a "session".
     '''
 
     # Will return None if the current user does not have a JWT (cookie/header)
@@ -40,7 +40,7 @@ def index():
     if jwt_id:
         return redirect(url_for('dashboard'))
 
-    # Get the WTForm and validate the user token
+    # Get the WTForm and validate the user token, move them along
     form = TokenForm()
     if form.validate_on_submit():
         redirect(url_for('dashboard'))
@@ -60,15 +60,14 @@ def dashboard():
     possible based on their assigned resources.
     '''
     user_token = get_jwt_identity()
-    user_scripts = rdb.hget(user_token, 'job_files')
-
+    user_data = rdb.hget('users', user_token)
     # Zip together job numbers and job files if possible to display in template
-    if rdb.hget(user_token, 'job_n'):
-        user_jobs = [i for i in xrange(int(rdb.hget(user_token, 'job_n')))]
-        zipped = zip(user_jobs, user_scripts)
+    # if rdb.hget(user_token, 'job_n'):
+    #     user_jobs = [i for i in xrange(int(rdb.hget(user_token, 'job_n')))]
+    #     zipped = zip(user_jobs, user_scripts)
 
-    else:
-        zipped = None
+    # else:
+    zipped = None
 
     return render_template('dashboard.html', id=user_token, jobs=zipped)
 
@@ -85,7 +84,7 @@ def tokenizer():
 
     # Create a UID
     user_token = create_user_token()
-    jwt_token = register_token(user_token, auth_token=True)
+    jwt_token = register_token(user_token)
     response = make_response(
         render_template('tokenizer.html', token=user_token))
     set_access_cookies(response, jwt_token)
@@ -102,7 +101,8 @@ def fit_job(results=False):
         payload = (process_request_form(form.data))
         dest = setup_job(user=get_jwt_identity(), data='',
                          filename=get_jwt_identity() + '.sh')
-        build_slurm_script(dest, payload)
+        build_slurm_script(dest, payload['slurm'])
+        line_handler(dest, payload['line'])  # DEBUG
         return render_template('service.html', data=payload, results=True)
 
     return render_template('service.html', form=form)
@@ -127,7 +127,7 @@ def upload():
 
     form = UploadForm()
     if form.validate_on_submit():
-        setup_job(user=get_jwt_identity(), _file=form.script.data)
+        setup_job(user=get_jwt_identity(), _file=form.script.data)  # DEBUG
         flash('File uploaded successfully!')
         return redirect(url_for('dashboard'))
 
@@ -142,25 +142,6 @@ def uploaded_file(filename):
     Sends a previously uploaded file to the browser
     '''
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-
-# @app.route('/api/refresh')
-# @jwt_refresh_token_required
-# def refresh():
-#     form = TokenForm()
-#
-#     if form.validate_on_submit():
-#         if form.token.data == get_jwt_identity():
-#             jwt_token = register_token(form.token.data, auth_token=True)
-#             response = make_response(render_template(url_for('index')))
-#             set_access_cookies(response, jwt_token)
-#             return response
-#
-#         else:
-#             render_template('refresh.html', form=form, error=True)
-#
-#     else:
-#         return render_template('refresh.html', form=form, error=False)
 
 
 # The following functions define the responses for JWT auth failure.

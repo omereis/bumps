@@ -70,11 +70,10 @@ class Database(object):
         return self.db.scan(0)[1]
 
     def get_jobs(self):
-        r_list = []
-        for db in self.get_all():
-            if 'users' not in db:
-                r_list.append(db)
-        return r_list
+        return self.db.hkeys('jobs')
+
+    def get_users(self):
+        return self.db.hkeys('users')
 
     def flushall(self):  # DEV
         self.db.flushall()
@@ -83,22 +82,24 @@ class Database(object):
 class User(object):
     def __init__(self, user_token=None, jobs=[]):
         self.user_token = user_token
-        self.jobs = jobs
+        self.jobs = jobs  # Should be a list of BumpsJobs
 
+    def get_jobs(self):
+        return self.jobs
 
 class BumpsJob(object):
-    def __init__(self, id=None, name='', origin='', start=None, stop=None,
-                 priority=0.0, notify='', status='PENDING', location=''):
+    '''
+    Possible job status: PENDING, ACTIVE, CANCEL, COMPLETE, ERROR
+    '''
+    def __init__(self, _id=None, name='', origin='', date=None, start=None, stop=None,
+                 priority=0.0, notify='', status='PENDING'):
 
-        self.id = id
+        self._id = _id
         self.name = name
         self.origin = origin
+        self.date = date
         self.start = start
         self.stop = stop
         self.priority = priority
         self.notify = notify
         self.status = status
-        self.location = location
-
-    def report_status(self):
-        pass

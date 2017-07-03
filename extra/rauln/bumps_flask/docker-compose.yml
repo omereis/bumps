@@ -5,7 +5,11 @@ services:
     ports:
     - "8888:5000"
     links:
-    - "redis_db"
+    - "redis"
+    depends_on:
+    - redis
 
-  redis_db:
+  redis:
     image: redis
+    ports:
+        - "6379:6379"

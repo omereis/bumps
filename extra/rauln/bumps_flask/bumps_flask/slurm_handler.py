@@ -64,11 +64,11 @@ def build_slurm_script(file_dest, _input):
     '''
 
     with open(file_dest, 'w+') as f:
-        slurm_commands = parse_commands(_input['slurm'])
+        slurm_commands = parse_commands(_input)
         f.write(slurm_commands)
-        del _input['slurm']
+        del _input
 
-        line_handler(f, _input['line'])  # DEBUG
+        line_handler(f, _input)  # DEBUG
         # execute_slurm_script(file_dest)  # DEBUG
 
 

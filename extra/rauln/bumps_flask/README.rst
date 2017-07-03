@@ -18,13 +18,14 @@ To-Do
     - [X] Fix serializing lists in redis
     - [ ] Implement unit testing
     - [ ] Implement logout (revoke JWT?)
-    - [W] Implement JWT token refresh for users who log back in with their UID
+    - [ ] Implement JWT token refresh for users who log back in with their UID
         - [X] Fix landing page auth issue (expired token)
     - [W] Implement secure redirect back to caller (http://flask.pocoo.org/snippets/63/)
 
 - Milestones
     - [W] Implement file handling (tempdirs, filenames based on jobids)
     - [W] Implement generic Slurm script generator from web service form values
-        - [W] Associate FitProblem scripts to job_n (consider that jobs may not finish in order appended...)
+        - [W] Associate FitProblems to users
     - [ ] Implement client interface for connecting to remote work server
+        - [ ] Implement the remaining REST interface
     - [ ] etc
