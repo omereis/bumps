@@ -83,13 +83,17 @@ class Database(object):
 
 
 class User(object):
-    def __init__(self, user_token=None, jobs=[], n_jobs=0):
+    # The jobs list should contain job_ids as provided by slurm
+    def __init__(self, user_token=None, jobs=[]):
         self.user_token = user_token
         self.jobs = jobs  # Should be a list of BumpsJobs
-        self.n_jobs = n_jobs
+        self.n_jobs = len(self.jobs)
 
     def get_jobs(self):
         return self.jobs
+
+    def get_njobs(self):
+        return len(self.jobs)
 
 class BumpsJob(object):
     '''

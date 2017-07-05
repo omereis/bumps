@@ -1,12 +1,5 @@
-import os
-import requests
-import random
-import datetime
-import json
-
 from flask import url_for, render_template, redirect, \
     send_from_directory, make_response, flash
-
 from flask import request as flask_request
 
 from flask_jwt_extended import jwt_required, jwt_optional,\
@@ -16,7 +9,6 @@ from flask_jwt_extended import jwt_required, jwt_optional,\
 from . import app, rdb, jwt
 from .api import api, create_user_token, register_token, \
     process_request_form, setup_job
-
 from .forms import TokenForm, LineForm, OptimizerForm, UploadForm, FitForm
 
 USERS_H = 'user_tokens'  # DEBUG
@@ -28,7 +20,7 @@ def index():
     '''
     View for the main landing page. Works as a simple authentication page.
     User can request a new UID (user token), which will also assign to them a
-    JWT auth token which must be sent in every subsequent request to the
+    JWT auth token that must be sent in every subsequent request to the
     server in order to maintain a sort of session.
     '''
 
@@ -58,9 +50,11 @@ def dashboard():
     running/completed/pending jobs and submit new jobs if
     possible based on their assigned resources.
     '''
+
+    # Retrieve the UID
     user_token = get_jwt_identity()
+    # Get the database info for the current user
     user_data = rdb.hget('users', user_token)
-    print(user_data)
     return render_template('dashboard.html', id=user_token, jobs=user_data[0]['jobs'])
 
 
@@ -76,9 +70,12 @@ def tokenizer():
 
     # Create a UID
     user_token = create_user_token()
+    # Associate an auth JWT to the UID
     jwt_token = register_token(user_token)
+    # Build the response object to a template
     response = make_response(
         render_template('tokenizer.html', token=user_token))
+    # Bundle the JWT cookie into the response object
     set_access_cookies(response, jwt_token)
     return response
 
@@ -87,24 +84,21 @@ def tokenizer():
 @jwt_required
 def fit_job(results=False):
     '''
+    Page for displaying the forms related to building
+    a FitProblem as described in the bumps docs. This
+    function validates the forms and sets up the job
+    by working with the API functions.
     '''
+
     form = FitForm()
     if form.validate_on_submit():
+        # Parse through the form data
         payload = (process_request_form(form.data))
+        # Use the parsed data to set up a job and related files
         setup_job(user=get_jwt_identity(), data=payload)
+        # Display the results
         return render_template('service.html', data=payload, results=True)
-
     return render_template('service.html', form=form)
-
-
-@app.route('/api/results', methods=['GET', 'POST'])
-def display_results():
-    '''
-    '''
-    # run_script(build_script(payload))
-    print(flask_request.form)
-    return render_template('results.html',
-                           payload=flask_request.form.get('payload'))
 
 
 @app.route('/api/upload', methods=['GET', 'POST'])
@@ -133,7 +127,7 @@ def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
-# The following functions define the responses for JWT auth failure.
+########## The following functions define the responses for JWT auth failure. ##########
 
 @jwt.expired_token_loader
 def expired_token_callback():

@@ -1,6 +1,7 @@
 import json
 import random
 import datetime
+import tempfile
 import uuid
 import os
 from werkzeug.utils import secure_filename
@@ -10,7 +11,7 @@ from flask_restful import Resource, Api, abort
 from flask_jwt_extended import create_access_token, create_refresh_token
 
 from .database import User, BumpsJob
-from .slurm_handler import build_slurm_script, line_handler
+from .file_handler import build_slurm_script, build_job_script
 from . import app, rdb, jwt
 
 
@@ -35,14 +36,14 @@ def register_token(user_token):
     todo: implement an existing, secure token generator
     '''
 
-
     jwt_id = create_access_token(identity=user_token)
     user = User(user_token=user_token)
     rdb.hset('users', user_token, user.__dict__)
     return jwt_id
 
 
-def setup_job(user, data, filename=None, _file=None):
+def setup_job(user, data=None, _file=None):
+
     # Convenient variable
     folder = os.path.join(
         app.config.get('UPLOAD_FOLDER'),
@@ -53,25 +54,31 @@ def setup_job(user, data, filename=None, _file=None):
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-    # If an upload file was provided...
+    # If a model file was provided...
     if _file:
-        # Get the file form data
-        f = _file
         filename = _file.filename
         # Sanitize the filename
         filename = secure_filename(filename)
         # Save the uploaded file
-        f.save(os.path.join(folder, filename))
+        _file.save(os.path.join(folder, filename))
 
+    # No model file was provided, create a tempfile for it
+    # and build it using the form data
     else:
-        # Sanitize the filename
-        filename = secure_filename('{}_{}.sh'.format(user, random.randint(1, 100)))  # DEBUG
-        # Create the file to prepare it for the queue
-        destination = os.path.join(folder, filename)
-        with open(destination, 'w') as f:
-            build_slurm_script(f, data['slurm'])
-            line_handler(f, data['line'])  # DEBUG
+        job_file = tempfile.NamedTemporaryFile(dir=folder, suffix='.py', delete=False)
+        try:
+            filename = job_file.name
+            build_job_script(job_file, data['line'])  # DEBUG
+        finally:
+            job_file.close()
 
+    # Build the slurm batch script for running the job
+    slurm_file = tempfile.NamedTemporaryFile(dir=folder, delete=False)
+    try:
+        build_slurm_script(slurm_file, data['slurm'], data['cli'], filename)
+    finally:
+        slurm_file.close()
+        
 
 def process_request_form(request):
     response = {'missing_keys': [], 'slurm': {}, 'cli': {}, 'line': {}}
@@ -116,6 +123,7 @@ def process_request_form(request):
                     response['missing_keys'].append(key)
 
         # Catch the line-fitting related variables here
+        # DEBUG
         elif 'line' == form:
             response['line']['x'] = [
                 int(float(i)) for i in request[form]['x'].strip().split(',')]
