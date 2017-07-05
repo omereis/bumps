@@ -3,15 +3,12 @@ from flask import url_for, render_template, redirect, \
 from flask import request as flask_request
 
 from flask_jwt_extended import jwt_required, jwt_optional,\
-    get_jwt_identity, get_jwt_claims, jwt_refresh_token_required,\
-    set_access_cookies
+    get_jwt_identity, get_jwt_claims, set_access_cookies
 
 from . import app, rdb, jwt
-from .api import api, create_user_token, register_token, \
-    process_request_form, setup_job
+from .api import api, create_user_token, register_token, process_request_form
 from .forms import TokenForm, LineForm, OptimizerForm, UploadForm, FitForm
-
-USERS_H = 'user_tokens'  # DEBUG
+from .file_handler import setup_job
 
 
 @app.route('/')
@@ -93,11 +90,17 @@ def fit_job(results=False):
     form = FitForm()
     if form.validate_on_submit():
         # Parse through the form data
-        payload = (process_request_form(form.data))
+        form_data = (process_request_form(form.data))
+
         # Use the parsed data to set up a job and related files
-        setup_job(user=get_jwt_identity(), data=payload)
-        # Display the results
-        return render_template('service.html', data=payload, results=True)
+        try:
+            setup_job(user=get_jwt_identity(), data=form_data, _file=form_data['script'])
+        except KeyError:
+            setup_job(user=get_jwt_identity(), data=form_data)
+        finally:
+            # Display the results
+            return render_template('service.html', data=form_data, results=True)
+
     return render_template('service.html', form=form)
 
 
@@ -110,7 +113,8 @@ def upload():
 
     form = UploadForm()
     if form.validate_on_submit():
-        setup_job(user=get_jwt_identity(), _file=form.script.data)  # DEBUG
+        form_data = process_request_form(form.script.data)
+        setup_job(user=get_jwt_identity(), _data=form_data)
         flash('File uploaded successfully!')
         return redirect(url_for('dashboard'))
 

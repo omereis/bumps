@@ -1,18 +1,17 @@
 from datetime import time
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileRequired, FileField, FileAllowed
+from flask_wtf.file import FileRequired, FileAllowed
 
 from wtforms import StringField, IntegerField, FloatField, SelectField,\
-    FormField, BooleanField
-from wtforms.validators import DataRequired, Optional
+    FormField, BooleanField, FileField
+from wtforms.validators import DataRequired, Optional, Email
 from wtforms_components import TimeField
 
 from . import rdb
 
 
-# Consider that --remote is implied, -- parallel, notify, queue and time
-# are
+# Consider that --remote is implied, --parallel, --notify, --queue and --time are built-in
 
 class TokenForm(FlaskForm):
     '''
@@ -34,8 +33,8 @@ class TokenForm(FlaskForm):
 
 class UploadForm(FlaskForm):
     script = FileField('', validators=[
-        FileRequired(),
-        FileAllowed(['xml', 'py'], '.xml or .py only!')])
+        FileAllowed(['xml', 'py'], '.xml or .py only!'),
+        Optional()])
 
 
 #################### Translating form data to CLI commands for bumps itself ####################
@@ -48,27 +47,27 @@ class ParsForm(FlaskForm):
 
 class ShakeForm(FlaskForm):
     '''Corresponds to the bumps CLI command --shake'''
-    pass
+    shake = BooleanField(label='Set random initial values for the parameters in the model?')
 
 
 class SimulateForm(FlaskForm):
     '''Corresponds to the bumps CLI command --simulate'''
-    pass
+    simulate = BooleanField(label='Simulate a dataset using the initial problem parameters?')
 
 
 class SimRandomForm(FlaskForm):
     '''Corresponds to the bumps CLI command --simrandom'''
-    pass
+    simrandom = BooleanField(label='Simulate a dataset using random initial parameters?')
 
 
 class NoiseForm(FlaskForm):
     '''Corresponds to the bumps CLI command --noise'''
-    pass
+    noise = FloatField(label='Noise percentage on the simulated data: ', default=5.0)
 
 
 class SeedForm(FlaskForm):
     '''Corresponds to the bumps CLI command --seed'''
-    pass
+    seed = IntegerField(label='Set the seed for the random generator in Numpy: ')
 
 ####################
 #################### Stopping condition forms
@@ -210,7 +209,7 @@ class PlotForm(FlaskForm):
 
 class ChiForm(FlaskForm):
     '''Corresponds to the bumps CLI command --chisq'''
-    BooleanField(label='Show chi squared and exit? Use this to test model for syntax errors)')
+    BooleanField(label='Show chi squared and exit? (Use this to test model for syntax errors)')
 
 ####################
 ####################
@@ -281,4 +280,4 @@ class FitForm(FlaskForm):
     upload = FormField(UploadForm)
     email = StringField(
         label='Email address',
-        validators=[Optional()])
+        validators=[Email(), Optional()])

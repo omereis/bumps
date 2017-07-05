@@ -1,10 +1,8 @@
 import json
 import random
 import datetime
-import tempfile
 import uuid
 import os
-from werkzeug.utils import secure_filename
 from flask import jsonify, url_for, redirect, render_template
 from flask import request as flask_request
 from flask_restful import Resource, Api, abort
@@ -42,48 +40,9 @@ def register_token(user_token):
     return jwt_id
 
 
-def setup_job(user, data=None, _file=None):
-
-    # Convenient variable
-    folder = os.path.join(
-        app.config.get('UPLOAD_FOLDER'),
-        'fit_problems',
-        user)
-
-    # Make sure the upload folder exists beforehand
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-
-    # If a model file was provided...
-    if _file:
-        filename = _file.filename
-        # Sanitize the filename
-        filename = secure_filename(filename)
-        # Save the uploaded file
-        _file.save(os.path.join(folder, filename))
-
-    # No model file was provided, create a tempfile for it
-    # and build it using the form data
-    else:
-        job_file = tempfile.NamedTemporaryFile(dir=folder, suffix='.py', delete=False)
-        try:
-            filename = job_file.name
-            build_job_script(job_file, data['line'])  # DEBUG
-        finally:
-            job_file.close()
-
-    # Build the slurm batch script for running the job
-    slurm_file = tempfile.NamedTemporaryFile(dir=folder, delete=False)
-    try:
-        build_slurm_script(slurm_file, data['slurm'], data['cli'], filename)
-    finally:
-        slurm_file.close()
-        
-
 def process_request_form(request):
     response = {'missing_keys': [], 'slurm': {}, 'cli': {}, 'line': {}}
     for form in request:
-
         if 'optimizer' == form:
             response['cli']['fit'] = request[form]['fitter']
 
@@ -92,6 +51,9 @@ def process_request_form(request):
 
         elif 'email' == form and request[form]:
             response['slurm']['--mail-user'] = request[form]
+
+        elif 'upload' == form and request[form]['script']:
+            response['script'] = request[form]['script']
 
         # Catch the slurm related variables here
         elif 'slurm' == form:
