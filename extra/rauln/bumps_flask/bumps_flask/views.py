@@ -1,5 +1,5 @@
 from flask import url_for, render_template, redirect, \
-    send_from_directory, make_response, flash
+    send_from_directory, make_response, flash, jsonify
 from flask import request as flask_request
 
 from flask_jwt_extended import jwt_required, jwt_optional,\
@@ -7,7 +7,7 @@ from flask_jwt_extended import jwt_required, jwt_optional,\
 
 from . import app, rdb, jwt
 from .api import api, create_user_token, register_token, process_request_form
-from .forms import TokenForm, LineForm, OptimizerForm, UploadForm, FitForm
+from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
 from .file_handler import setup_job
 
 
@@ -55,7 +55,7 @@ def dashboard():
     return render_template('dashboard.html', id=user_token, jobs=user_data[0]['jobs'])
 
 
-@app.route('/register')
+@app.route('/register', methods=['GET', 'POST'])
 def tokenizer():
     '''
     View for showing the user their unique ID, which they should store
@@ -69,9 +69,17 @@ def tokenizer():
     user_token = create_user_token()
     # Associate an auth JWT to the UID
     jwt_token = register_token(user_token)
-    # Build the response object to a template
-    response = make_response(
-        render_template('tokenizer.html', token=user_token))
+
+    # Working with the client interface
+    if flask_request.method == 'POST':
+        response = jsonify({'uid': user_token})
+
+    # Working with the web page interface
+    else:
+        # Build the response object to a template
+        response = make_response(
+            render_template('tokenizer.html', token=user_token))
+
     # Bundle the JWT cookie into the response object
     set_access_cookies(response, jwt_token)
     return response

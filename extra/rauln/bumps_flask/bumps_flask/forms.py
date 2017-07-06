@@ -1,12 +1,13 @@
 from datetime import time
 
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileRequired, FileAllowed
 
 from wtforms import StringField, IntegerField, FloatField, SelectField,\
     FormField, BooleanField, FileField
-from wtforms.validators import DataRequired, Optional, Email
-from wtforms_components import TimeField
+from wtforms.validators import DataRequired, Optional, Email, ValidationError
+from wtforms_components import TimeField  # DEBUG
+
+from werkzeug.utils import secure_filename
 
 from . import rdb
 
@@ -26,15 +27,26 @@ class TokenForm(FlaskForm):
         Validation consists of checking whether or not the submitted
         value corresponds to an existing database token
         '''
-        if not rdb.sismember('users', field.data):
-            raise ValidationError(
-                'Token \"' + field.data + '\" does not exist in the database.')
+        if not rdb.hget('users', field.data):
+            raise ValidationError('Token \"' + field.data + '\" does not exist in the database.')
 
 
 class UploadForm(FlaskForm):
-    script = FileField('', validators=[
-        FileAllowed(['xml', 'py'], '.xml or .py only!'),
-        Optional()])
+    script = FileField('Model file: ', validators=[DataRequired()])
+
+    def validate_script(form, field):
+        '''
+        Validation consists of checking the file extension
+        '''
+        filename = secure_filename(field.data)
+        if not filename.split('.')[1] == 'py':
+            raise ValidationError('Only .py files allowed!')
+
+
+class EmailForm(FlaskForm):
+    email = StringField(
+        label='Email address: ',
+        validators=[Email(message='Please enter a correct email address.'), Optional()])
 
 
 #################### Translating form data to CLI commands for bumps itself ####################
@@ -104,7 +116,7 @@ class TimeForm(FlaskForm):
 
 class OptimizerForm(FlaskForm):
     '''Corresponds to the bumps CLI command --fit'''
-    fitter = SelectField('Fit Optimizer', choices=[
+    fitter = SelectField('Fit Optimizer: ', choices=[
         ('lm', 'Levenberg Marquardt'),
         ('newton', 'Quasi-Newton BFGS'),
         ('de', 'Differential Evolution'),
@@ -201,7 +213,8 @@ class CovarianceForm(FlaskForm):
 class PlotForm(FlaskForm):
     '''Corresponds to the bumps CLI command --plot'''
     plot = SelectField(
-        choices=[('')]
+        choices=[('linear', 'linear'), ('log', 'logarithmic'), ('residuals', 'residuals')],
+        default='log'
     )
 
 ####################
@@ -213,35 +226,6 @@ class ChiForm(FlaskForm):
 
 ####################
 ####################
-
-
-class LineForm(FlaskForm):
-    '''
-    Test form for performing a linear curve fit.
-    The idea is to test handling data and running a simple fit
-    on the server.
-    '''
-
-    x = StringField(
-        label='x: ',
-        validators=[DataRequired(message='Missing x values.')],
-        default='1,2,3,4,5,6')
-    y = StringField(
-        label='y: ',
-        validators=[DataRequired(message='Missing y values.')],
-        default='2.1,4.0,6.3,8.03,9.6,11.9')
-    dy = StringField(
-        label='dy: ',
-        validators=[DataRequired(message='Missing dy values.')],
-        default='0.05,0.05,0.2,0.05,0.2,0.2')
-    m = FloatField(
-        label='slope (m): ',
-        validators=[DataRequired(message='Missing slope value.')],
-        default=2.0)
-    b = FloatField(
-        label='y-intercept (b): ',
-        validators=[DataRequired(message='Missing b values.')],
-        default=2.0)
 
 
 class SlurmForm(FlaskForm):
@@ -259,12 +243,12 @@ class SlurmForm(FlaskForm):
         label='Number of GPUs: ',
         validators=[Optional()])
     mem_per_core = IntegerField(
-        label='memory per processor core: ',
+        label='Memory per processor core: ',
         validators=[DataRequired()], default=1)
 
-    mem_unit = SelectField(choices=[('G', 'GB'), ('M', 'MB')], default='G')
+    mem_unit = SelectField(label='Memory Unit', choices=[('G', 'GB'), ('M', 'MB')], default='G')
     walltime = TimeField(default=time(0, 30, 0))
-    jobname = StringField(validators=[Optional()])
+    # jobname = StringField(validators=[Optional()])
 
 
 class FitForm(FlaskForm):
@@ -274,10 +258,7 @@ class FitForm(FlaskForm):
     on the server.
     '''
     slurm = FormField(SlurmForm)
-    line = FormField(LineForm)
     steps = FormField(StepForm)
     optimizer = FormField(OptimizerForm)
     upload = FormField(UploadForm)
-    email = StringField(
-        label='Email address',
-        validators=[Email(), Optional()])
+    email = FormField(EmailForm)

@@ -41,7 +41,7 @@ def register_token(user_token):
 
 
 def process_request_form(request):
-    response = {'missing_keys': [], 'slurm': {}, 'cli': {}, 'line': {}}
+    response = {'missing_keys': [], 'slurm': {}, 'cli': {}}
     for form in request:
         if 'optimizer' == form:
             response['cli']['fit'] = request[form]['fitter']
@@ -83,18 +83,6 @@ def process_request_form(request):
 
                 else:
                     response['missing_keys'].append(key)
-
-        # Catch the line-fitting related variables here
-        # DEBUG
-        elif 'line' == form:
-            response['line']['x'] = [
-                int(float(i)) for i in request[form]['x'].strip().split(',')]
-            response['line']['y'] = [
-                float(i) for i in request[form]['y'].strip().split(',')]
-            response['line']['dy'] = [
-                float(i) for i in request[form]['dy'].strip().split(',')]
-            response['line']['m'] = request[form]['m']
-            response['line']['b'] = request[form]['b']
 
     return response
 

@@ -16,7 +16,6 @@ To-Do
 -  Tweaks and improvements
     - [X] Implement actual redis database
     - [X] Fix serializing lists in redis
-    - [ ] Implement unit testing
     - [ ] Implement logout (revoke JWT?)
     - [ ] Implement JWT token refresh for users who log back in with their UID
         - [X] Fix landing page auth issue (expired token)
@@ -25,7 +24,9 @@ To-Do
 - Milestones
     - [X] Implement file handling
     - [W] Implement generic Slurm script generator from web service form values
-        - [W] Associate FitProblems to users
-    - [ ] Implement client interface for connecting to remote work server
-        - [ ] Implement the remaining REST interface
+        - [ ] Associate FitProblems to users
+        - [W] Generate unique job ids for organization and DB usage
+    - [W] Implement client interface for connecting to remote work server
+        - [W] Implement the remaining REST interface
+    - [ ] Implement unit testing
     - [ ] etc
