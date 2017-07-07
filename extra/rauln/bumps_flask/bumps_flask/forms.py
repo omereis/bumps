@@ -1,9 +1,10 @@
 from datetime import time
 
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField
 
 from wtforms import StringField, IntegerField, FloatField, SelectField,\
-    FormField, BooleanField, FileField
+    FormField, BooleanField
 from wtforms.validators import DataRequired, Optional, Email, ValidationError
 from wtforms_components import TimeField  # DEBUG
 
@@ -38,15 +39,15 @@ class UploadForm(FlaskForm):
         '''
         Validation consists of checking the file extension
         '''
-        filename = secure_filename(field.data)
-        if not filename.split('.')[1] == 'py':
+        filename = secure_filename(field.data.filename)
+        if not filename.rsplit('.', 1)[1].lower() == 'py':
             raise ValidationError('Only .py files allowed!')
 
 
 class EmailForm(FlaskForm):
     email = StringField(
         label='Email address: ',
-        validators=[Email(message='Please enter a correct email address.'), Optional()])
+        validators=[Email(message='Please enter a valid email address.'), Optional()])
 
 
 #################### Translating form data to CLI commands for bumps itself ####################

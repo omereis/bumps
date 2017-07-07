@@ -99,15 +99,10 @@ def fit_job(results=False):
     if form.validate_on_submit():
         # Parse through the form data
         form_data = (process_request_form(form.data))
-
         # Use the parsed data to set up a job and related files
-        try:
-            setup_job(user=get_jwt_identity(), data=form_data, _file=form_data['script'])
-        except KeyError:
-            setup_job(user=get_jwt_identity(), data=form_data)
-        finally:
-            # Display the results
-            return render_template('service.html', data=form_data, results=True)
+        setup_job(user=get_jwt_identity(), _input=form_data, _file=form.upload.data['script'])
+        # Display the results
+        return render_template('service.html', data=form_data, results=True)
 
     return render_template('service.html', form=form)
 

@@ -11,7 +11,7 @@ else:
     import subprocess
 
 
-def setup_job(user, data=None, _file=None):
+def setup_job(user, _input, _file):
     # Convenient variable
     folder = os.path.join(
         app.config.get('UPLOAD_FOLDER'),
@@ -22,46 +22,17 @@ def setup_job(user, data=None, _file=None):
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-    # If a model file was provided...
-    if _file:
-        filename = _file.filename
-        # Sanitize the filename
-        filename = secure_filename(filename)
-        # Save the uploaded file
-        _file.save(os.path.join(folder, filename))
-
-    # No model file was provided, create a tempfile for it
-    # and build it using the form data
-    else:
-        job_file = tempfile.NamedTemporaryFile(dir=folder, suffix='.py', delete=False)
-        try:
-            filename = job_file.name
-            build_job_script(job_file, data['line'])  # DEBUG
-        finally:
-            job_file.close()
+    # Sanitize the filename
+    filename = secure_filename(_file.filename)
+    # Save the uploaded file
+    _file.save(os.path.join(folder, filename))
 
     # Build the slurm batch script for running the job
     slurm_file = tempfile.NamedTemporaryFile(dir=folder, delete=False)
     # try:
-    build_slurm_script(slurm_file, data['slurm'], data['cli'], filename)
+    build_slurm_script(slurm_file, _input['slurm'], _input['cli'], filename)
     # finally:
     slurm_file.close()
-
-
-def build_job_script(_file, job_dict):
-    '''
-    TEST function to handle building the line FitProblem script TEST
-    '''
-
-    _file.write('\nfrom bumps.names import *\n\n')
-    _file.write('''def line(x, m, b=0):\n\treturn m * x + b\n\n''')
-
-    for key in job_dict:
-        _file.write('{} = {}\n'.format(key, job_dict[key]))
-
-    _file.write('''\nM = Curve(line,x,y,dy,m=2,b=2)\nM.m.range(0,4)\nM.b.range(-5,5)\n''')
-
-    _file.write('\nproblem = FitProblem(M)\n')
 
 
 def build_slurm_script(_file, slurm_dict, cli_dict, job_file_name):
@@ -114,7 +85,7 @@ def cli_commands(cli_dict):
     '''
     TODO: Consider the CLI args which are just switches
     '''
-    
+
     output_s = ''
     for key in cli_dict:
         output_s += ' --{}={}'.format(key, cli_dict[key])

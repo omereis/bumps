@@ -1,11 +1,16 @@
 from os import environ
+from sys import exit
 from flask import Flask
 from flask_redis import FlaskRedis
 from flask_jwt_extended import JWTManager
 from .database import Database
 
 # Set app
-app = Flask(__name__)
+app = Flask(__name__, instance_relative_config=True)
+
+# Set app configs
+app.config.from_object('config')
+app.config.from_pyfile('config.py', silent=True)
 
 # Set JWT Manager
 jwt = JWTManager(app)
@@ -13,19 +18,11 @@ jwt = JWTManager(app)
 # Set Redis db
 rdb = Database(FlaskRedis(app))
 
-# Not working currently (just hangs)
 try:
     rdb.ping()
 except:
-    print("Redis isn't running. try `/etc/init.d/redis-server restart`")
-    exit(0)
-
-# Set app configs
-if environ.get('BUMPS_FLASK_DEV', '0') == '1':
-    app.config.from_object('config.DevelopmentConfig')
-    # rdb.flushall()  # DANGER!!
-else:
-    app.config.from_object('config.ProductionConfig')
+    print("WARNING: Redis isn't running. try `/etc/init.d/redis-server restart`")
+    exit(1)
 
 # Import the Flask views after instancing the app
 import bumps_flask.views

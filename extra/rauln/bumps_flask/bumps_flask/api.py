@@ -9,7 +9,7 @@ from flask_restful import Resource, Api, abort
 from flask_jwt_extended import create_access_token, create_refresh_token
 
 from .database import User, BumpsJob
-from .file_handler import build_slurm_script, build_job_script
+from .file_handler import build_slurm_script
 from . import app, rdb, jwt
 
 
@@ -51,10 +51,7 @@ def process_request_form(request):
 
         elif 'email' == form and request[form]:
             response['slurm']['--mail-user'] = request[form]
-
-        elif 'upload' == form and request[form]['script']:
-            response['script'] = request[form]['script']
-
+            
         # Catch the slurm related variables here
         elif 'slurm' == form:
             for key in request[form]:
@@ -114,7 +111,7 @@ class Jobs(Resource):
         json_data = flask_request.get_json()
         try:
             job = BumpsJob(
-                _id=random.randint(0, 100),  # Debug
+                _id=random.randint(0, 100),  # DEBUG
                 name=json_data['name'],
                 origin=flask_request.remote_addr,
                 date=str(datetime.datetime.utcnow()),

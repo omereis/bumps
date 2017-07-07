@@ -17,39 +17,28 @@
 <!--  -->
 
     {% if results %}
-    <h4> Results </h4>
+        <h4> Results </h4>
 
-    {% if data %}
-        {% for key in data.keys() %}
-            {% if 'csrf_token' not in key %}
-                <p>{{key}}: {{data[key]}} </p>
-            {% endif %}
-        {% endfor %}
-    {% endif %}
+        {% if data %}
+            {% for key in data.keys() %}
+                {% if 'csrf_token' not in key %}
+                    <p>{{key}}: {{data[key]}} </p>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
     {% else %}
 
-    <h4> Time to work with some data</h4>
-    <br>
-    <form action="" method="POST">
-        {{ form.hidden_tag() }}
-        {% for field in form if field.widget.input_type != 'hidden' %}
-
-    <br>   {{ with_errors(field, style='font-weight: bold') }}
-
-        {% endfor %}
-    <br><br>
-    <input type="submit" value="Submit Job" /> </p>
-
-    </form>
-    {#
-    {% if %}
-    <p> (This should show up if a user has a fit job running:) Check the status of your fit. </p>
-    {% endif %}
-
-    {% if %}
-    <p> (This should show up if a fit job has finished running:) Check the results of your fit. </p>
-    {% endif %}
-    #}
+        <h4> Time to work with some data</h4>
+        <br>
+        <form action="" method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            {% for field in form if field.widget.input_type != 'hidden' %}
+                {{ with_errors(field, style='font-weight: bold') }}
+            {% endfor %}
+        <br><br>
+        <input type="submit" value="Submit Job" />
+        </form>
 
     {% endif %}
     <form action="{{url_for('dashboard')}}" method="GET">
