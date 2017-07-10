@@ -9,8 +9,8 @@
 
     {% else %}
     <h4> Welcome. Please use your user token to sign in or request a new user token.</h4>
-    <form action = "{{ url_for('dashboard') }}" method = "POST">
-        <p> {{form.csrf_token}} {{form.token.label}} {{form.token}}
+    <form method = "POST">
+        <p> {{ form.csrf_token }} {{ form.token.label }} {{ form.token }}
         <input type="submit" value="Submit" /> </p>
     </form>
 

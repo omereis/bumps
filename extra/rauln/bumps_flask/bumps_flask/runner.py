@@ -1,10 +1,14 @@
 from . import app, rdb, rqueue
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 # note: allow for usage of SLURM scheduler as well as RQ
 
-def run_job():
-    pass
-
+def run_job(job):
+    from bumps.fitservice import fitservice
+    return fitservice(job)
 
 
 def tear_down_job(jobid):

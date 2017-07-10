@@ -21,14 +21,14 @@ class TokenForm(FlaskForm):
     and anywhere else.
     '''
 
-    token = StringField('Enter your token: ', validators=[DataRequired()])
+    token = StringField('Enter your token: ', validators=[DataRequired(message='Please enter a token.')])
 
     def validate_token(form, field):
         '''
         Validation consists of checking whether or not the submitted
         value corresponds to an existing database token
         '''
-        if not rdb.hget('users', field.data):
+        if str(field.data) not in rdb.hkeys('users'):
             raise ValidationError('Token \"' + field.data + '\" does not exist in the database.')
 
 

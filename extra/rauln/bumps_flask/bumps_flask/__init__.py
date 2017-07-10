@@ -22,7 +22,7 @@ redis = FlaskRedis(app)
 rdb = Database(redis)
 
 # Set queue
-rqueue = RQ(app)
+rqueue = RQ(app)  # DEBUG
 
 
 try:

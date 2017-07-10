@@ -3,10 +3,12 @@ import random
 import datetime
 import uuid
 import os
-from flask import jsonify, url_for, redirect, render_template
+from flask import jsonify, url_for, redirect, render_template, make_response
 from flask import request as flask_request
 from flask_restful import Resource, Api, abort
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import (
+    create_access_token, create_refresh_token,
+    get_jwt_identity, jwt_required, get_jti)
 
 from .database import BumpsJob
 from .file_handler import build_slurm_script
@@ -19,10 +21,26 @@ api = Api(app)
 
 def create_user_token():
     '''
-    Generates a user access token for identification
+    Generates a user id for identification.
+    works basically like a username
     '''
 
-    return str(uuid.uuid4()).split('-')[0]
+    return str(uuid.uuid4())[:6]
+
+
+def create_auth_token(user_token):
+    '''
+    Creates a JWT token given a UID
+    '''
+
+    jwt_token = create_access_token(identity=user_token)
+
+    # Use the token ID for blacklisting purposes
+    access_jti = get_jti(encoded_token=jwt_token)
+    # Mark the token as not blacklisted
+    rdb.set(access_jti, 'false', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
+
+    return jwt_token
 
 
 def register_token(user_token):
@@ -31,19 +49,30 @@ def register_token(user_token):
     based on available resources, priority (...)
 
     todo: check resources before providing token
-    todo: implement an existing, secure token generator
     '''
 
-    jwt_id = create_access_token(identity=user_token)
+    # Create both the auth and refresh tokens
+    access_token = create_auth_token(user_token)
+    refresh_token = create_refresh_token(identity=user_token)
+
+    # Use the refresh token ID for blacklisting purposes
+    refresh_jti = get_jti(encoded_token=refresh_token)
+    # Mark the refresh token as not blacklisted
+    rdb.set(refresh_jti, 'false', app.config.get('JWT_REFRESH_TOKEN_EXPIRES'))
 
     rdb.hset('users', user_token, [])
-    return jwt_id
 
+    return make_response(jsonify(refresh_token=refresh_token, access_token=access_token), 201)
 
 def add_job(user, job):
-    rdb.hset('users', user, job)
+    rdb.hset('users', user, job)  # DEBUG
+
 
 def process_request_form(request):
+    '''
+    Parser function for posteed webforms coming
+    from 'form.py'
+    '''
     response = {'missing_keys': [], 'slurm': {}, 'cli': {}}
     for form in request:
         if 'optimizer' == form:
@@ -97,15 +126,15 @@ class Jobs(Resource):
         Print their information
         Stop their work
     '''
-    def get(self, job_id=None, _format='json'):
+    def get(self, job_id=None, _format='.json'):
         if job_id:
-            if _format == 'html':
+            if _format == '.html':
                 return '''{}'''.format(rdb.hget('jobs', job_id))
 
             return jsonify(rdb.hget('jobs', job_id))
 
         else:
-            if _format == 'html':
+            if _format == '.html':
                 return '''{}'''.format(rdb.get_jobs())
 
             return jsonify(rdb.get_jobs())
@@ -131,15 +160,15 @@ class Jobs(Resource):
 
 
 class Users(Resource):
-    def get(self, user_id=None, _format='json'):
+    def get(self, user_id=None, _format='.json'):
         if user_id:
-            if _format == 'html':
+            if _format == '.html':
                 return '''{}'''.format(rdb.hget('users', user_id))
 
             return jsonify(rdb.hget('users', user_id))
 
         else:
-            if _format == 'html':
+            if _format == '.html':
                 return '''{}'''.format(rdb.get_users())
 
             return jsonify(rdb.get_users())
@@ -169,5 +198,5 @@ def add_claims_to_jwt(identity):
     })
 
 
-api.add_resource(Jobs, '/api/jobs', '/api/jobs.<string:_format>', '/api/jobs/<int:job_id>.<string:_format>')
-api.add_resource(Users, '/api/users', '/api/users.<string:_format>', '/api/users/<string:user_id>.<string:_format>')
+api.add_resource(Jobs, '/api/jobs', '/api/jobs<string:_format>', '/api/jobs/<int:job_id><string:_format>')
+api.add_resource(Users, '/api/users', '/api/users<string:_format>', '/api/users/<string:user_id><string:_format>')

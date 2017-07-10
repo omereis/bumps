@@ -44,9 +44,18 @@ class Database(object):
     def hincr(self, _hash, key, n):
         self.db.hincrby(_hash, key, n)
 
+    def hkeys(self, _hash):
+        return self.db.hkeys(_hash)
+
     ##################
     # String commands
     ##################
+
+    def set(self, key, value, expiration=None):
+        if expiration:
+            self.db.set(key, value, expiration)
+        else:
+            self.db.set(key, value)
 
     def exists(self, key):
         return self.db.exists(key)

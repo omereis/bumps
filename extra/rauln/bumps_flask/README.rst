@@ -57,8 +57,8 @@ To-Do
 -  Tweaks and improvements
     - [X] Implement actual redis database
     - [X] Fix serializing lists in redis
-    - [ ] Implement logout (revoke JWT?)
-    - [ ] Implement JWT token refresh for users who log back in with their UID
+    - [X] Implement logout (revoke JWT?)
+    - [W] Implement JWT token refresh for users to log back in with their UID
         - [X] Fix landing page auth issue (expired token)
     - [ ] Implement secure redirect back to caller (http://flask.pocoo.org/snippets/63/)
 

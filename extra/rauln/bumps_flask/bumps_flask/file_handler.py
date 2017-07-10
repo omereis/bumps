@@ -8,13 +8,7 @@ from werkzeug.utils import secure_filename
 from . import app, rdb, jwt
 from .database import BumpsJob
 
-if os.name == 'posix' and sys.version_info[0] < 3:
-    import subprocess32 as subprocess
-else:
-    import subprocess
-
-
-def setup_job(user, _input, _file):
+def setup_job(user, _input, _file, queue='rq'):
     # Convenient variable
     folder = os.path.join(
         app.config.get('UPLOAD_FOLDER'),
@@ -31,17 +25,15 @@ def setup_job(user, _input, _file):
     _file.save(os.path.join(folder, filename))
 
     # Build the slurm batch script for running the job
-    slurm_file = tempfile.NamedTemporaryFile(dir=folder, delete=False)
-    # try:
-    build_slurm_script(slurm_file, _input['slurm'], _input['cli'], filename)
-    # finally:
-    slurm_file.close()
+    if queue == 'slurm':
+        slurm_file = tempfile.NamedTemporaryFile(dir=folder, delete=False)
+        # try:
+        build_slurm_script(slurm_file, _input['slurm'], _input['cli'], filename)
+        # finally:
+        slurm_file.close()
 
-    run_command = ['bumps', os.path.join(folder, filename)]
-    run_command.extend(cli_commands(_input['cli']).split())
-    print(run_command)
-    # execute_pythons_script(run_command)
-
+    elif queue == 'rq':
+        pass
 
     return random.randint(1, 10)  # DEBUG
 
@@ -104,8 +96,8 @@ def cli_commands(cli_dict):
     return output_s
 
 # @job
-def execute_pythons_script(*args):
-    '''TEST TEST TEST'''
+def execute_python_script(args):
+    ''' TEST '''
     # with Popen(args, shell=True, stdout=PIPE, stderr=PIPE) as process:
     #     try:
     #         stdout, stderr = process.communicate()
@@ -118,4 +110,4 @@ def execute_pythons_script(*args):
     #             process.kill()
     #             stdout, stderr = process.communicate()
 
-    subprocess.Popen(args, shell=False)
+    pass

@@ -1,8 +1,8 @@
 {% extends "base.html" %}
+{% import "base.html" as base%}
 {% block content %}
 
-
-<!-- Error macro from https://wtforms.readthedocs.io/en/1.0.5/specific_problems.html with modifications -->
+    <!-- Error macro from https://wtforms.readthedocs.io/en/1.0.5/specific_problems.html with modifications -->
     {% macro with_errors(field) %}
         <div class="form_field">
         {% if field.errors %}
@@ -14,7 +14,8 @@
         {% endif %}
         </div>
     {% endmacro %}
-<!--  -->
+    <!--  -->
+
 
     {% if results %}
         <h4> Results </h4>
@@ -33,7 +34,7 @@
 
         <h4> Time to work with some data</h4>
         <br>
-        <form action="" method="POST" enctype="multipart/form-data">
+        <form method="POST" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
             {% for field in form if field.widget.input_type != 'hidden' %}
                 {{ with_errors(field, style='font-weight: bold') }}

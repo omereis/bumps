@@ -1,15 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <ul class=flashes> {% for message in messages %}
-                <li>{{ message }}</li>{% endfor %}
-            </ul> {% endif %}
-    {% endwith %}
-
     <p>Hello, user of token {{ id }}!</p>
     <div>
-        {% if jobs != [] %}
+        {% if jobs and jobs != [] %}
         <p> View the status of your jobs... </p>
             {% for job in jobs %}
                 <form action="/api/jobs/{{ id }}/{{ job }}" method="GET">
@@ -24,10 +17,9 @@
 
 
     <p>Submit a new job... <form action="{{url_for('fit_job')}}" method="GET"> <input style="display:inline;" type="submit" value="Go"/></form></p>
-    <!-- <p><b> TEST </b>Upload a model file...<b> TEST </b> <form action="{{url_for('upload')}}" method="GET"> <input style="display:inline;" type="submit" value="Go"/></form></p> -->
 
-    <form action="{{url_for('index')}}" method="GET">
-        <p><input type="submit" value="(Not implemented) Logout"/></p>
+    <form action="{{url_for('logout')}}" method="GET">
+        <p><input type="submit" value="Logout"/></p>
     </form>
 
 {% endblock %}

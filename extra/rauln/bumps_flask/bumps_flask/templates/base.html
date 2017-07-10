@@ -6,6 +6,13 @@
     </head>
     <body>
         <div>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class=flashes> {% for message in messages %}
+                    <li>{{ message }}</li>{% endfor %}
+                </ul> {% endif %}
+                
+            {% endwith %}
         {% block content %} {% endblock %}
         </div>
         <p> For help, please contact <a href="mailto:raul.negron3@upr.edu">support</a>.</p>

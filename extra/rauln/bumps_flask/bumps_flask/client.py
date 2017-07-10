@@ -39,7 +39,7 @@ class Connection(object):
         Returns jobs given a job_id
         Formats available = json (default), html
         '''
-        
+
         resource = 'jobs'
 
         if job_id:
