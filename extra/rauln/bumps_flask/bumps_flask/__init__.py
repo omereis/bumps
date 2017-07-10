@@ -1,8 +1,8 @@
-from os import environ
-from sys import exit
+import sys
 from flask import Flask
 from flask_redis import FlaskRedis
 from flask_jwt_extended import JWTManager
+from flask_rq2 import RQ
 from .database import Database
 
 # Set app
@@ -15,14 +15,21 @@ app.config.from_pyfile('config.py', silent=True)
 # Set JWT Manager
 jwt = JWTManager(app)
 
+# Set redis
+redis = FlaskRedis(app)
+
 # Set Redis db
-rdb = Database(FlaskRedis(app))
+rdb = Database(redis)
+
+# Set queue
+rqueue = RQ(app)
+
 
 try:
     rdb.ping()
 except:
     print("WARNING: Redis isn't running. try `/etc/init.d/redis-server restart`")
-    exit(1)
+    sys.exit(1)
 
 # Import the Flask views after instancing the app
 import bumps_flask.views

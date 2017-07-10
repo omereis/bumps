@@ -38,7 +38,7 @@ This should start a *gunicorn* server accessible from ``http://0.0.0.0:5000``.
 This is a development configuration and has a lot of security flaws.
 For example, *Redis* is installed but not properly secured. It uses legacy *Docker*
 commands such as *--link*. Since we are testing file uploads,
-the Unix user which runs the servergit has root privileges. It also starts *Flask* with debug mode on.
+the Unix user which runs the server has root privileges. It also starts *Flask* with debug mode on.
 Do **not** install this for production servers.
 
 

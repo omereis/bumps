@@ -6,7 +6,7 @@ from flask_jwt_extended import jwt_required, jwt_optional,\
     get_jwt_identity, get_jwt_claims, set_access_cookies
 
 from . import app, rdb, jwt
-from .api import api, create_user_token, register_token, process_request_form
+from .api import api, create_user_token, register_token, process_request_form, add_job
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
 from .file_handler import setup_job
 
@@ -52,7 +52,8 @@ def dashboard():
     user_token = get_jwt_identity()
     # Get the database info for the current user
     user_data = rdb.hget('users', user_token)
-    return render_template('dashboard.html', id=user_token, jobs=user_data[0]['jobs'])
+    print(user_data)
+    return render_template('dashboard.html', id=user_token, jobs=user_data)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -100,7 +101,8 @@ def fit_job(results=False):
         # Parse through the form data
         form_data = (process_request_form(form.data))
         # Use the parsed data to set up a job and related files
-        setup_job(user=get_jwt_identity(), _input=form_data, _file=form.upload.data['script'])
+        job_id = setup_job(user=get_jwt_identity(), _input=form_data, _file=form.upload.data['script'])
+        add_job(get_jwt_identity(), job_id)  # DEBUG
         # Display the results
         return render_template('service.html', data=form_data, results=True)
 

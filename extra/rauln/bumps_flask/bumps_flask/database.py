@@ -32,12 +32,14 @@ class Database(object):
         it with the current value
         '''
 
-        key_list = self.hget(_hash, key)
-        if key_list:
+        # Catch the first pass where the list is not json
+        try:
+            key_list = self.hget(_hash, key)
             key_list.append(value)
             self.db.hset(_hash, key, dumps(key_list))
-        else:
-            self.db.hset(_hash, key, dumps([value]))
+        except:
+            self.db.hset(_hash, key, dumps([]))
+
 
     def hincr(self, _hash, key, n):
         self.db.hincrby(_hash, key, n)
@@ -81,19 +83,6 @@ class Database(object):
     def flushall(self):  # DEV
         self.db.flushall()
 
-
-class User(object):
-    # The jobs list should contain job_ids as provided by slurm
-    def __init__(self, user_token=None, jobs=[]):
-        self.user_token = user_token
-        self.jobs = jobs  # Should be a list of BumpsJobs
-        self.n_jobs = len(self.jobs)
-
-    def get_jobs(self):
-        return self.jobs
-
-    def get_njobs(self):
-        return len(self.jobs)
 
 class BumpsJob(object):
     '''

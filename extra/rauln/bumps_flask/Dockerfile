@@ -42,7 +42,7 @@ RUN groupadd -r app_user && useradd --no-log-init -r -g app_user app_user
 RUN pip install --no-cache-dir -e ..
 
 # Log in with 'app_user' for the rest of the process
-# USER app_user
+USER app_user
 
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask

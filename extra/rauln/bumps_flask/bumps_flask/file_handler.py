@@ -1,9 +1,12 @@
+from __future__ import print_function
 import os
 import sys
+import random
 import tempfile
 from werkzeug.utils import secure_filename
 
 from . import app, rdb, jwt
+from .database import BumpsJob
 
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
@@ -33,6 +36,14 @@ def setup_job(user, _input, _file):
     build_slurm_script(slurm_file, _input['slurm'], _input['cli'], filename)
     # finally:
     slurm_file.close()
+
+    run_command = ['bumps', os.path.join(folder, filename)]
+    run_command.extend(cli_commands(_input['cli']).split())
+    print(run_command)
+    # execute_pythons_script(run_command)
+
+
+    return random.randint(1, 10)  # DEBUG
 
 
 def build_slurm_script(_file, slurm_dict, cli_dict, job_file_name):
@@ -92,18 +103,19 @@ def cli_commands(cli_dict):
 
     return output_s
 
+# @job
+def execute_pythons_script(*args):
+    '''TEST TEST TEST'''
+    # with Popen(args, shell=True, stdout=PIPE, stderr=PIPE) as process:
+    #     try:
+    #         stdout, stderr = process.communicate()
+    #         # job.meta['output'] = stdout + stderr
+    #     except JobTimeoutException:
+    #         logger.error('Process was killed by timeout.')
+    #         raise
+    #     finally:
+    #         if process.poll() is None:
+    #             process.kill()
+    #             stdout, stderr = process.communicate()
 
-def execute_slurm_script(script):
-    '''
-    Handle the running of a slurm file
-    '''
-
-    subprocess.call([script], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-
-def tear_down_job(jobid):
-    '''
-    Delete the model files, slurm scripts for a given job.
-    TODO: Should be called after a job signals it is completed, perhaps...
-    '''
-    pass
+    subprocess.Popen(args, shell=False)

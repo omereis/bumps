@@ -1,9 +1,14 @@
+import sys
 from json import dumps, loads
 from requests import post, get
 from requests.cookies import RequestsCookieJar
 # import .api
+# from bumps import FitDriver
 
-HOST = 'http://localhost:5000'  # DEBUG
+if len(sys.argv) > 1:
+    HOST = sys.argv[1]
+else:
+    HOST = 'http://localhost:5000'  # DEBUG
 
 class Connection(object):
     def __init__(self, host=None):
@@ -13,6 +18,12 @@ class Connection(object):
         self.uid = None
 
     def connect(self):
+        '''
+        Connects to the web service, the UID and
+        saves the JWT in a cookie (or a header).
+        Returns true for a succesful connection,
+        false otherwise.
+        '''
         r = post(HOST + '/register')
         try:
             self.uid = r.json()['uid']
@@ -24,6 +35,11 @@ class Connection(object):
 
 
     def get_job(self, jod_id=None, _format=None):
+        '''
+        Returns jobs given a job_id
+        Formats available = json (default), html
+        '''
+        
         resource = 'jobs'
 
         if job_id:
@@ -39,6 +55,11 @@ class Connection(object):
 
 
     def post_job(self, job):
+        '''
+        Posts a job to the server, associated
+        to the current user
+        '''
+
         r = post(HOST + '/jobs', json=job, cookies=self.jar)
         return r.json()
 
@@ -74,6 +95,6 @@ class Connection(object):
     def stop_job(self, jobid):
         pass
 
-        
+
     def delete_job(self, jobid):
         pass

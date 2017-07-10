@@ -8,7 +8,7 @@ from flask import request as flask_request
 from flask_restful import Resource, Api, abort
 from flask_jwt_extended import create_access_token, create_refresh_token
 
-from .database import User, BumpsJob
+from .database import BumpsJob
 from .file_handler import build_slurm_script
 from . import app, rdb, jwt
 
@@ -35,10 +35,13 @@ def register_token(user_token):
     '''
 
     jwt_id = create_access_token(identity=user_token)
-    user = User(user_token=user_token)
-    rdb.hset('users', user_token, user.__dict__)
+
+    rdb.hset('users', user_token, [])
     return jwt_id
 
+
+def add_job(user, job):
+    rdb.hset('users', user, job)
 
 def process_request_form(request):
     response = {'missing_keys': [], 'slurm': {}, 'cli': {}}
@@ -51,7 +54,7 @@ def process_request_form(request):
 
         elif 'email' == form and request[form]:
             response['slurm']['--mail-user'] = request[form]
-            
+
         # Catch the slurm related variables here
         elif 'slurm' == form:
             for key in request[form]:
