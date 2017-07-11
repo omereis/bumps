@@ -42,12 +42,13 @@ def index():
     form = TokenForm()
 
     if form.validate_on_submit():
-        # Associate an auth JWT and a refresh JWT to the UID
         user_token = form.data['token']
+        # Get the auth and refresh tokens from the api
         resp = json.loads(register_token(user_token).get_data())
         jwt_token = resp['access_token']
         refresh_token = resp['refresh_token']
 
+        # Prepare a redirect for a successful login
         response = make_response(redirect(url_for('dashboard')))
         # Bundle the JWT cookies into the response object
         set_access_cookies(response, jwt_token)
@@ -56,12 +57,11 @@ def index():
         return response
 
 
-
     # If the user does not yet have a JWT token and has not filled the form,
-    # display they main login page
+    # display the main login page
     else:
         if form.errors:
-            flash('{}'.format(''.join(form.errors['token'])))
+            flash('Error: {}'.format(''.join(form.errors['token'])))
 
         return render_template('index.html', form=form)
 
@@ -85,10 +85,10 @@ def dashboard():
 @app.route('/register', methods=['GET', 'POST'])
 def tokenizer():
     '''
-    View for showing the user their unique ID, which they should store
-    in order to refresh their JWT.
+    View for showing the user their unique ID, which they should remember
+    in order to refresh their JWT authentication.
     Uses the API to create a unique user_token which is
-    then associated to an authorization JWT token
+    then associated to an authentication JWT
     and saved as a cookie by the client
     '''
 
@@ -101,7 +101,7 @@ def tokenizer():
 
     # Working with the client interface
     if flask_request.method == 'POST':
-        response = jsonify({'uid': user_token})
+        response = jsonify(uid=user_token, auth_token=jwt_token, refresh_token=refresh_token)
 
     # Working with the web page interface
     else:
@@ -129,41 +129,26 @@ def fit_job(results=False):
     if form.validate_on_submit():
         # Parse through the form data
         form_data = (process_request_form(form.data))
+
         # Use the parsed data to set up a job and related files
-        job_id = setup_job(user=get_jwt_identity(), _input=form_data,
-                            _file=form.upload.data['script'], queue='slurm')  # DEBUG
+        job_id = setup_job(user=get_jwt_identity(),
+                _input=form_data, _file=form.upload.data['script'])  # DEBUG
+
         add_job(get_jwt_identity(), job_id)  # DEBUG
-        # Display the results
-        return render_template('service.html', data=form_data, results=True)
+
+        flash('Job submitted successfully.')
+        return redirect(url_for('dashboard'))
 
     return render_template('service.html', form=form)
 
 
-# @app.route('/api/upload', methods=['GET', 'POST'])
+# @app.route('/api/uploaded_file/<filename>')
 # @jwt_required
-# def upload():
+# def uploaded_file(filename):
 #     '''
-#     Function which handles file uploads to the server.
+#     Sends a previously uploaded file to the browser
 #     '''
-#
-#     form = UploadForm()
-#     if form.validate_on_submit():
-#         form_data = process_request_form(form.script.data)
-#         setup_job(user=get_jwt_identity(), _data=form_data, queue = 'slurm')
-#         flash('File uploaded successfully!')
-#         return redirect(url_for('dashboard'))
-#
-#     else:
-#         return render_template('upload.html', form=form)
-
-
-@app.route('/api/uploaded_file/<filename>')
-@jwt_required
-def uploaded_file(filename):
-    '''
-    Sends a previously uploaded file to the browser
-    '''
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 @app.route('/refresh')
@@ -236,8 +221,9 @@ def invalid_token_callback(error):
 
     user_token = get_jwt_identity()
     if user_token:
-        response = make_response(redirect(url_for('tokenizer')))
+        response = make_response(redirect(url_for('index')))
         unset_jwt_cookies(response)
+        flash('Invalid token detected, redirected to the frontpage.')
         return response
 
     return render_template('error.html', reason=error), 401

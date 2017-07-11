@@ -2,9 +2,9 @@ import os
 import datetime
 
 ### DEBUG
-MAX_CONTENT_LENGHT = 16 * 1024 * 1024  # 16MB
+MAX_CONTENT_LENGHT = 8 * 1024 * 1024  # 8MB
 SECRET_KEY = os.urandom(24)
-UPLOAD_FOLDER = os.path.join(os.getcwd(), '.bumps_folder')
+UPLOAD_FOLDER = os.path.join(os.path.expanduser('~'), '.bumps_flask')
 REDIS_URL = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
 WTF_CSRF_ENABLED = False
 JWT_COOKIE_CSRF_PROTECT = False

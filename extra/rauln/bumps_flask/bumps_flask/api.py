@@ -22,7 +22,7 @@ api = Api(app)
 def create_user_token():
     '''
     Generates a user id for identification.
-    works basically like a username
+    Works basically like a username
     '''
 
     return str(uuid.uuid4())[:6]
@@ -84,8 +84,9 @@ def process_request_form(request):
         elif 'steps' == form:
             response['cli']['steps'] = request[form]['steps']
 
-        elif 'email' == form and request[form]:
-            response['slurm']['--mail-user'] = request[form]
+        elif 'email' == form and request[form]['email']:
+            print('Email: ', request[form]['email'])
+            response['slurm']['--mail-user'] = request[form]['email']
 
         # Catch the slurm related variables here
         elif 'slurm' == form:
@@ -129,6 +130,7 @@ class Jobs(Resource):
         Print their information
         Stop their work
     '''
+    @jwt_required
     def get(self, job_id=None, _format='.json'):
         if job_id:
             if _format == '.html':
@@ -162,6 +164,10 @@ class Jobs(Resource):
         return jsonify({'job_data': job.__dict__})
 
 
+    def delete(self, job_id):
+        pass
+
+
 class Users(Resource):
     def get(self, user_id=None, _format='.json'):
         if user_id:
@@ -186,20 +192,19 @@ class Users(Resource):
 
         rdb.hset('users', user_token, json.dumps(user.get_job()))
 
+# @jwt.user_claims_loader
+# def add_claims_to_jwt(identity):
+#     '''
+#     Function wrapped with the ability to add JSON-serializable
+#     claims to the headers of the soon-to-be-created JWT token
+#     '''
+#
+#     return json.dumps({
+#         'iat': str(datetime.datetime.utcnow()),
+#         'exp': str(datetime.datetime.utcnow() + datetime.timedelta(minutes=0, seconds=10)),
+#         'extra_headers': ''
+#     })
 
-@jwt.user_claims_loader
-def add_claims_to_jwt(identity):
-    '''
-    Function wrapped with the ability to add JSON-serializable
-    claims to the headers of the soon-to-be-created JWT token
-    '''
 
-    return json.dumps({
-        'iat': str(datetime.datetime.utcnow()),
-        'exp': str(datetime.datetime.utcnow() + datetime.timedelta(minutes=0, seconds=10)),
-        'extra_headers': ''
-    })
-
-
-api.add_resource(Jobs, '/api/jobs', '/api/jobs<string:_format>', '/api/jobs/<int:job_id><string:_format>')
+api.add_resource(Jobs, '/api/jobs', '/api/jobs<string:_format>', '/api/jobs/<string:job_id><string:_format>')
 api.add_resource(Users, '/api/users', '/api/users<string:_format>', '/api/users/<string:user_id><string:_format>')

@@ -7,54 +7,51 @@ from werkzeug.utils import secure_filename
 
 from . import app, rdb, jwt
 from .database import BumpsJob
+from .run_job import execute_python_script
 
-def setup_job(user, _input, _file, queue='rq'):
+def setup_job(user, _input, _file, queue='slurm'):
     # Convenient variable
     folder = os.path.join(
         app.config.get('UPLOAD_FOLDER'),
         'fit_problems',
         user)
 
-    # Make sure the upload folder exists beforehand
+    # Add the store location to the bumps args
+    _input['cli']['store'] = os.path.join(folder, 'results')
+
+    # Toggle batch mode so we don't display interactive plots
+    _input['cli']['batch'] = True
+
+    # Make sure the upload and results
+    # folders exist beforehand
     if not os.path.exists(folder):
-        os.makedirs(folder)
+        os.makedirs(_input['cli']['store'])
 
     # Sanitize the filename
     filename = secure_filename(_file.filename)
+    file_path = os.path.join(folder, filename)
     # Save the uploaded file
-    _file.save(os.path.join(folder, filename))
+    _file.save(file_path)
 
     # Build the slurm batch script for running the job
     if queue == 'slurm':
+        # Open a non-volatile named tempfile for for output
         slurm_file = tempfile.NamedTemporaryFile(dir=folder, delete=False)
-        # try:
-        build_slurm_script(slurm_file, _input['slurm'], _input['cli'], filename)
-        # finally:
+
+        build_slurm_script(slurm_file, _input['slurm'], _input['cli'], file_path)
+
         slurm_file.close()
 
     elif queue == 'rq':
         pass
 
-    return random.randint(1, 10)  # DEBUG
-
-
-def build_slurm_script(_file, slurm_dict, cli_dict, job_file_name):
-    '''
-    Parse given slurm_dict and cli_dict into a slurm script _file
-    '''
-    job_file_name = os.path.basename(job_file_name)
-
-    slurm_opts = slurm_commands(slurm_dict)
-    _file.write(slurm_opts)
-
-    cli_opts = cli_commands(cli_dict)
-    _file.write('\nbumps{} {}\n'.format(cli_opts, job_file_name))
+    return random.randint(1, 10)  # DEBUG JOB ID
 
 
 def slurm_commands(slurm_dict):
     '''
-    Input: dicionary of key=slurm commands, value=form values
-    Output: String containing the commands parsed and ready to be written
+    Buils a string to consisting of parsed SLURM commands
+    and returns the string for writing to a file.
     '''
 
     output_s = '#!/bin/bash\n\n'
@@ -62,7 +59,8 @@ def slurm_commands(slurm_dict):
     # Handle the commands which are formatted differently
     for key in slurm_dict:
         if key == 'n_gpus':
-            output_s += '#SBATCH --gres=gpu:{}\n'.format(slurm_dict[key])
+            pass  # DEBUG
+            # output_s += '#SBATCH --gres=gpu:{}\n'.format(slurm_dict[key])
 
         elif key == 'limit_node':
             output_s += '#SBATCH --nodes=1\n'
@@ -86,28 +84,42 @@ def slurm_commands(slurm_dict):
 
 def cli_commands(cli_dict):
     '''
-    TODO: Consider the CLI args which are just switches
+    Buils a string to consisting of parsed CLI commands
+    and returns the string for writing to a file.
+    TODO: Consider the CLI args which are just switches (if/else?)
     '''
 
     output_s = ''
     for key in cli_dict:
-        output_s += ' --{}={}'.format(key, cli_dict[key])
 
-    return output_s
+        # Handle the toggles
+        if key == 'batch':
+            output_s += ' --batch'
 
-# @job
-def execute_python_script(args):
-    ''' TEST '''
-    # with Popen(args, shell=True, stdout=PIPE, stderr=PIPE) as process:
-    #     try:
-    #         stdout, stderr = process.communicate()
-    #         # job.meta['output'] = stdout + stderr
-    #     except JobTimeoutException:
-    #         logger.error('Process was killed by timeout.')
-    #         raise
-    #     finally:
-    #         if process.poll() is None:
-    #             process.kill()
-    #             stdout, stderr = process.communicate()
+        # Handle the options
+        else:
+            output_s += ' --{}={}'.format(key, cli_dict[key])
 
-    pass
+    return output_s.lstrip()
+
+
+def build_slurm_script(_file, slurm_dict, cli_dict, file_path):
+    '''
+    Parse given slurm_dict and cli_dict into a slurm script _file
+    '''
+
+    job_file = os.path.basename(file_path)
+    job_path = os.path.dirname(file_path)
+
+    # Parse the slurm options and write them
+    # on the open _file
+    slurm_opts = slurm_commands(slurm_dict)
+    _file.write(slurm_opts)
+
+    # Parse the CLI options and write them
+    # on the open _file
+    cli_opts = cli_commands(cli_dict)
+    _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
+
+    execute_python_script('bumps', cli_opts.split(), job_file, job_path)  # DEBUG
+    return 

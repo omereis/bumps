@@ -9,8 +9,9 @@
 
     {% else %}
     <h4> Welcome. Please use your user token to sign in or request a new user token.</h4>
+
     <form method = "POST">
-        <p> {{ form.csrf_token }} {{ form.token.label }} {{ form.token }}
+        <p> {{ form.csrf_token }} {{ form.token.label }} {{ form.token(size=20) }}
         <input type="submit" value="Submit" /> </p>
     </form>
 
@@ -18,6 +19,8 @@
         <p> Don't have access?
         <input type="submit" value="Request" /></p>
     </form>
+
+    <p><em> Note: This page currently uses cookies to remember your authorization token.</em></p>
 
     {% endif %}
 {% endblock %}
