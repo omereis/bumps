@@ -5,7 +5,7 @@ import datetime
 MAX_CONTENT_LENGHT = 16 * 1024 * 1024  # 16MB
 SECRET_KEY = os.urandom(24)
 UPLOAD_FOLDER = os.path.join(os.getcwd(), '.bumps_folder')
-REDIS_URL = 'redis://localhost:6379/0'
+REDIS_URL = os.getenv('REDISTOGO_URL', 'redis://localhost:6379')
 WTF_CSRF_ENABLED = False
 JWT_COOKIE_CSRF_PROTECT = False
 JWT_SESSION_COOKIE = True

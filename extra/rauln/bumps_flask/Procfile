@@ -1,2 +1,1 @@
 web: gunicorn bumps_flask:app
-init: redis-server

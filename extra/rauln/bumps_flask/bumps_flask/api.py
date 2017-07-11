@@ -60,7 +60,10 @@ def register_token(user_token):
     # Mark the refresh token as not blacklisted
     rdb.set(refresh_jti, 'false', app.config.get('JWT_REFRESH_TOKEN_EXPIRES'))
 
-    rdb.hset('users', user_token, [])
+
+    # If there is not already a list, it means there is a NoneType
+    if type(rdb.hget('users', user_token)) != type([]):
+        rdb.hset('users', user_token, [])
 
     return make_response(jsonify(refresh_token=refresh_token, access_token=access_token), 201)
 

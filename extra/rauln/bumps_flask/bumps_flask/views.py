@@ -43,7 +43,7 @@ def index():
 
     if form.validate_on_submit():
         # Associate an auth JWT and a refresh JWT to the UID
-        user_token = form.data
+        user_token = form.data['token']
         resp = json.loads(register_token(user_token).get_data())
         jwt_token = resp['access_token']
         refresh_token = resp['refresh_token']
@@ -61,7 +61,7 @@ def index():
     # display they main login page
     else:
         if form.errors:
-            flash('Error: {}'.format(''.join(form.errors['token'])))
+            flash('{}'.format(''.join(form.errors['token'])))
 
         return render_template('index.html', form=form)
 
