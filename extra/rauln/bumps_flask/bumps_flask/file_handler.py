@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 import sys
 import random
@@ -122,4 +121,4 @@ def build_slurm_script(_file, slurm_dict, cli_dict, file_path):
     _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
 
     execute_python_script('bumps', cli_opts.split(), job_file, job_path)  # DEBUG
-    return 
+    return

@@ -27,7 +27,7 @@ rqueue = RQ(app)  # DEBUG
 
 try:
     rdb.ping()
-except:
+except BaseException:
     print("WARNING: Redis isn't running. try `/etc/init.d/redis-server restart`")
     sys.exit(1)
 

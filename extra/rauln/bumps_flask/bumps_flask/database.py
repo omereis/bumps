@@ -37,9 +37,8 @@ class Database(object):
             key_list = self.hget(_hash, key)
             key_list.append(value)
             self.db.hset(_hash, key, dumps(key_list))
-        except:
+        except BaseException:
             self.db.hset(_hash, key, dumps([]))
-
 
     def hincr(self, _hash, key, n):
         self.db.hincrby(_hash, key, n)
@@ -97,6 +96,7 @@ class BumpsJob(object):
     '''
     Possible job status: PENDING, ACTIVE, CANCEL, COMPLETE, ERROR
     '''
+
     def __init__(self, _id=None, name='', origin='', date=None, start=None, stop=None,
                  priority=0.0, notify='', status='PENDING'):
 

@@ -56,7 +56,6 @@ def index():
         flash('Logged in!')
         return response
 
-
     # If the user does not yet have a JWT token and has not filled the form,
     # display the main login page
     else:
@@ -93,7 +92,10 @@ def tokenizer():
     '''
 
     # Create a UID
+    # resources = check_available_resources()
+    # user_token = create_user_token(resources)
     user_token = create_user_token()
+
     # Associate an auth JWT and a refresh JWT to the UID
     resp = json.loads(register_token(user_token).get_data())
     jwt_token = resp['access_token']
@@ -101,7 +103,10 @@ def tokenizer():
 
     # Working with the client interface
     if flask_request.method == 'POST':
-        response = jsonify(uid=user_token, auth_token=jwt_token, refresh_token=refresh_token)
+        response = jsonify(
+            uid=user_token,
+            auth_token=jwt_token,
+            refresh_token=refresh_token)
 
     # Working with the web page interface
     else:
@@ -132,7 +137,7 @@ def fit_job(results=False):
 
         # Use the parsed data to set up a job and related files
         job_id = setup_job(user=get_jwt_identity(),
-                _input=form_data, _file=form.upload.data['script'])  # DEBUG
+                           _input=form_data, _file=form.upload.data['script'])  # DEBUG
 
         add_job(get_jwt_identity(), job_id)  # DEBUG
 
@@ -166,7 +171,7 @@ def refresh():
     return resp
 
 
-@app.route('/logout', methods=['GET', 'POST','DELETE'])
+@app.route('/logout', methods=['GET', 'POST', 'DELETE'])
 @jwt_required
 def logout():
     '''
@@ -183,7 +188,7 @@ def logout():
     return resp
 
 
-########## The following functions define the responses for JWT auth failure. ##########
+########## The following functions define the responses for JWT auth failu
 
 @jwt.token_in_blacklist_loader
 def token_in_blacklist_callback(decrypted_token):
@@ -193,12 +198,14 @@ def token_in_blacklist_callback(decrypted_token):
         return True
     return entry == 'true'
 
+
 @jwt.expired_token_loader
 def expired_token_callback():
     '''
     Function to call when an expired token accesses a protected endpoint
     '''
-    return render_template('error.html', reason="Expired token", expired=True), 401
+    return render_template(
+        'error.html', reason="Expired token", expired=True), 401
 
 
 @jwt.unauthorized_loader

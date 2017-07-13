@@ -13,7 +13,8 @@ from werkzeug.utils import secure_filename
 from . import rdb
 
 
-# Consider that --remote is implied, --parallel, --notify, --queue and --time are built-in
+# Consider that --remote is implied, --parallel, --notify, --queue and
+# --time are built-in
 
 class TokenForm(FlaskForm):
     '''
@@ -21,7 +22,10 @@ class TokenForm(FlaskForm):
     and anywhere else.
     '''
 
-    token = StringField('Enter your token: ', validators=[DataRequired(message='Please enter a token.')])
+    token = StringField(
+        'Enter your token: ', validators=[
+            DataRequired(
+                message='Please enter a token.')])
 
     def validate_token(form, field):
         '''
@@ -29,7 +33,10 @@ class TokenForm(FlaskForm):
         value corresponds to an existing database token
         '''
         if str(field.data) not in rdb.hkeys('users'):
-            raise ValidationError('Token \"' + field.data + '\" does not exist in the database.')
+            raise ValidationError(
+                'Token \"' +
+                field.data +
+                '\" does not exist in the database.')
 
 
 class UploadForm(FlaskForm):
@@ -50,8 +57,8 @@ class EmailForm(FlaskForm):
         validators=[Email(message='Please enter a valid email address.'), Optional()])
 
 
-#################### Translating form data to CLI commands for bumps itself ####################
-#################### Problem setup forms
+#################### Translating form data to CLI commands for bumps itsel
+# Problem setup forms
 
 class ParsForm(FlaskForm):
     '''Corresponds to the bumps CLI command --pars'''
@@ -60,30 +67,36 @@ class ParsForm(FlaskForm):
 
 class ShakeForm(FlaskForm):
     '''Corresponds to the bumps CLI command --shake'''
-    shake = BooleanField(label='Set random initial values for the parameters in the model?')
+    shake = BooleanField(
+        label='Set random initial values for the parameters in the model?')
 
 
 class SimulateForm(FlaskForm):
     '''Corresponds to the bumps CLI command --simulate'''
-    simulate = BooleanField(label='Simulate a dataset using the initial problem parameters?')
+    simulate = BooleanField(
+        label='Simulate a dataset using the initial problem parameters?')
 
 
 class SimRandomForm(FlaskForm):
     '''Corresponds to the bumps CLI command --simrandom'''
-    simrandom = BooleanField(label='Simulate a dataset using random initial parameters?')
+    simrandom = BooleanField(
+        label='Simulate a dataset using random initial parameters?')
 
 
 class NoiseForm(FlaskForm):
     '''Corresponds to the bumps CLI command --noise'''
-    noise = FloatField(label='Noise percentage on the simulated data: ', default=5.0)
+    noise = FloatField(
+        label='Noise percentage on the simulated data: ',
+        default=5.0)
 
 
 class SeedForm(FlaskForm):
     '''Corresponds to the bumps CLI command --seed'''
-    seed = IntegerField(label='Set the seed for the random generator in Numpy: ')
+    seed = IntegerField(
+        label='Set the seed for the random generator in Numpy: ')
 
 ####################
-#################### Stopping condition forms
+# Stopping condition forms
 
 
 class StepForm(FlaskForm):
@@ -92,6 +105,7 @@ class StepForm(FlaskForm):
         label='steps: ',
         validators=[DataRequired(message='Missing steps...')],
         default=100)
+
 
 class SampleForm(FlaskForm):
     '''Corresponds to the bumps CLI command --sample'''
@@ -113,7 +127,8 @@ class TimeForm(FlaskForm):
     pass
 
 ####################
-#################### Optimizer control forms
+# Optimizer control forms
+
 
 class OptimizerForm(FlaskForm):
     '''Corresponds to the bumps CLI command --fit'''
@@ -192,7 +207,8 @@ class Keep_BestForm(FlaskForm):
     pass
 
 ####################
-#################### Execution control forms
+# Execution control forms
+
 
 class ResumeFitForm(FlaskForm):
     '''Corresponds to the bumps CLI command --resume'''
@@ -204,7 +220,8 @@ class StepMonForm(FlaskForm):
     pass
 
 ####################
-#################### Output control forms
+# Output control forms
+
 
 class CovarianceForm(FlaskForm):
     '''Corresponds to the bumps CLI command --cov'''
@@ -214,16 +231,19 @@ class CovarianceForm(FlaskForm):
 class PlotForm(FlaskForm):
     '''Corresponds to the bumps CLI command --plot'''
     plot = SelectField(
-        choices=[('linear', 'linear'), ('log', 'logarithmic'), ('residuals', 'residuals')],
+        choices=[('linear', 'linear'), ('log', 'logarithmic'),
+                 ('residuals', 'residuals')],
         default='log'
     )
 
 ####################
-#################### Bumps control forms
+# Bumps control forms
+
 
 class ChiForm(FlaskForm):
     '''Corresponds to the bumps CLI command --chisq'''
-    BooleanField(label='Show chi squared and exit? (Use this to test model for syntax errors)')
+    BooleanField(
+        label='Show chi squared and exit? (Use this to test model for syntax errors)')
 
 ####################
 ####################
@@ -247,7 +267,9 @@ class SlurmForm(FlaskForm):
         label='Memory per processor core: ',
         validators=[DataRequired()], default=1)
 
-    mem_unit = SelectField(label='Memory Unit', choices=[('G', 'GB'), ('M', 'MB')], default='G')
+    mem_unit = SelectField(
+        label='Memory Unit', choices=[
+            ('G', 'GB'), ('M', 'MB')], default='G')
     walltime = TimeField(default=time(0, 30, 0))
     # jobname = StringField(validators=[Optional()])
 

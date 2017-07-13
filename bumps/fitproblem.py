@@ -473,6 +473,7 @@ class BaseFitProblem(object):
             return
 
         import pylab
+        import mpld3
         if fignum is not None:
             pylab.figure(fignum)
         if p is not None:
@@ -480,8 +481,13 @@ class BaseFitProblem(object):
         self.fitness.plot(view=view)
         pylab.text(0.01, 0.01, 'chisq=%s' % self.chisq_str(),
                    transform=pylab.gca().transAxes)
+
         if figfile is not None:
+            with open(figfile + "-model.html", 'w') as fid:
+                fid.write(mpld3.fig_to_html(pylab.gcf()))
             pylab.savefig(figfile + "-model.png", format='png')
+
+
 
     def cov(self):
         """

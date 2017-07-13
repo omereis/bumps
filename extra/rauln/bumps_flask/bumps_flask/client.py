@@ -10,6 +10,7 @@ if len(sys.argv) > 1:
 else:
     HOST = 'http://localhost:5000'  # DEBUG
 
+
 class Connection(object):
     def __init__(self, host=None):
         self.endpoint = HOST
@@ -27,12 +28,14 @@ class Connection(object):
         r = post(HOST + '/register')
         try:
             self.uid = r.json()['uid']
-            self.jar.set('access_token_cookie', r.cookies['access_token_cookie'], domain=HOST)
-        except:
+            self.jar.set(
+                'access_token_cookie',
+                r.cookies['access_token_cookie'],
+                domain=HOST)
+        except BaseException:
             return False
 
         return True
-
 
     def get_job(self, jod_id=None, _format=None):
         '''
@@ -53,7 +56,6 @@ class Connection(object):
 
         return loads(get(endpoint + resource, cookies=self.jar))
 
-
     def post_job(self, job):
         '''
         Posts a job to the server, associated
@@ -63,38 +65,29 @@ class Connection(object):
         r = post(HOST + '/jobs', json=job, cookies=self.jar)
         return r.json()
 
-
     def get_user(self):
         pass
-
 
     def post_user(self):
         pass
 
-
     def list_jobs(self):
         pass
-
 
     def get_job_info(self, jobid):
         pass
 
-
     def get_job_status(self, jobid):
         pass
-
 
     def get_job_results(self, jobid):
         pass
 
-
     def wait_for_job(self):
         pass
 
-
     def stop_job(self, jobid):
         pass
-
 
     def delete_job(self, jobid):
         pass

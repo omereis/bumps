@@ -19,6 +19,10 @@ from . import app, rdb, jwt
 api = Api(app)
 
 
+# def check_available_resources():
+#     pass
+
+# def create_user_token(resources):
 def create_user_token():
     '''
     Generates a user id for identification.
@@ -60,12 +64,13 @@ def register_token(user_token):
     # Mark the refresh token as not blacklisted
     rdb.set(refresh_jti, 'false', app.config.get('JWT_REFRESH_TOKEN_EXPIRES'))
 
-
     # If there is not already a list, it means there is a NoneType
-    if type(rdb.hget('users', user_token)) != type([]):
+    if not isinstance(rdb.hget('users', user_token), type([])):
         rdb.hset('users', user_token, [])
 
-    return make_response(jsonify(refresh_token=refresh_token, access_token=access_token), 201)
+    return make_response(
+        jsonify(refresh_token=refresh_token, access_token=access_token), 201)
+
 
 def add_job(user, job):
     rdb.hset('users', user, job)  # DEBUG
@@ -153,16 +158,16 @@ class Jobs(Resource):
                 origin=flask_request.remote_addr,
                 date=str(datetime.datetime.utcnow()),
                 #priority = get_priority(),
-                #notify= get_notify(),?
-                )
+                # notify= get_notify(),?
+            )
 
         except KeyError:
-            return make_response(json.dumps({'error':'not a proper job definition'}), 400)
+            return make_response(json.dumps(
+                {'error': 'not a proper job definition'}), 400)
 
         rdb.hset('jobs', _id, json.dumps(job.__dict__))
 
         return jsonify({'job_data': job.__dict__})
-
 
     def delete(self, job_id):
         pass
@@ -188,7 +193,8 @@ class Users(Resource):
         try:
             user = User(user_token=json_data['user_token'])
         except KeyError:
-            return make_response(json.dumps({'error':'not a proper job definition'}), 400)
+            return make_response(json.dumps(
+                {'error': 'not a proper job definition'}), 400)
 
         rdb.hset('users', user_token, json.dumps(user.get_job()))
 
@@ -206,5 +212,10 @@ class Users(Resource):
 #     })
 
 
-api.add_resource(Jobs, '/api/jobs', '/api/jobs<string:_format>', '/api/jobs/<string:job_id><string:_format>')
-api.add_resource(Users, '/api/users', '/api/users<string:_format>', '/api/users/<string:user_id><string:_format>')
+api.add_resource(Jobs, '/api/jobs', '/api/jobs<string:_format>',
+                 '/api/jobs/<string:job_id><string:_format>')
+api.add_resource(
+    Users,
+    '/api/users',
+    '/api/users<string:_format>',
+    '/api/users/<string:user_id><string:_format>')

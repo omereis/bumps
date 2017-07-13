@@ -35,22 +35,23 @@ def tear_down_job(jobid):
     pass
 
 
-
 def execute_slurm_script(cmd, *args):
     """
     Run a slurm command, capturing any errors.
     """
     with subprocess.Popen([cmd] + list(args),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE) as process:
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE) as process:
         try:
             stdout, stderr = process.communicate()
-        except:
+        except BaseException:
             raise
 
     return stdout, stderr
 
 # @job
+
+
 def execute_python_script(cmd, args, job_file, job_path):
     '''
     TEST
@@ -59,9 +60,9 @@ def execute_python_script(cmd, args, job_file, job_path):
     out = open(os.path.join(job_path, 'output.txt'), 'w+')
 
     with subprocess.Popen([cmd] + [job_file] + list(args),
-                shell=False, cwd=job_path,
-                stdout=out,
-                stderr=subprocess.STDOUT) as process:
+                          shell=False, cwd=job_path,
+                          stdout=out,
+                          stderr=subprocess.STDOUT) as process:
         try:
             process.communicate()
             # job.meta['output'] = stdout + stderr
