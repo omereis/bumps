@@ -1,15 +1,17 @@
-version: '2'
+version: '3'
 services:
   web:
     build: .
     ports:
     - "8888:5000"
-    links:
-    - "redis"
     depends_on:
     - redis
+    - slurm
 
   redis:
     image: redis
     ports:
         - "6379:6379"
+
+  slurm:
+      build: slurm_test/

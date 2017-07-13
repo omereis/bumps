@@ -6,7 +6,7 @@
         <p> View the status of your jobs... </p>
             {% for job in jobs %}
                 <form action="/api/jobs/{{ id }}/{{ job }}" method="GET">
-                    <p> Job {{ job }} ... RUNNING/PENDING/ERROR/COMPLETE <input type="submit" value="View"/> </p>
+                    <p> Job #{{ job }} ... PENDING/RUNNING (last reported value: 3.141592) <input type="submit" value="View"/> </p>
                 </form>
             {% endfor %}
 

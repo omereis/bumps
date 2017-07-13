@@ -68,12 +68,22 @@ def register_token(user_token):
     if not isinstance(rdb.hget('users', user_token), type([])):
         rdb.hset('users', user_token, [])
 
+    # Initialize the user's job store
+    if not isinstance(rdb.hget('jobs', user_token), type([])):
+        rdb.hset('jobs', user_token, [])
+
     return make_response(
         jsonify(refresh_token=refresh_token, access_token=access_token), 201)
 
 
-def add_job(user, job):
-    rdb.hset('users', user, job)  # DEBUG
+
+def add_job(bumps_job):
+
+    # These two operations are critical
+    # Maybe raise exception if failure
+    rdb.hset('users', bumps_job['user'], bumps_job['_id'])
+    rdb.hset('jobs', bumps_job['users'], bumps_job)
+
 
 
 def process_request_form(request):
@@ -105,7 +115,7 @@ def process_request_form(request):
                     response['slurm']['n_gpus'] = request[form][key]
 
                 elif 'jobname' == key and request[form][key]:
-                    response['slurm']['jobname'] = request[form][key]
+                    response['slurm']['job-name'] = request[form][key]
 
                 elif 'n_cores' == key:
                     response['slurm']['--ntasks'] = request[form][key]

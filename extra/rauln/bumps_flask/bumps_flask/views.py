@@ -1,4 +1,5 @@
 import json
+import os
 
 from flask import (
     url_for, render_template, redirect,
@@ -18,7 +19,7 @@ from .api import (
     process_request_form, add_job, create_auth_token)
 
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
-from .file_handler import setup_job
+from .file_handler import setup_files
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -78,6 +79,7 @@ def dashboard():
     user_token = get_jwt_identity()
     # Get the database info for the current user
     user_data = rdb.hget('users', user_token)
+    # job_data = rdb.hmget('jobs', (job for job in user_data))
     return render_template('dashboard.html', id=user_token, jobs=user_data)
 
 
@@ -135,12 +137,28 @@ def fit_job(results=False):
         # Parse through the form data
         form_data = (process_request_form(form.data))
 
-        # Use the parsed data to set up a job and related files
-        job_id = setup_job(user=get_jwt_identity(),
-                           _input=form_data, _file=form.upload.data['script'])  # DEBUG
+        # Assuming the UIDs are unique enough, a job_id
+        # can be an incremental integer associated with a UID.
+        job_id = str(len(rdb.hget('users', get_jwt_identity())) + 1)
+        # Build job directory
+        _dir = os.path.join(app.config.get('UPLOAD_FOLDER'),
+            'fit_problems', get_jwt_identity(), 'job' + job_id)
 
-        add_job(get_jwt_identity(), job_id)  # DEBUG
+        # TODO: Add extra keys from form_data
+        bumps_payload = {
+                    'user': get_jwt_identity(),
+                    '_id': job_id,
+                    'origin': flask_request.remote_addr,
+                    'directory': _dir
+                    }
 
+        # Use the parsed data to set up the job related files
+        # and build a BumpsJob (json serialized dict)
+        bumps_job = setup_files(job=bumps_payload, _input=form_data,
+                                _file=form.upload.data['script'])
+
+
+        add_job(bumps_job)
         flash('Job submitted successfully.')
         return redirect(url_for('dashboard'))
 

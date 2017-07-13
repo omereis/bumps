@@ -64,7 +64,8 @@ To-Do
     - [X] Implement file handling
     - [X] Implement generic Slurm script generator from web service form values
         - [ ] Associate FitProblems to users
-        - [W] Generate unique job ids for organization and DB usage
+        - [ ] Allow for custom job names for displaying in web page
+        - [X] Generate unique job ids for organization and DB usage (done since UIDs are unique enough)
     - [ ] Implement client interface for connecting to remote work server
         - [ ] Implement the remaining REST interface
     - [W] Implement calling bumps for running and saving of fits

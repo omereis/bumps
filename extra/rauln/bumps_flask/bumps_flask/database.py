@@ -43,8 +43,13 @@ class Database(object):
     def hincr(self, _hash, key, n):
         self.db.hincrby(_hash, key, n)
 
+
     def hkeys(self, _hash):
         return self.db.hkeys(_hash)
+
+
+    def hmget(self, _hash, *args):
+        return self.db.hget(_hash, args)
 
     ##################
     # String commands
@@ -98,7 +103,7 @@ class BumpsJob(object):
     '''
 
     def __init__(self, _id=None, name='', origin='', date=None, start=None, stop=None,
-                 priority=0.0, notify='', status='PENDING'):
+                 priority=0.0, notify='', status='PENDING', directory=None, user=None):
 
         self._id = _id
         self.name = name
@@ -109,3 +114,5 @@ class BumpsJob(object):
         self.priority = priority
         self.notify = notify
         self.status = status
+        self.directory = directory
+        self.user = user

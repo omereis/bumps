@@ -554,8 +554,10 @@ def main():
         problem.show()
         if opts.stepmon:
             fid = open(problem.output_path + '.log', 'w')
+            status_fid = open(problem.output_path + '-steps.json', 'w+')
             fitdriver.monitors = [ConsoleMonitor(problem),
-                                  StepMonitor(problem, fid, fields=['step', 'value'])]
+                                  StepMonitor(problem, fid, sfid = status_fid,
+                                  fields=['step', 'value'])]
 
         #import time; t0=time.clock()
         cpus = int(opts.parallel) if opts.parallel != "" else 0

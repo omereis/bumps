@@ -57,14 +57,18 @@ class StepMonitor(monitor.Monitor):
     """
     FIELDS = ['step', 'time', 'value', 'point']
 
-    def __init__(self, problem, fid, fields=FIELDS):
+    def __init__(self, problem, fid, sfid, fields=FIELDS):
+        import json
         if any(f not in self.FIELDS for f in fields):
             raise ValueError("invalid monitor field")
+        self.dump = json.dump
         self.fid = fid
+        self.sfid = sfid
         self.fields = fields
         self.problem = problem
         self._pattern = "%%(%s)s\n" % (")s %(".join(fields))
         fid.write("# " + ' '.join(fields) + '\n')
+
 
     def config_history(self, history):
         history.requires(time=1, value=1, point=1, step=1)
@@ -77,7 +81,12 @@ class StepMonitor(monitor.Monitor):
         value = "%.15g" % (scale * history.value[0])
         out = self._pattern % dict(point=point, time=time,
                                    value=value, step=step)
+        json_out = dict(value=value, step=step)
+
         self.fid.write(out)
+        self.dump(json_out, self.sfid)
+        self.sfid.write('\n')
+
 
 class MonitorRunner(object):
     """

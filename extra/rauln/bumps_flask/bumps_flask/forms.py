@@ -4,9 +4,8 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileField
 
 from wtforms import StringField, IntegerField, FloatField, SelectField,\
-    FormField, BooleanField
+    FormField, BooleanField, DateTimeField
 from wtforms.validators import DataRequired, Optional, Email, ValidationError
-from wtforms_components import TimeField  # DEBUG
 
 from werkzeug.utils import secure_filename
 
@@ -270,8 +269,10 @@ class SlurmForm(FlaskForm):
     mem_unit = SelectField(
         label='Memory Unit', choices=[
             ('G', 'GB'), ('M', 'MB')], default='G')
-    walltime = TimeField(default=time(0, 30, 0))
-    # jobname = StringField(validators=[Optional()])
+
+    # Walltime needs a regex validator or similar
+    walltime = DateTimeField(label='Walltime (HH:MM:SS)', default=time(00, 30, 00), format='%H:%M:%S')
+    jobname = StringField(validators=[Optional()])
 
 
 class FitForm(FlaskForm):

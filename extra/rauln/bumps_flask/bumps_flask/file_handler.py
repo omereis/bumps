@@ -8,18 +8,16 @@ from . import app, rdb, jwt
 from .database import BumpsJob
 from .run_job import execute_python_script
 
-def setup_job(user, _input, _file, queue='slurm'):
-    # Convenient variable
-    folder = os.path.join(
-        app.config.get('UPLOAD_FOLDER'),
-        'fit_problems',
-        user)
+def setup_files(job, _input, _file, queue='slurm'):
 
     # Add the store location to the bumps args
+    folder = job['directory']
     _input['cli']['store'] = os.path.join(folder, 'results')
 
     # Toggle batch mode so we don't display interactive plots
     _input['cli']['batch'] = True
+    # Toggle stepmon so we can get some useful data from each step
+    _input['cli']['stepmon'] = True
 
     # Make sure the upload and results
     # folders exist beforehand
@@ -41,11 +39,12 @@ def setup_job(user, _input, _file, queue='slurm'):
 
         slurm_file.close()
 
+    # Currently only support for slurm is available
     elif queue == 'rq':
         pass
 
-    return random.randint(1, 10)  # DEBUG JOB ID
-
+    # TODO: Add some info to the job dict here
+    return job
 
 def slurm_commands(slurm_dict):
     '''
@@ -63,9 +62,6 @@ def slurm_commands(slurm_dict):
 
         elif key == 'limit_node':
             output_s += '#SBATCH --nodes=1\n'
-
-        elif key == 'jobname':
-            output_s += '#SBATCH -J "{}"\n'.format(slurm_dict[key])
 
         elif key == '--mem-per-cpu' or key == 'mem_unit':
             # Handle these in the end, since they should be as one in the slurm command
@@ -94,6 +90,9 @@ def cli_commands(cli_dict):
         # Handle the toggles
         if key == 'batch':
             output_s += ' --batch'
+
+        elif key =='stepmon':
+            output_s += ' --stepmon'
 
         # Handle the options
         else:
