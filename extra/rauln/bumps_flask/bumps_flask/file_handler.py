@@ -1,17 +1,19 @@
 import os
 import sys
+import json
 import random
 import tempfile
 from werkzeug.utils import secure_filename
 
 from . import app, rdb, jwt
 from .database import BumpsJob
-from .run_job import execute_python_script
+from .run_job import execute_python_script, execute_slurm_script
 
-def setup_files(job, _input, _file, queue='slurm'):
+
+def setup_files(payload, _input, _file, queue='slurm'):
 
     # Add the store location to the bumps args
-    folder = job['directory']
+    folder = payload['directory']
     _input['cli']['store'] = os.path.join(folder, 'results')
 
     # Toggle batch mode so we don't display interactive plots
@@ -30,21 +32,29 @@ def setup_files(job, _input, _file, queue='slurm'):
     # Save the uploaded file
     _file.save(file_path)
 
+    # Parse the CLI options
+    cli_opts = cli_commands(_input['cli'])
+
+    # Add the filename to the payload
+    payload['filebase'] = filename.split('.')[0]
+
     # Build the slurm batch script for running the job
     if queue == 'slurm':
         # Open a non-volatile named tempfile for for output
         slurm_file = tempfile.NamedTemporaryFile(dir=folder, delete=False)
 
-        build_slurm_script(slurm_file, _input['slurm'], _input['cli'], file_path)
+        build_slurm_script(slurm_file, _input['slurm'], cli_opts, file_path)
 
         slurm_file.close()
 
     # Currently only support for slurm is available
     elif queue == 'rq':
-        pass
+        payload = execute_python_script.queue(
+            _file, cli_opts.split(), file_path)
 
     # TODO: Add some info to the job dict here
-    return job
+    return payload
+
 
 def slurm_commands(slurm_dict):
     '''
@@ -64,7 +74,8 @@ def slurm_commands(slurm_dict):
             output_s += '#SBATCH --nodes=1\n'
 
         elif key == '--mem-per-cpu' or key == 'mem_unit':
-            # Handle these in the end, since they should be as one in the slurm command
+            # Handle these in the end, since they should be as one in the slurm
+            # command
             pass
 
         else:
@@ -91,7 +102,7 @@ def cli_commands(cli_dict):
         if key == 'batch':
             output_s += ' --batch'
 
-        elif key =='stepmon':
+        elif key == 'stepmon':
             output_s += ' --stepmon'
 
         # Handle the options
@@ -101,7 +112,7 @@ def cli_commands(cli_dict):
     return output_s.lstrip()
 
 
-def build_slurm_script(_file, slurm_dict, cli_dict, file_path):
+def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
     '''
     Parse given slurm_dict and cli_dict into a slurm script _file
     '''
@@ -114,10 +125,51 @@ def build_slurm_script(_file, slurm_dict, cli_dict, file_path):
     slurm_opts = slurm_commands(slurm_dict)
     _file.write(slurm_opts)
 
-    # Parse the CLI options and write them
-    # on the open _file
-    cli_opts = cli_commands(cli_dict)
+    # Write the CLI options
     _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
 
-    execute_python_script('bumps', cli_opts.split(), job_file, job_path)  # DEBUG
+    execute_slurm_script(
+        'bumps',
+        cli_opts.split(),
+        job_file,
+        job_path)  # DEBUG
+
     return
+
+# TODO: Support more than just curve fitting here
+
+
+def update_job_info(user):
+    '''
+    Go through the user's job list and check their status,
+    update the database as necessary. Job status is checked
+    by attempting to open specific files associated
+    with job progress
+    '''
+    user_jobs = rdb.hvals(user)
+
+    if not user_jobs:
+        return False
+
+    for job in user_jobs:
+        if isinstance(job, bool):
+            continue
+        try:
+            with open(os.path.join(job['directory'], 'results',
+                                   '{}-steps.json'.format(job['filebase'])), 'r') as j:
+                if job['status'] == 'PENDING':
+                    job['value'] = json.loads(j.readlines()[-1])['value']
+                    job['status'] = 'RUNNING'
+        except BaseException:
+            pass
+
+        try:
+            with open(os.path.join(job['directory'], 'results',
+                                   '{}-model.html'.format(job['filebase'])), 'r') as f:
+                job['status'] = 'COMPLETED'
+        except BaseException:
+            pass
+
+        rdb.hset(user, job['_id'], job)
+
+    return True

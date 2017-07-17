@@ -55,20 +55,22 @@ To-Do
     GET TO WORK!
 
 - Todo
+    - [ ] Generalize the service to allow for other bumps commands
+    - [W] Implement client interface for connecting to remote work server
+        - [W] Implement the remaining REST interface
+    - [X] Implement generic Slurm script generator from web service form values
+        - [ ] Associate FitProblems to users
+        - [W] Allow for downloading of result files
+        - [X] Generate unique job ids for organization and DB usage
+    - [W] Implement calling bumps for running and saving of fits
+        - [X] Implement MPLD3 html results page for generated graphs
+    - [W] Generalize the service to allow for generic queues (priority: support for slurm)
+        - [W] Dockerize a slurm cluster for linking with bumps_flask
+    - [ ] Implement secure redirect back to caller (http://flask.pocoo.org/snippets/63/)
+    - [ ] Implement unit testing
     - [X] Fix serializing lists in redis
     - [X] Implement logout
     - [X] Implement JWT token refresh for users to log back in with their UID
         - [X] Fix landing page auth issue (expired token)
-    - [ ] Implement secure redirect back to caller (http://flask.pocoo.org/snippets/63/)
     - [X] Implement redis database
     - [X] Implement file handling
-    - [X] Implement generic Slurm script generator from web service form values
-        - [ ] Associate FitProblems to users
-        - [ ] Allow for custom job names for displaying in web page
-        - [X] Generate unique job ids for organization and DB usage (done since UIDs are unique enough)
-    - [ ] Implement client interface for connecting to remote work server
-        - [ ] Implement the remaining REST interface
-    - [W] Implement calling bumps for running and saving of fits
-        - [W] Implement MPLD3 html results page for generated graphs
-    - [ ] Implement unit testing
-    - [ ] Dockerize a slurm cluster for linking with bumps_flask

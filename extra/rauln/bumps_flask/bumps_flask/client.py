@@ -1,3 +1,4 @@
+from __future__ import print_function
 import sys
 from json import dumps, loads
 from requests import post, get
@@ -12,58 +13,93 @@ else:
 
 
 class Connection(object):
-    def __init__(self, host=None):
-        self.endpoint = HOST
+    def __init__(self, host=HOST):
+        self.endpoint = host + '/api/'
         self.jar = RequestsCookieJar()
         self.headers = None
         self.uid = None
 
-    def connect(self):
+        r = self.login()
+
+        if r is True:
+            print('Logged in as token {}!'.format(self.uid))
+
+        else:
+            print('Error connecting, server returned: ', r)
+
+    def login(self):
         '''
         Connects to the web service, the UID and
         saves the JWT in a cookie (or a header).
         Returns true for a succesful connection,
         false otherwise.
         '''
-        r = post(HOST + '/register')
+        r = post(self.endpoint + 'register')
         try:
             self.uid = r.json()['uid']
             self.jar.set(
                 'access_token_cookie',
                 r.cookies['access_token_cookie'],
                 domain=HOST)
-        except BaseException:
-            return False
+
+        except Exception as e:
+            return e
 
         return True
 
-    def get_job(self, jod_id=None, _format=None):
+
+    def logout(self):
+        '''
+        Disconnect from the web service,
+        clear cookies (or headers).
+        Return true for a succesful disconnect,
+        false otherwise
+        '''
+
+        r = get(self.endpoint + 'logout', params={'redirect': 0})
+        return r.json()
+
+
+    def get_job(self, job_id=None, _format=None):
         '''
         Returns jobs given a job_id
         Formats available = json (default), html
         '''
 
+        self.job_id = job_id
+        self._format = _format
+
         resource = 'jobs'
 
-        if job_id:
-            if _format:
-                resource += '/{}.{}'.format(job_id, _format)
+        if self.job_id:
+            if self._format:
+                resource += '/{}.{}'.format(self.job_id, self._format)
             else:
-                resource += '/{}'.format(jod_id)
+                resource += '/{}'.format(self.job_id)
         else:
-            if _format:
-                resource += '.{}'.format(_format)
+            if self._format:
+                resource += '.{}'.format(self._format)
 
-        return loads(get(endpoint + resource, cookies=self.jar))
-
-    def post_job(self, job):
-        '''
-        Posts a job to the server, associated
-        to the current user
-        '''
-
-        r = post(HOST + '/jobs', json=job, cookies=self.jar)
+        r = get(self.endpoint + resource, cookies=self.jar)
         return r.json()
+
+    def post_job(self, job_file, queue='slurm'):
+        '''
+        Posts a job file in the current working
+        directory to the server and return the
+        server's response
+        '''
+
+        r = post(self.endpoint + 'jobs', json={
+            'file': open(job_file, 'rb'),
+            'user': self.uid,
+            'queue': queue},
+            cookies=self.jar)
+
+        return r.json()
+
+    def current_user(self):
+        return self.uid
 
     def get_user(self):
         pass
@@ -72,7 +108,8 @@ class Connection(object):
         pass
 
     def list_jobs(self):
-        pass
+        r = get(self.endpoint + 'jobs')
+        return r.json()
 
     def get_job_info(self, jobid):
         pass
@@ -81,9 +118,6 @@ class Connection(object):
         pass
 
     def get_job_results(self, jobid):
-        pass
-
-    def wait_for_job(self):
         pass
 
     def stop_job(self, jobid):

@@ -11,8 +11,6 @@ else:
 
 # import mpld3
 
-# note: allow for usage of SLURM scheduler as well as RQ
-
 def handle_bumps_script(*args):
     pass
 
@@ -26,7 +24,7 @@ def run_job(job):
     return fitservice(job)
 
 
-def tear_down_job(jobid):
+def tear_down_job(job_id):
     '''
     Erase a job from DB and call a file deletion function
     TODO: Should be called after a job signals it is completed, perhaps...
@@ -35,44 +33,22 @@ def tear_down_job(jobid):
     pass
 
 
-def execute_slurm_script(cmd, *args):
+@rqueue.job
+def execute_python_script(job_file, args, job_path):
     """
-    Run a slurm command, capturing any errors.
-    """
-    with subprocess.Popen([cmd] + list(args),
-                          stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE) as process:
-        try:
-            stdout, stderr = process.communicate()
-        except BaseException:
-            raise
-
-    return stdout, stderr
-
-# @job
-
-
-def execute_python_script(cmd, args, job_file, job_path):
-    '''
     TEST
-    '''
+    """
+    subprocess.Popen(['bumps'] + [job_file] + list(args),
+                     cwd=job_path,
+                     stdout=subprocess.PIPE,
+                     stderr=subprocess.PIPE)
 
-    out = open(os.path.join(job_path, 'output.txt'), 'w+')
 
-    with subprocess.Popen([cmd] + [job_file] + list(args),
-                          shell=False, cwd=job_path,
-                          stdout=out,
-                          stderr=subprocess.STDOUT) as process:
-        try:
-            process.communicate()
-            # job.meta['output'] = stdout + stderr
-        except JobTimeoutException:
-            raise
-        finally:
-            if process.poll() is None:
-                process.kill()
-                process.communicate()
-
-            out.close()
-
-    return
+def execute_slurm_script(cmd, args, job_file, job_path):
+    """
+    TEST
+    """
+    subprocess.Popen([cmd] + [job_file] + list(args),
+                     cwd=job_path,
+                     stdout=subprocess.PIPE,
+                     stderr=subprocess.PIPE)

@@ -16,6 +16,9 @@ class Database(object):
     def hexists(self, key, value):
         return self.db.hexists(key, value)
 
+    def hlen(self, _hash):
+        return self.db.hlen(_hash)
+
     def hget(self, _hash, key):
         if self.db.hget(_hash, key):
             return loads(self.db.hget(_hash, key))
@@ -23,33 +26,25 @@ class Database(object):
         return None
 
     def hget_all(self, _hash):
-        return {key: self.hget(_hash, key) for key in self.db.hkeys(_hash)}
+        return self.db.hgetall(_hash)
+
+    def hvals(self, _hash):
+        return [loads(job) for job in self.db.hvals(_hash)]
 
     def hset(self, _hash, key, value):
-        '''
-        Attempt to set value to an existing json serialized
-        key list in _hash. If the list is empty, then initialize
-        it with the current value
-        '''
-
-        # Catch the first pass where the list is not json
-        try:
-            key_list = self.hget(_hash, key)
-            key_list.append(value)
-            self.db.hset(_hash, key, dumps(key_list))
-        except BaseException:
-            self.db.hset(_hash, key, dumps([]))
+        return self.db.hset(_hash, key, dumps(value))
 
     def hincr(self, _hash, key, n):
         self.db.hincrby(_hash, key, n)
 
-
     def hkeys(self, _hash):
         return self.db.hkeys(_hash)
 
-
     def hmget(self, _hash, *args):
         return self.db.hget(_hash, args)
+
+    def hdel(self, _hash, key):
+        return self.db.hdel(_hash, key)
 
     ##################
     # String commands
@@ -102,8 +97,19 @@ class BumpsJob(object):
     Possible job status: PENDING, ACTIVE, CANCEL, COMPLETE, ERROR
     '''
 
-    def __init__(self, _id=None, name='', origin='', date=None, start=None, stop=None,
-                 priority=0.0, notify='', status='PENDING', directory=None, user=None):
+    def __init__(
+            self,
+            _id=None,
+            name='',
+            origin='',
+            date=None,
+            start=None,
+            stop=None,
+            priority=0.0,
+            notify='',
+            status='PENDING',
+            directory=None,
+            user=None):
 
         self._id = _id
         self.name = name

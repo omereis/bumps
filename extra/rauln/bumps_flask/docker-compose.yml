@@ -1,4 +1,4 @@
-version: '3'
+version: '2'
 services:
   web:
     build: .
@@ -14,4 +14,4 @@ services:
         - "6379:6379"
 
   slurm:
-      build: slurm_test/
+      image: giovtorres/docker-centos7-slurm:latest

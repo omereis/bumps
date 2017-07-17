@@ -3,23 +3,22 @@ import os
 
 from flask import (
     url_for, render_template, redirect,
-    send_from_directory, make_response,
-    flash, jsonify)
+    make_response, flash, jsonify)
 
 from flask import request as flask_request
 
 from flask_jwt_extended import (
-    jwt_required, jwt_optional, get_jti, get_raw_jwt,
+    jwt_required, jwt_optional,
     get_jwt_identity, get_jwt_claims, set_access_cookies,
     jwt_refresh_token_required, set_refresh_cookies, unset_jwt_cookies)
 
-from . import app, rdb, jwt
+from . import app, rdb, jwt, api
 from .api import (
-    api, create_user_token, register_token,
+    create_user_token, register_token, disconnect,
     process_request_form, add_job, create_auth_token)
 
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
-from .file_handler import setup_files
+from .file_handler import setup_files, update_job_info
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -45,12 +44,13 @@ def index():
     if form.validate_on_submit():
         user_token = form.data['token']
         # Get the auth and refresh tokens from the api
-        resp = json.loads(register_token(user_token).get_data())
+        resp = json.loads(register_token(user_token).get_data())  # POST/GET
         jwt_token = resp['access_token']
         refresh_token = resp['refresh_token']
 
         # Prepare a redirect for a successful login
         response = make_response(redirect(url_for('dashboard')))
+
         # Bundle the JWT cookies into the response object
         set_access_cookies(response, jwt_token)
         set_refresh_cookies(response, refresh_token)
@@ -77,20 +77,23 @@ def dashboard():
 
     # Retrieve the UID
     user_token = get_jwt_identity()
+
+    update_job_info(user_token)  # DEBUG (Polling job status here)  # POST/GET
+
     # Get the database info for the current user
-    user_data = rdb.hget('users', user_token)
-    # job_data = rdb.hmget('jobs', (job for job in user_data))
-    return render_template('dashboard.html', id=user_token, jobs=user_data)
+    user_jobs = rdb.hvals(user_token)
+
+    return render_template('dashboard.html', id=user_token, jobs=user_jobs)
 
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/api/register', methods=['GET', 'POST'])
 def tokenizer():
     '''
     View for showing the user their unique ID, which they should remember
     in order to refresh their JWT authentication.
     Uses the API to create a unique user_token which is
     then associated to an authentication JWT
-    and saved as a cookie by the client
+    and saved as a cookie or in a header by the client
     '''
 
     # Create a UID
@@ -139,39 +142,34 @@ def fit_job(results=False):
 
         # Assuming the UIDs are unique enough, a job_id
         # can be an incremental integer associated with a UID.
-        job_id = str(len(rdb.hget('users', get_jwt_identity())) + 1)
+        job_id = str(rdb.hlen(get_jwt_identity()) + 1)
+
         # Build job directory
         _dir = os.path.join(app.config.get('UPLOAD_FOLDER'),
-            'fit_problems', get_jwt_identity(), 'job' + job_id)
+                            'fit_problems', get_jwt_identity(), 'job' + job_id)
+
+        # TODO: Get queue here
+        # queue = 'rq'  # DEBUG
 
         # TODO: Add extra keys from form_data
         bumps_payload = {
-                    'user': get_jwt_identity(),
-                    '_id': job_id,
-                    'origin': flask_request.remote_addr,
-                    'directory': _dir
-                    }
+            'user': get_jwt_identity(),
+            '_id': job_id,
+            'origin': flask_request.remote_addr,
+            'directory': _dir,
+            'status': 'PENDING',
+        }
 
         # Use the parsed data to set up the job related files
         # and build a BumpsJob (json serialized dict)
-        bumps_job = setup_files(job=bumps_payload, _input=form_data,
-                                _file=form.upload.data['script'])
+        bumps_payload = setup_files(bumps_payload, form_data,
+                                    form.upload.data['script'])
 
-
-        add_job(bumps_job)
+        add_job(bumps_payload)
         flash('Job submitted successfully.')
         return redirect(url_for('dashboard'))
 
     return render_template('service.html', form=form)
-
-
-# @app.route('/api/uploaded_file/<filename>')
-# @jwt_required
-# def uploaded_file(filename):
-#     '''
-#     Sends a previously uploaded file to the browser
-#     '''
-#     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 @app.route('/refresh')
@@ -189,24 +187,16 @@ def refresh():
     return resp
 
 
-@app.route('/logout', methods=['GET', 'POST', 'DELETE'])
+@app.route('/api/logout', methods=['GET'])
 @jwt_required
 def logout():
-    '''
-    Blacklists the user's refresh token
-    and unsets the cookies/removes the headers
-    '''
-
-    jti = get_raw_jwt()['jti']
-    rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
-
-    resp = make_response(redirect(url_for('index')))
-    unset_jwt_cookies(resp)
+    params = flask_request.args
+    resp = disconnect(params)
     flash('Logged out successfully!')
     return resp
 
 
-########## The following functions define the responses for JWT auth failu
+# The following functions define the responses for JWT callbacks
 
 @jwt.token_in_blacklist_loader
 def token_in_blacklist_callback(decrypted_token):

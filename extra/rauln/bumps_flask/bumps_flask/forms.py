@@ -31,7 +31,7 @@ class TokenForm(FlaskForm):
         Validation consists of checking whether or not the submitted
         value corresponds to an existing database token
         '''
-        if str(field.data) not in rdb.hkeys('users'):
+        if not rdb.exists(str(field.data)):
             raise ValidationError(
                 'Token \"' +
                 field.data +
@@ -53,10 +53,13 @@ class UploadForm(FlaskForm):
 class EmailForm(FlaskForm):
     email = StringField(
         label='Email address: ',
-        validators=[Email(message='Please enter a valid email address.'), Optional()])
+        validators=[
+            Email(
+                message='Please enter a valid email address.'),
+            Optional()])
 
 
-#################### Translating form data to CLI commands for bumps itsel
+# Translating form data to CLI commands for bumps itsel
 # Problem setup forms
 
 class ParsForm(FlaskForm):
@@ -102,8 +105,7 @@ class StepForm(FlaskForm):
     '''Corresponds to the bumps CLI command --steps'''
     steps = IntegerField(
         label='steps: ',
-        validators=[DataRequired(message='Missing steps...')],
-        default=100)
+        validators=[Optional()])
 
 
 class SampleForm(FlaskForm):
@@ -155,7 +157,9 @@ class InitForm(FlaskForm):
 
 class BurnForm(FlaskForm):
     '''Corresponds to the bumps CLI command --burn'''
-    pass
+    burn = IntegerField(
+        label='burn: ',
+        validators=[Optional()])
 
 
 class ThinForm(FlaskForm):
@@ -214,10 +218,6 @@ class ResumeFitForm(FlaskForm):
     pass
 
 
-class StepMonForm(FlaskForm):
-    '''Corresponds to the bumps CLI command --stepmon'''
-    pass
-
 ####################
 # Output control forms
 
@@ -271,7 +271,9 @@ class SlurmForm(FlaskForm):
             ('G', 'GB'), ('M', 'MB')], default='G')
 
     # Walltime needs a regex validator or similar
-    walltime = DateTimeField(label='Walltime (HH:MM:SS)', default=time(00, 30, 00), format='%H:%M:%S')
+    walltime = DateTimeField(
+        label='Walltime (HH:MM:SS)', default=time(
+            00, 30, 00), format='%H:%M:%S')
     jobname = StringField(validators=[Optional()])
 
 
@@ -283,6 +285,7 @@ class FitForm(FlaskForm):
     '''
     slurm = FormField(SlurmForm)
     steps = FormField(StepForm)
+    burn = FormField(BurnForm)
     optimizer = FormField(OptimizerForm)
     upload = FormField(UploadForm)
     email = FormField(EmailForm)

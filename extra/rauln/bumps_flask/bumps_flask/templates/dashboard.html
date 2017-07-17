@@ -1,15 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
-    <p>Hello, user of token {{ id }}!</p>
+    <p>Logged in as token {{ id }}.</p>
     <div>
         {% if jobs and jobs != [] %}
         <p> View the status of your jobs... </p>
             {% for job in jobs %}
-                <form action="/api/jobs/{{ id }}/{{ job }}" method="GET">
-                    <p> Job #{{ job }} ... PENDING/RUNNING (last reported value: 3.141592) <input type="submit" value="View"/> </p>
-                </form>
-            {% endfor %}
+                {% if job['status'] == 'COMPLETED' %}
+                    <form action="/api/users/{{ id }}/job{{ job['_id'] }}.html" method="GET">
+                        <p> Job #{{ job['_id'] }} ... results available! <input type="submit" value="View"/> </p>
+                    </form>
 
+                {% elif job['status'] == 'RUNNING' %}
+                    <p> Job #{{ job['_id'] }} ... Status: {{ job['status'] }} (last reported value: {{ job['value'] }}) </p>
+
+                {% elif job['status'] == 'PENDING' %}
+                <p> Job #{{ job['_id'] }} ... Status: {{ job['status'] }} </p>
+
+                {% endif %}
+
+            {% endfor %}
         {% else %}
         <p> You currently have no jobs running. </p>
         {% endif %}
@@ -18,7 +27,7 @@
 
     <p>Submit a new job... <form action="{{url_for('fit_job')}}" method="GET"> <input style="display:inline;" type="submit" value="Go"/></form></p>
 
-    <form action="{{url_for('logout')}}" method="GET">
+    <form action="{{ url_for('logout', redirect=1) }}" method="GET">
         <p><input type="submit" value="Logout"/></p>
     </form>
 

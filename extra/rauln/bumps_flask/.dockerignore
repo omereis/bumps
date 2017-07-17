@@ -3,5 +3,6 @@
 *.egg-info
 *.rdb
 .bumps_folder
+Procfile
 instance/
 slurm_test/
