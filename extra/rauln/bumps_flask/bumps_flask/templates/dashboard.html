@@ -5,10 +5,17 @@
         {% if jobs and jobs != [] %}
         <p> View the status of your jobs... </p>
             {% for job in jobs %}
+            <br><br>
                 {% if job['status'] == 'COMPLETED' %}
                     <form action="/api/users/{{ id }}/job{{ job['_id'] }}.html" method="GET">
-                        <p> Job #{{ job['_id'] }} ... results available! <input type="submit" value="View"/> </p>
+                        <p> Job #{{ job['_id'] }} ... results available! <input type="submit" value="View main graph"/> </p>
                     </form>
+
+                    {% for result_file in files[job['_id']] %}
+                        <form action="/api/users/{{ id }}/job{{ job['_id'] }}/{{ result_file }}" method="GET">
+                        <p style="padding-left:5em"> File: {{ result_file|safe }} <input type="submit" value="Download"/> </p>
+                    {% endfor %}
+
 
                 {% elif job['status'] == 'RUNNING' %}
                     <p> Job #{{ job['_id'] }} ... Status: {{ job['status'] }} (last reported value: {{ job['value'] }}) </p>
@@ -24,8 +31,8 @@
         {% endif %}
     </div>
 
-
-    <p>Submit a new job... <form action="{{url_for('fit_job')}}" method="GET"> <input style="display:inline;" type="submit" value="Go"/></form></p>
+    <br><br>
+    <p>Submit a new job... <form action="{{ url_for('fit_job') }}" method="GET"> <input style="display:inline;" type="submit" value="Go"/></form></p>
 
     <form action="{{ url_for('logout', redirect=1) }}" method="GET">
         <p><input type="submit" value="Logout"/></p>

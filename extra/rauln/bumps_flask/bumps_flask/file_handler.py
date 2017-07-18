@@ -136,7 +136,15 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
 
     return
 
-# TODO: Support more than just curve fitting here
+
+def search_results(path):
+    from glob import glob
+    possible_ext = ('dat', 'err', 'mon', 'par',
+                    'png', 'log', 'mcmc')
+
+    return [os.path.basename(_file) for _file in
+            glob(os.path.join(path, 'results', '*')) if
+            os.path.basename(_file).split('.')[1] in possible_ext]
 
 
 def update_job_info(user):
@@ -149,7 +157,7 @@ def update_job_info(user):
     user_jobs = rdb.hvals(user)
 
     if not user_jobs:
-        return False
+        return
 
     for job in user_jobs:
         if isinstance(job, bool):
@@ -157,9 +165,10 @@ def update_job_info(user):
         try:
             with open(os.path.join(job['directory'], 'results',
                                    '{}-steps.json'.format(job['filebase'])), 'r') as j:
-                if job['status'] == 'PENDING':
-                    job['value'] = json.loads(j.readlines()[-1])['value']
-                    job['status'] = 'RUNNING'
+                # if job['status'] == 'PENDING':
+                job['status'] = 'RUNNING'
+                job['value'] = json.loads(j.readlines()[-1])['value']
+
         except BaseException:
             pass
 

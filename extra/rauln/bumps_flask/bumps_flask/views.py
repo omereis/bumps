@@ -8,7 +8,7 @@ from flask import (
 from flask import request as flask_request
 
 from flask_jwt_extended import (
-    jwt_required, jwt_optional,
+    jwt_required, jwt_optional, get_raw_jwt,
     get_jwt_identity, get_jwt_claims, set_access_cookies,
     jwt_refresh_token_required, set_refresh_cookies, unset_jwt_cookies)
 
@@ -18,7 +18,7 @@ from .api import (
     process_request_form, add_job, create_auth_token)
 
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
-from .file_handler import setup_files, update_job_info
+from .file_handler import setup_files, update_job_info, search_results
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -82,8 +82,15 @@ def dashboard():
 
     # Get the database info for the current user
     user_jobs = rdb.hvals(user_token)
+    files = []
+    if user_jobs:
+        files = {job['_id']: search_results(
+                            job['directory'])
+                            for job in user_jobs}
+        for f in files['1']:
+            print f
 
-    return render_template('dashboard.html', id=user_token, jobs=user_jobs)
+    return render_template('dashboard.html', id=user_token, jobs=user_jobs, files=files)
 
 
 @app.route('/api/register', methods=['GET', 'POST'])
@@ -187,11 +194,16 @@ def refresh():
     return resp
 
 
-@app.route('/api/logout', methods=['GET'])
+@app.route('/api/web/logout')
 @jwt_required
 def logout():
-    params = flask_request.args
-    resp = disconnect(params)
+
+    jti = get_raw_jwt()['jti']
+    rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
+
+    resp = make_response(redirect(url_for('index')))
+    unset_jwt_cookies(resp)
+
     flash('Logged out successfully!')
     return resp
 

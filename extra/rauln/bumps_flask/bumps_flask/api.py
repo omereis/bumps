@@ -10,7 +10,7 @@ from flask_restful import Resource, abort
 from flask_jwt_extended import (
     create_access_token, create_refresh_token,
     get_jwt_identity, jwt_required, get_jti,
-    get_raw_jwt)
+    get_raw_jwt, unset_jwt_cookies)
 
 from . import app, rdb, jwt, api
 from .file_handler import setup_files
@@ -27,24 +27,20 @@ def create_user_token():
 
     return str(uuid.uuid4())[:6]
 
-def disconnect(params):
+
+@jwt_required
+def disconnect():
     '''
     Blacklists the user's refresh token
     and unsets the cookies/removes the headers
     '''
 
-    optional_redirect = params['redirect']
-
     jti = get_raw_jwt()['jti']
     rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
 
-    if optional_redirect:
-            resp = make_response(redirect(url_for('index')), 201)
-
-    else:
-        resp = make_response(jsonify(Disconnected=True), 201)
-
+    resp = make_response(jsonify(Disconnected=True), 201)
     unset_jwt_cookies(resp)
+
     return resp
 
 def create_auth_token(user_token):
@@ -86,6 +82,7 @@ def register_token(user_token):
 def add_job(bumps_job):
     # Add job to the DB
     rdb.hset(bumps_job['user'], bumps_job['_id'], bumps_job)
+
 
 # TODO: Clean up
 def process_request_form(request):
@@ -207,7 +204,7 @@ class Jobs(Resource):
 
 
 class Users(Resource):
-    def get(self, user_id=None, job_id=None, _format='.json'):
+    def get(self, user_id=None, job_id=None, _file=None, _format='.json'):
         # Work with a specific user's info
         if user_id:
             # Get current user's specific job
@@ -218,14 +215,17 @@ class Users(Resource):
                 if not os.path.exists(_dir):
                     return abort(404)
 
-                if _format == '.html':
-                    filebase = rdb.hget(user_id, job_id)['filebase']
-                    print('Sending: ', '{}-model.html.'.format(filebase))
-                    return send_from_directory(
-                        _dir, '{}-model.html'.format(filebase))
+                # Download a generated result file
+                if _file:
+                    print('Sending ' + _file + ' from ' + _dir)
+                    return send_from_directory(_dir, _file, as_attachment=True)
 
+                # View an html results graph
                 else:
-                    pass
+                    if _format == '.html':
+                        filebase = rdb.hget(user_id, job_id)['filebase']
+                        return send_from_directory(
+                            _dir, '{}-model.html'.format(filebase))
 
             # Get current user's info
             else:
@@ -268,6 +268,6 @@ api.add_resource(Users,
                  '/api/users',
                  '/api/users<string:_format>',
                  '/api/users/<string:user_id><string:_format>',
-                 '/api/users/<string:user_id><string:_format>',
-                 '/api/users/<string:user_id>/job<int:job_id><string:_format>'
+                 '/api/users/<string:user_id>/job<int:job_id><string:_format>',
+                 '/api/users/<string:user_id>/job<int:job_id>/<string:_file>'
                  )
