@@ -8,20 +8,24 @@
             <br><br>
                 {% if job['status'] == 'COMPLETED' %}
                     <form action="/api/users/{{ id }}/job{{ job['_id'] }}.html" method="GET">
-                        <p> Job #{{ job['_id'] }} ... results available! <input type="submit" value="View main graph"/> </p>
+                        <p> Job #{{ job['_id'] }} (Submitted on {{ job['submitted'] }}) | Results available! <input type="submit" value="View graph"/> </p>
                     </form>
 
                     {% for result_file in files[job['_id']] %}
                         <form action="/api/users/{{ id }}/job{{ job['_id'] }}/{{ result_file }}" method="GET">
-                        <p style="padding-left:5em"> File: {{ result_file|safe }} <input type="submit" value="Download"/> </p>
+                        <p style="padding-left:5em; display:list-item"> File: {{ result_file|safe }} <input type="submit" value="Download"/> </p>
+                        </form>
                     {% endfor %}
+                    <form action="/api/users/{{ id }}/job{{ job['_id'] }}/job_results.zip" method="GET">
+                    <p style="padding-left:5em; font-weight: bold;"> Download zipped results (excluding .mc files) <input type="submit" value="Download"/> </p>
+                    </form>
 
 
                 {% elif job['status'] == 'RUNNING' %}
-                    <p> Job #{{ job['_id'] }} ... Status: {{ job['status'] }} (last reported value: {{ job['value'] }}) </p>
+                    <p> Job #{{ job['_id'] }} (Submitted on {{ job['submitted'] }}) | Status: running... </p>
 
                 {% elif job['status'] == 'PENDING' %}
-                <p> Job #{{ job['_id'] }} ... Status: {{ job['status'] }} </p>
+                <p> Job #{{ job['_id'] }} (Submitted on {{ job['submitted'] }}) | Status: pending...</p>
 
                 {% endif %}
 

@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import random
+import zipfile
 import tempfile
 from werkzeug.utils import secure_filename
 
@@ -15,11 +16,6 @@ def setup_files(payload, _input, _file, queue='slurm'):
     # Add the store location to the bumps args
     folder = payload['directory']
     _input['cli']['store'] = os.path.join(folder, 'results')
-
-    # Toggle batch mode so we don't display interactive plots
-    _input['cli']['batch'] = True
-    # Toggle stepmon so we can get some useful data from each step
-    _input['cli']['stepmon'] = True
 
     # Make sure the upload and results
     # folders exist beforehand
@@ -56,6 +52,17 @@ def setup_files(payload, _input, _file, queue='slurm'):
     return payload
 
 
+def zip_files(_dir, file_list):
+    # Excluce mc and mcmc files
+    work_list = [_file for _file in file_list if 'mc' not in _file.split('.')[1]]
+    work_dir = os.path.join(_dir, 'results',)
+    # Only create the zip file if it does not already exist
+    if not os.path.isfile(os.path.join(work_dir, 'results.zip')):
+        with zipfile.ZipFile(os.path.join(work_dir, 'job_results.zip'), mode='w') as zip_file:
+            for _file in work_list:
+                zip_file.write(os.path.join(work_dir, _file), arcname=_file)
+
+
 def slurm_commands(slurm_dict):
     '''
     Buils a string to consisting of parsed SLURM commands
@@ -83,7 +90,7 @@ def slurm_commands(slurm_dict):
 
     # Handle the mem-per-cpu and mem_unit here
     output_s += '#SBATCH --mem-per-cpu={}{}\n'.format(
-        slurm_dict['--mem-per-cpu'], slurm_dict['mem_unit'])
+                slurm_dict['--mem-per-cpu'], slurm_dict['mem_unit'])
 
     return output_s
 
@@ -96,18 +103,17 @@ def cli_commands(cli_dict):
     '''
 
     output_s = ''
+
+    # Handle the toggles
+    # Toggle batch mode so we don't display interactive plots
+    output_s += ' --batch'
+    # Toggle stepmon so we can get some useful data from each step
+    output_s += ' --stepmon'
+
     for key in cli_dict:
 
-        # Handle the toggles
-        if key == 'batch':
-            output_s += ' --batch'
-
-        elif key == 'stepmon':
-            output_s += ' --stepmon'
-
         # Handle the options
-        else:
-            output_s += ' --{}={}'.format(key, cli_dict[key])
+        output_s += ' --{}={}'.format(key, cli_dict[key])
 
     return output_s.lstrip()
 
@@ -128,11 +134,8 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
     # Write the CLI options
     _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
 
-    execute_slurm_script(
-        'bumps',
-        cli_opts.split(),
-        job_file,
-        job_path)  # DEBUG
+    execute_slurm_script('bumps', cli_opts.split(),
+                        job_file, job_path)
 
     return
 
@@ -140,7 +143,7 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
 def search_results(path):
     from glob import glob
     possible_ext = ('dat', 'err', 'mon', 'par',
-                    'png', 'log', 'mcmc')
+                    'png', 'log', 'mc')
 
     return [os.path.basename(_file) for _file in
             glob(os.path.join(path, 'results', '*')) if
@@ -165,12 +168,11 @@ def update_job_info(user):
         try:
             with open(os.path.join(job['directory'], 'results',
                                    '{}-steps.json'.format(job['filebase'])), 'r') as j:
-                # if job['status'] == 'PENDING':
                 job['status'] = 'RUNNING'
-                job['value'] = json.loads(j.readlines()[-1])['value']
 
-        except BaseException:
+        except IOError:
             pass
+
 
         try:
             with open(os.path.join(job['directory'], 'results',

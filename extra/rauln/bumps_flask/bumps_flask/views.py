@@ -1,5 +1,6 @@
-import json
 import os
+import json
+import datetime
 
 from flask import (
     url_for, render_template, redirect,
@@ -18,7 +19,7 @@ from .api import (
     process_request_form, add_job, create_auth_token)
 
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
-from .file_handler import setup_files, update_job_info, search_results
+from .file_handler import setup_files, update_job_info, search_results, zip_files
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -72,7 +73,8 @@ def dashboard():
     '''
     View for the user's dashboard. They can see their
     running/completed/pending jobs and submit new jobs if
-    possible based on their assigned resources.
+    possible based on their assigned resources. Users can
+    retrieve the results of their finished jobs.
     '''
 
     # Retrieve the UID
@@ -82,13 +84,12 @@ def dashboard():
 
     # Get the database info for the current user
     user_jobs = rdb.hvals(user_token)
-    files = []
-    if user_jobs:
-        files = {job['_id']: search_results(
-                            job['directory'])
-                            for job in user_jobs}
-        for f in files['1']:
-            print f
+
+    files = {}
+    for job in user_jobs:
+        if job['status'] == 'COMPLETED':
+            files[job['_id']] = search_results(job['directory'])
+            zip_files(job['directory'], files[job['_id']])
 
     return render_template('dashboard.html', id=user_token, jobs=user_jobs, files=files)
 
@@ -103,9 +104,8 @@ def tokenizer():
     and saved as a cookie or in a header by the client
     '''
 
+    # TODO: Check available resources here
     # Create a UID
-    # resources = check_available_resources()
-    # user_token = create_user_token(resources)
     user_token = create_user_token()
 
     # Associate an auth JWT and a refresh JWT to the UID
@@ -156,7 +156,7 @@ def fit_job(results=False):
                             'fit_problems', get_jwt_identity(), 'job' + job_id)
 
         # TODO: Get queue here
-        # queue = 'rq'  # DEBUG
+        # queue = 'rq'
 
         # TODO: Add extra keys from form_data
         bumps_payload = {
@@ -165,6 +165,7 @@ def fit_job(results=False):
             'origin': flask_request.remote_addr,
             'directory': _dir,
             'status': 'PENDING',
+            'submitted': datetime.datetime.now().strftime('%c')
         }
 
         # Use the parsed data to set up the job related files
@@ -197,7 +198,7 @@ def refresh():
 @app.route('/api/web/logout')
 @jwt_required
 def logout():
-
+    # Get the JWT identifier and set logged_out to 'true' in DB
     jti = get_raw_jwt()['jti']
     rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
 

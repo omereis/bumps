@@ -114,7 +114,7 @@ def process_request_form(request):
                     response['slurm']['n_gpus'] = request[form][key]
 
                 elif 'jobname' == key and request[form][key]:
-                    response['slurm']['job-name'] = request[form][key]
+                    response['slurm']['job-name'] = request[form][key].replace(' ', '_')
 
                 elif 'n_cores' == key:
                     response['slurm']['--ntasks'] = request[form][key]
@@ -126,7 +126,7 @@ def process_request_form(request):
                     response['slurm']['mem_unit'] = request[form][key]
 
                 elif 'walltime' == key:
-                    response['slurm']['--time'] = str(request[form][key].time)
+                    response['slurm']['--time'] = request[form][key].strftime("%H:%M:%S")
 
                 else:
                     response['missing_keys'].append(key)
@@ -174,30 +174,51 @@ class Jobs(Resource):
         return make_response(format_response(
                 rdb.hget(user_id, job_id), _format))
 
-    # TODO: Implement POSTing jobs
-    def post(self):
-        request = flask_request.get_json()
 
-        _file = request['file']
+    def post(self):
+
+        # Get the uploaded file
+        _file = flask_request.files.get('file')
+
+        # Get the POSTed data
+        request = flask_request.form
+
+        # Get the bumps CLI dict and the slurm command dict
+        bumps_cmds = json.loads(request.get('bumps_commands'))
+        slurm_cmds = json.loads(request.get('slurm_commands'))
+
+        # Format the cmds for compatability moving forward
+        cmds = dict(cli=bumps_cmds, slurm=slurm_cmds)
+
+        # Get the specified queue
+        queue = request.get('queue')
+
+        # Assuming the UIDs are unique enough, a job_id
+        # can be an incremental integer associated with a UID.
+        job_id = str(rdb.hlen(request['user']) + 1)
 
         # Build job directory
         _dir = os.path.join(app.config.get('UPLOAD_FOLDER'),
                             'fit_problems', request['user'], 'job' + job_id)
 
+        # Build job metadata
         job_data = {
             'user': request['user'],
-            '_id': str(rdb.hlen(request['user']) + 1),
-            'directory': _dir,
+            '_id': job_id,
             'origin': flask_request.remote_addr,
-            'status': 'PENDING'
+            'directory': _dir,
+            'status': 'PENDING',
+            'submitted': datetime.datetime.now().strftime('%c')
         }
 
-        queue = job_data['queue']
+        # Setup the job files
+        setup_files(job_data, cmds, _file, queue)
 
-        setup_files(job_data, queue,
-                    )
+        # Add job to redis
+        add_job(job_data)
 
-        add_job(bumps_payload)
+        return jsonify(Submitted=True)
+
 
     def delete(self, job_id):
         pass
@@ -217,7 +238,6 @@ class Users(Resource):
 
                 # Download a generated result file
                 if _file:
-                    print('Sending ' + _file + ' from ' + _dir)
                     return send_from_directory(_dir, _file, as_attachment=True)
 
                 # View an html results graph
@@ -240,19 +260,6 @@ class Users(Resource):
                 return '''{}'''.format(rdb.get_users())
 
             return jsonify(rdb.get_users())
-
-    # TODO: Implement POSTing (creating) users
-    def post(self):
-        # # Add jobs to users
-        # json_data = flask_request.get_json()
-        # try:
-        #     user = User(user_token=json_data['user_token'])
-        # except KeyError:
-        #     return make_response(json.dumps(
-        #         {'error': 'not a proper job definition'}), 400)
-        #
-        # add_job(json_data)
-        pass
 
 
 # TODO: Change from string format to UUID format

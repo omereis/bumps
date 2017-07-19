@@ -35,10 +35,10 @@
         <form method="POST" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
             {% for field in form if field.widget.input_type != 'hidden' %}
-                {{ with_errors(field, style='font-weight: bold') }}
+                {{ with_errors(field, style='font-weight: bold; margin-top:1em;') }}
             {% endfor %}
         <br><br>
-        <input type="submit" value="Submit Job" />
+        <input style="margin-bottom:1em;" type="submit" value="Submit Job" />
         </form>
 
     {% endif %}

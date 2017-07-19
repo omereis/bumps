@@ -83,20 +83,25 @@ class Connection(object):
         r = get(self.endpoint + resource, cookies=self.jar)
         return r.json()
 
-    def post_job(self, job_file, queue='slurm'):
+
+    # def format_slurm_commands(ntasks=, ):
+
+    def post_job(self, job_file, bumps_cmds, slurm_cmds, queue='slurm'):
         '''
         Posts a job file in the current working
         directory to the server and return the
         server's response
         '''
 
-        r = post(self.endpoint + 'jobs', json={
-            'file': open(job_file, 'rb'),
-            'user': self.uid,
-            'queue': queue},
-            cookies=self.jar)
-
-        return r.json()
+        r = post(self.endpoint + 'jobs',
+                    files={'file': open(job_file, 'rb')},
+                    data={
+                        'bumps_commands': dumps(bumps_cmds),
+                        'slurm_commands': dumps(slurm_cmds),
+                        'user': self.uid,
+                        'queue': queue},
+                    cookies=self.jar)
+        print(r.text)
 
     def current_user(self):
         return self.uid
@@ -111,17 +116,17 @@ class Connection(object):
         r = get(self.endpoint + 'jobs')
         return r.json()
 
-    def get_job_info(self, jobid):
+    def get_job_info(self, job_id):
         pass
 
-    def get_job_status(self, jobid):
+    def get_job_status(self, job_id):
         pass
 
-    def get_job_results(self, jobid):
+    def get_job_results(self, job_id):
         pass
 
-    def stop_job(self, jobid):
+    def stop_job(self, job_id):
         pass
 
-    def delete_job(self, jobid):
+    def delete_job(self, job_id):
         pass
