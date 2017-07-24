@@ -30,6 +30,7 @@ def create_user_token():
     return str(uuid.uuid4())[:6]
 
 
+
 @jwt_required
 def disconnect():
     '''
@@ -164,13 +165,17 @@ class Jobs(Resource):
         Stop their work
     '''
 
+    @jwt_required
     def get(self, user_id=None, job_id=None, action=None, _format='json'):
         # request = flask_request.get_json()
         # if user_id != get_jwt_identity():
         #     abort(404)
+
+        # No user_id given, so return every user's jobs
         if not user_id:
             return make_response(format_response(rdb.get_jobs(), _format))
 
+        # No job_id given, so return the user's jobs
         if not job_id:
             return make_response(
                 format_response(
@@ -179,19 +184,24 @@ class Jobs(Resource):
                         user_id),
                     _format))
 
+        # No particular action given, so return the specific user job data
         if not action:
             return make_response(format_response(
                 rdb.hget(user_id, job_id), _format))
 
+        # A delete was requested, delete the job record and files
         elif action == 'delete':
-            print('Deleting')
+            # Check if the user actually has a DB entry
             if not rdb.hexists(user_id, job_id):
                 abort(404)
 
-            print('Cleaning')
+            # Remove the corresponding job entry
             rdb.hdel(user_id, job_id)
+
+            # Delete up the job folder and files
             clean_job_files(user_id, job_id)
-            print('Deleted job {} from user {}'.format(job_id, user_id))
+
+            # Return result in specified format
             if _format=='json':
                 return jsonify(Deleted=True)
 

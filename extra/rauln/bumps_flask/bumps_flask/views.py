@@ -85,8 +85,6 @@ def dashboard():
     # Get the database info for the current user
     user_jobs = rdb.hvals(user_token)
 
-    print('User job length: ', len(user_jobs))
-
     files = {}
     for job in user_jobs:
         if job['status'] == 'COMPLETED':

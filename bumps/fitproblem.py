@@ -485,8 +485,8 @@ class BaseFitProblem(object):
         if figfile is not None:
             pylab.savefig(figfile + "-model.png", format='png')
             with open(figfile + "-model.html", 'w') as fid:
-                fid.write('<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
-                fid.write('<script type="text/javascript" src="../../../../bumps_flask/static/js/svg_mathjax.js"></script>\n')
+                fid.write('<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+                fid.write('<script type="text/javascript" src="https://bitbucket.org/jason_s/svg_mathjax/raw/a538dd453eea2ddd6e50096643038ad6229a6547/src/svg_mathjax.js"></script>\n')
                 fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
                 fid.write(mpld3.fig_to_html(pylab.gcf()))
 
@@ -635,8 +635,8 @@ class MultiFitProblem(BaseFitProblem):
             if figfile is not None:
                 pylab.savefig(figfile + "-model%d.png" % i, format='png')
                 with open(figfile + "-model%d.html" % i, 'w') as fid:
-                    fid.write('<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
-                    fid.write('<script type="text/javascript" src="../../../../bumps_flask/static/js/svg_mathjax.js"></script>\n')
+                    fid.write('<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+                    fid.write('<script type="text/javascript" src="https://bitbucket.org/jason_s/svg_mathjax/raw/a538dd453eea2ddd6e50096643038ad6229a6547/src/svg_mathjax.js"></script>\n')
                     fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
                     fid.write(mpld3.fig_to_html(pylab.gcf()))
 
