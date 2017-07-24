@@ -1,6 +1,13 @@
 <!doctype html>
 <html>
     <head>
+        <style>
+            /*.graphs {margin: 5em;}*/
+            table#graphs {border-collapse: separate; border-spacing: 35px 35px;}
+            input.thumbnail {width: 26em; height: 26em;}
+            input[name="graph_btn"] {display: block; width: 100%; margin: 0; text-align: center;}
+        </style>
+
         <title> bumps distribution server </title>
         <div class="container">
             {% with messages = get_flashed_messages() %}
@@ -18,7 +25,7 @@
 
         <div class="container">
             {% block content %} {% endblock %}
-            <p> For help, please contact <a href="mailto:raul.negron3@upr.edu">support</a>.</p>
+            <p> For help, please contact <a href="mailto:ren5@nist.gov">support</a>.</p>
         </div>
     </body>
 

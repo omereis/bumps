@@ -105,7 +105,7 @@ class StepForm(FlaskForm):
     '''Corresponds to the bumps CLI command --steps'''
     steps = IntegerField(
         label='steps: ',
-        validators=[Optional()])
+        validators=[Optional()], default=100)
 
 
 class SampleForm(FlaskForm):
@@ -159,7 +159,7 @@ class BurnForm(FlaskForm):
     '''Corresponds to the bumps CLI command --burn'''
     burn = IntegerField(
         label='burn: ',
-        validators=[Optional()])
+        validators=[Optional()], default=100)
 
 
 class ThinForm(FlaskForm):
@@ -258,17 +258,17 @@ class SlurmForm(FlaskForm):
     limit_node = BooleanField(label='Limit this job to one node?')
     n_cores = IntegerField(
         label='Number of processor cores across all nodes:',
-        validators=[DataRequired()], default=1)
+        validators=[DataRequired()], default=2)
     n_gpus = IntegerField(
         label='Number of GPUs: ',
-        validators=[Optional()])
+        validators=[Optional()], default=0)
     mem_per_core = IntegerField(
         label='Memory per processor core: ',
-        validators=[DataRequired()], default=1)
+        validators=[DataRequired()], default=512)
 
     mem_unit = SelectField(
         label='Memory Unit', choices=[
-            ('G', 'GB'), ('M', 'MB')], default='G')
+            ('G', 'GB'), ('M', 'MB')], default='M')
 
     # Walltime needs a regex validator or similar
     walltime = DateTimeField(

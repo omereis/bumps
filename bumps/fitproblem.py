@@ -483,9 +483,12 @@ class BaseFitProblem(object):
                    transform=pylab.gca().transAxes)
 
         if figfile is not None:
-            with open(figfile + "-model.html", 'w') as fid:
-                fid.write(mpld3.fig_to_html(pylab.gcf()))
             pylab.savefig(figfile + "-model.png", format='png')
+            with open(figfile + "-model.html", 'w') as fid:
+                fid.write('<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+                fid.write('<script type="text/javascript" src="../../../../bumps_flask/static/js/svg_mathjax.js"></script>\n')
+                fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+                fid.write(mpld3.fig_to_html(pylab.gcf()))
 
 
 
@@ -622,6 +625,7 @@ class MultiFitProblem(BaseFitProblem):
         print("[overall chisq=%s, nllf=%g]" % (self.chisq_str(), self.nllf()))
 
     def plot(self, p=None, fignum=1, figfile=None, view=None):
+        import mpld3
         import pylab
         if p is not None:
             self.setp(p)
@@ -630,6 +634,11 @@ class MultiFitProblem(BaseFitProblem):
             pylab.suptitle('Model %d - %s' % (i, f.name))
             if figfile is not None:
                 pylab.savefig(figfile + "-model%d.png" % i, format='png')
+                with open(figfile + "-model%d.html" % i, 'w') as fid:
+                    fid.write('<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+                    fid.write('<script type="text/javascript" src="../../../../bumps_flask/static/js/svg_mathjax.js"></script>\n')
+                    fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+                    fid.write(mpld3.fig_to_html(pylab.gcf()))
 
     # Note: restore default behaviour of getstate/setstate rather than
     # inheriting from BaseFitProblem

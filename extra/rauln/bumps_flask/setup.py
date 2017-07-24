@@ -10,7 +10,6 @@ setup(
         'Flask-JWT-Extended',
         'flask-redis',
         'flask-restful',
-        'Flask-RQ2',
         'Flask-WTF',
         'requests'
     ],

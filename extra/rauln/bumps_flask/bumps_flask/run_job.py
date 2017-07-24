@@ -1,4 +1,4 @@
-from . import app, rdb, rqueue
+from . import app, rdb
 import multiprocessing
 import os
 import sys
@@ -33,7 +33,6 @@ def tear_down_job(job_id):
     pass
 
 
-@rqueue.job
 def execute_python_script(job_file, args, job_path):
     """
     TEST

@@ -5,7 +5,7 @@ Introduction
 ------------
 
 A remote processing service for *bumps* using a batch queue on a *Flask* server with a *Redis* database.
-Queue service TBD (looking at Celery, slurm, torque, RQ).
+Queueing and scheduling is currently provided by *slurm*.
 
 
 Installation
@@ -55,17 +55,16 @@ To-Do
     GET TO WORK!
 
 - Todo
-    - [ ] Generalize the service to allow for other bumps commands
+    - [W] Generalize the service to allow for other bumps commands
+    - [ ] Generalize the service to allow for generic queues (priority: support for slurm)
+        - [W] Dockerize a slurm cluster for linking with bumps_flask
     - [W] Implement client interface for connecting to remote work server
         - [W] Implement the remaining REST interface
     - [X] Implement generic Slurm script generator from web service form values
-        - [ ] Associate FitProblems to users
-        - [W] Allow for downloading of result files
+        - [X] Allow for downloading of result files
         - [X] Generate unique job ids for organization and DB usage
-    - [W] Implement calling bumps for running and saving of fits
+    - [X] Implement calling bumps for running and saving of fits
         - [X] Implement MPLD3 html results page for generated graphs
-    - [W] Generalize the service to allow for generic queues (priority: support for slurm)
-        - [W] Dockerize a slurm cluster for linking with bumps_flask
     - [ ] Implement secure redirect back to caller (http://flask.pocoo.org/snippets/63/)
     - [ ] Implement unit testing
     - [X] Fix serializing lists in redis

@@ -18,7 +18,8 @@ from .formatnum import format_value
 from .stats import var_stats, format_vars
 
 def plot_all(state, portion=1.0, figfile=None):
-    from pylab import figure, savefig, suptitle, rcParams
+    from pylab import figure, savefig, suptitle, rcParams, gcf
+    import mpld3
     figext = '.'+rcParams.get('savefig.format', 'png')
 
     draw = state.draw(portion=portion)
@@ -29,12 +30,22 @@ def plot_all(state, portion=1.0, figfile=None):
         suptitle(state.title)
     print(format_vars(all_vstats))
     if figfile is not None:
+        with open(figfile + "-vars.html", 'w') as fid:
+            fid.write('<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+            fid.write('<script type="text/javascript" src="../../../../bumps_flask/static/js/svg_mathjax.js"></script>\n')
+            fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+            fid.write(mpld3.fig_to_html(gcf()))
         savefig(figfile+"-vars"+figext)
     figure()
     plot_trace(state, portion=portion)
     if state.title:
         suptitle(state.title)
     if figfile is not None:
+        with open(figfile + "-trace.html", 'w') as fid:
+            fid.write('<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+            fid.write('<script type="text/javascript" src="../../../../bumps_flask/static/js/svg_mathjax.js"></script>\n')
+            fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+            fid.write(mpld3.fig_to_html(gcf()))
         savefig(figfile+"-trace"+figext)
     # Suppress R stat for now
     #figure()
@@ -48,6 +59,11 @@ def plot_all(state, portion=1.0, figfile=None):
     if state.title:
         suptitle(state.title)
     if figfile is not None:
+        with open(figfile + "-logp.html", 'w') as fid:
+            fid.write('<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+            fid.write('<script type="text/javascript" src="../../../../bumps_flask/static/js/svg_mathjax.js"></script>\n')
+            fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+            fid.write(mpld3.fig_to_html(gcf()))
         savefig(figfile+"-logp"+figext)
     if draw.num_vars <= 25:
         figure()
@@ -55,6 +71,11 @@ def plot_all(state, portion=1.0, figfile=None):
         if state.title:
             suptitle(state.title)
         if figfile is not None:
+            with open(figfile + "-corr.html", 'w') as fid:
+                fid.write('<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+                fid.write('<script type="text/javascript" src="../../../../bumps_flask/static/js/svg_mathjax.js"></script>\n')
+                fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+                fid.write(mpld3.fig_to_html(gcf()))
             savefig(figfile+"-corr"+figext)
 
 

@@ -3,7 +3,6 @@ from flask import Flask
 from flask_redis import FlaskRedis
 from flask_jwt_extended import JWTManager
 from flask_restful  import Api
-from flask_rq2 import RQ
 from .database import Database
 
 # Set app
@@ -24,10 +23,6 @@ redis = FlaskRedis(app)
 
 # Set Redis db
 rdb = Database(redis)
-
-# Set queue
-rqueue = RQ(app)  # DEBUG
-
 
 try:
     rdb.ping()

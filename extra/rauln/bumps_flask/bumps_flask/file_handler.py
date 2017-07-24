@@ -1,13 +1,12 @@
 import os
-import sys
 import json
-import random
+import shutil
 import zipfile
 import tempfile
+import datetime
 from werkzeug.utils import secure_filename
 
-from . import app, rdb, jwt
-from .database import BumpsJob
+from . import app, rdb
 from .run_job import execute_python_script, execute_slurm_script
 
 
@@ -61,6 +60,11 @@ def zip_files(_dir, file_list):
         with zipfile.ZipFile(os.path.join(work_dir, 'job_results.zip'), mode='w') as zip_file:
             for _file in work_list:
                 zip_file.write(os.path.join(work_dir, _file), arcname=_file)
+
+
+def clean_job_files(user, job_id):
+    _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', user, 'job{}'.format(job_id))
+    shutil.rmtree(_dir)
 
 
 def slurm_commands(slurm_dict):
@@ -173,11 +177,11 @@ def update_job_info(user):
         except IOError:
             pass
 
-
         try:
             with open(os.path.join(job['directory'], 'results',
                                    '{}-model.html'.format(job['filebase'])), 'r') as f:
                 job['status'] = 'COMPLETED'
+                job['completed'] = datetime.datetime.now().strftime('%c')
         except BaseException:
             pass
 
