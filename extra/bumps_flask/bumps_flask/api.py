@@ -46,6 +46,7 @@ def disconnect():
 
     return resp
 
+
 def create_auth_token(user_token):
     '''
     Creates a JWT token given a UID
@@ -142,6 +143,7 @@ def process_request_form(request):
 
     return response
 
+
 ##### RESTful Interface
 def format_response(request, _format):
     if _format == 'html':
@@ -167,9 +169,11 @@ class Jobs(Resource):
 
     @jwt_required
     def get(self, user_id=None, job_id=None, action=None, _format='json'):
-        # request = flask_request.get_json()
-        # if user_id != get_jwt_identity():
-        #     abort(404)
+        request = flask_request.get_json()
+        print(requests)
+        print(get_jwt_identity())
+        if user_id != get_jwt_identity():
+            abort(404)
 
         # No user_id given, so return every user's jobs
         if not user_id:
@@ -256,7 +260,11 @@ class Jobs(Resource):
 
 
 class Users(Resource):
+    @jwt_required
     def get(self, user_id=None, job_id=None, _file=None, interactive=None, _format='.json'):
+        if user_id != get_jwt_identity():
+            abort(404)
+
         # Work with a specific user's info
         if user_id:
             # Get current user's specific job

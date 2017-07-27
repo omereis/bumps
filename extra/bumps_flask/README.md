@@ -1,11 +1,16 @@
 bumps_flask
 ===========
 
+
+![](http://i.imgur.com/80bX1Tu.gif)
+
+
 Introduction
 ------------
 
-A remote processing service for *bumps* using a batch queue on a *Flask* server with a *Redis* database.
-Queueing and scheduling is currently provided by *slurm*.
+A remote processing service for *bumps* using a batch queue on a *Flask* server with a *Redis* database. Includes a simple web page interface.
+
+Queueing and scheduling handled by *slurm*.
 
 
 Installation
@@ -39,6 +44,7 @@ This is a development configuration and has a lot of security flaws.
 For example, *Redis* is installed but not properly secured. It uses legacy *Docker*
 commands such as *--link*. Since we are testing file uploads,
 the Unix user which runs the server has root privileges. It also starts *Flask* with debug mode on.
+
 Do **not** install this for production servers.
 
 
@@ -48,7 +54,7 @@ To-Do
 [W]
     Working on it
 
-[X]
+[x]
     DONE! (maybe)
 
 [ ]
@@ -60,16 +66,16 @@ To-Do
         - [W] Dockerize a slurm cluster for linking with bumps_flask
     - [W] Implement client interface for connecting to remote work server
         - [W] Implement the remaining REST interface
-    - [X] Implement generic Slurm script generator from web service form values
-        - [X] Allow for downloading of result files
-        - [X] Generate unique job ids for organization and DB usage
-    - [X] Implement calling bumps for running and saving of fits
-        - [X] Implement MPLD3 html results page for generated graphs
+    - [x] Implement generic Slurm script generator from web service form values
+        - [x] Allow for downloading of result files
+        - [x] Generate unique job ids for organization and DB usage
+    - [x] Implement calling bumps for running and saving of fits
+        - [x] Implement MPLD3 html results page for generated graphs
     - [ ] Implement secure redirect back to caller (http://flask.pocoo.org/snippets/63/)
     - [ ] Implement unit testing
-    - [X] Fix serializing lists in redis
-    - [X] Implement logout
-    - [X] Implement JWT token refresh for users to log back in with their UID
-        - [X] Fix landing page auth issue (expired token)
-    - [X] Implement redis database
-    - [X] Implement file handling
+    - [x] Fix serializing lists in redis
+    - [x] Implement logout
+    - [x] Implement JWT token refresh for users to log back in with their UID
+        - [x] Fix landing page auth issue (expired token)
+    - [x] Implement redis database
+    - [x] Implement file handling

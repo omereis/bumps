@@ -27,6 +27,7 @@ class Connection(object):
         else:
             print('Error connecting, server returned: ', r)
 
+
     def login(self):
         '''
         Connects to the web service, the UID and
@@ -106,27 +107,35 @@ class Connection(object):
     def current_user(self):
         return self.uid
 
+
     def get_user(self):
         pass
 
+
     def post_user(self):
         pass
+
 
     def list_jobs(self):
         r = get(self.endpoint + 'jobs')
         return r.json()
 
+
     def get_job_info(self, job_id):
         pass
+
 
     def get_job_status(self, job_id):
         pass
 
+
     def get_job_results(self, job_id):
         pass
 
+
     def stop_job(self, job_id):
         pass
+
 
     def delete_job(self, job_id):
         pass
