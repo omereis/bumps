@@ -27,7 +27,6 @@ class Connection(object):
         else:
             print('Error connecting, server returned: ', r)
 
-
     def login(self):
         '''
         Connects to the web service, the UID and
@@ -38,16 +37,21 @@ class Connection(object):
         r = post(self.endpoint + 'register')
         try:
             self.uid = r.json()['uid']
+
             self.jar.set(
                 'access_token_cookie',
                 r.cookies['access_token_cookie'],
+                domain=HOST)
+
+            self.jar.set(
+                'refresh_token_cookie',
+                r.cookies['refresh_token_cookie'],
                 domain=HOST)
 
         except Exception as e:
             return e
 
         return True
-
 
     def logout(self):
         '''
@@ -60,6 +64,8 @@ class Connection(object):
         r = get(self.endpoint + 'logout', params={'redirect': 0})
         return r.json()
 
+    def current_cookies(self):
+        return self.jar
 
     def get_job(self, job_id=None, _format=None):
         '''
@@ -84,7 +90,6 @@ class Connection(object):
         r = get(self.endpoint + resource, cookies=self.jar)
         return r.json()
 
-
     # def format_slurm_commands(ntasks=, ):
 
     def post_job(self, job_file, bumps_cmds, slurm_cmds, queue='slurm'):
@@ -95,47 +100,39 @@ class Connection(object):
         '''
 
         r = post(self.endpoint + 'jobs',
-                    files={'file': open(job_file, 'rb')},
-                    data={
-                        'bumps_commands': dumps(bumps_cmds),
-                        'slurm_commands': dumps(slurm_cmds),
-                        'user': self.uid,
-                        'queue': queue},
-                    cookies=self.jar)
+                 files={'file': open(job_file, 'rb')},
+                 data={
+                     'bumps_commands': dumps(bumps_cmds),
+                     'slurm_commands': dumps(slurm_cmds),
+                     'user': self.uid,
+                     'queue': queue},
+                 cookies=self.jar)
         print(r.text)
 
     def current_user(self):
         return self.uid
 
-
     def get_user(self):
         pass
-
 
     def post_user(self):
         pass
 
-
     def list_jobs(self):
-        r = get(self.endpoint + 'jobs')
+        r = get(self.endpoint + 'jobs', cookies=self.jar)
         return r.json()
-
 
     def get_job_info(self, job_id):
         pass
 
-
     def get_job_status(self, job_id):
         pass
-
 
     def get_job_results(self, job_id):
         pass
 
-
     def stop_job(self, job_id):
         pass
-
 
     def delete_job(self, job_id):
         pass

@@ -21,14 +21,15 @@ from .file_handler import setup_files, clean_job_files
 #     pass
 
 # def create_user_token(resources):
+
+
 def create_user_token():
     '''
     Generates a user id for identification.
     Works basically like a username
     '''
 
-    return str(uuid.uuid4())[:6]
-
+    return str(uuid.uuid4())
 
 
 @jwt_required
@@ -64,10 +65,9 @@ def create_auth_token(user_token):
 
 def register_token(user_token):
     '''
-    Generates a resource token for accessing bumps functionality
-    based on available resources, priority (...)
+    Generates a resource token for accessing bumps functionality.
 
-    todo: check resources before providing token
+    todo: should be based on available resources, priority (...)
     '''
 
     # Create both the auth and refresh tokens
@@ -88,7 +88,6 @@ def add_job(bumps_job):
     rdb.hset(bumps_job['user'], bumps_job['_id'], bumps_job)
 
 
-# TODO: Clean up
 def process_request_form(request):
     '''
     Parser function for posted web forms coming
@@ -124,7 +123,8 @@ def process_request_form(request):
                     response['slurm']['n_gpus'] = request[form][key]
 
                 elif 'jobname' == key and request[form][key]:
-                    response['slurm']['job-name'] = request[form][key].replace(' ', '_')
+                    response['slurm']['job-name'] = request[form][key].replace(
+                        ' ', '_')
 
                 elif 'n_cores' == key:
                     response['slurm']['--ntasks'] = request[form][key]
@@ -136,7 +136,8 @@ def process_request_form(request):
                     response['slurm']['mem_unit'] = request[form][key]
 
                 elif 'walltime' == key:
-                    response['slurm']['--time'] = request[form][key].strftime("%H:%M:%S")
+                    response['slurm']['--time'] = request[form][key].strftime(
+                        "%H:%M:%S")
 
                 else:
                     response['missing_keys'].append(key)
@@ -144,7 +145,7 @@ def process_request_form(request):
     return response
 
 
-##### RESTful Interface
+# RESTful Interface
 def format_response(request, _format):
     if _format == 'html':
         return render_template('results.html', data=request)
@@ -158,7 +159,6 @@ def format_response(request, _format):
 
 class Jobs(Resource):
     '''
-    Post a job, get a job!
     Things jobs should be able to do:
         Be submitted
         Be deleted
@@ -170,7 +170,7 @@ class Jobs(Resource):
     @jwt_required
     def get(self, user_id=None, job_id=None, action=None, _format='json'):
         request = flask_request.get_json()
-        print(requests)
+        print(request)
         print(get_jwt_identity())
         if user_id != get_jwt_identity():
             abort(404)
@@ -183,10 +183,7 @@ class Jobs(Resource):
         if not job_id:
             return make_response(
                 format_response(
-                    rdb.hget(
-                        'users',
-                        user_id),
-                    _format))
+                    rdb.hget('users', user_id), _format))
 
         # No particular action given, so return the specific user job data
         if not action:
@@ -206,13 +203,12 @@ class Jobs(Resource):
             clean_job_files(user_id, job_id)
 
             # Return result in specified format
-            if _format=='json':
+            if _format == 'json':
                 return jsonify(Deleted=True)
 
             else:
                 flash('Job successfully deleted.')
                 return redirect(url_for('dashboard'))
-
 
     def post(self):
 
@@ -261,7 +257,8 @@ class Jobs(Resource):
 
 class Users(Resource):
     @jwt_required
-    def get(self, user_id=None, job_id=None, _file=None, interactive=None, _format='.json'):
+    def get(self, user_id=None, job_id=None, _file=None,
+            interactive=None, _format='.json'):
         if user_id != get_jwt_identity():
             abort(404)
 
@@ -282,7 +279,8 @@ class Users(Resource):
 
                     else:
                         # Download a generated result file
-                        return send_from_directory(_dir, _file, as_attachment=True)
+                        return send_from_directory(
+                            _dir, _file, as_attachment=True)
 
             # Get current user's info
             else:
@@ -299,21 +297,20 @@ class Users(Resource):
             return jsonify(rdb.get_users())
 
 
-# TODO: Change from string format to UUID format
-api.add_resource(Jobs,
-                 '/api/jobs',
-                 '/api/jobs/<string:user_id><string:_format>',
-                 '/api/jobs/<string:user_id>/job<int:job_id><string:_format>',
-                 '/api/jobs/<string:user_id>/job<int:job_id>/<string:action>.<string:_format>',
-                 '/api/jobs<string:_format>')
+api.add_resource(
+    Jobs,
+    '/api/jobs',
+    '/api/jobs/<string:user_id><string:_format>',
+    '/api/jobs/<string:user_id>/job<int:job_id><string:_format>',
+    '/api/jobs/<string:user_id>/job<int:job_id>/<string:action>.<string:_format>',
+    '/api/jobs<string:_format>')
 
 
-# TODO: Change from string format to UUID format
-api.add_resource(Users,
-                 '/api/users',
-                 '/api/users<string:_format>',
-                 '/api/users/<string:user_id><string:_format>',
-                 '/api/users/<string:user_id>/job<int:job_id><string:_format>',
-                 '/api/users/<string:user_id>/job<int:job_id>/<string:_file>',
-                 '/api/users/<string:user_id>/job<int:job_id>/<string:_file>/<string:interactive>'
-                 )
+api.add_resource(
+    Users,
+    '/api/users',
+    '/api/users<string:_format>',
+    '/api/users/<string:user_id><string:_format>',
+    '/api/users/<string:user_id>/job<int:job_id><string:_format>',
+    '/api/users/<string:user_id>/job<int:job_id>/<string:_file>',
+    '/api/users/<string:user_id>/job<int:job_id>/<string:_file>/<string:interactive>')

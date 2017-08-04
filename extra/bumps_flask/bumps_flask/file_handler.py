@@ -63,7 +63,9 @@ def zip_files(_dir, file_list):
 
 
 def clean_job_files(user, job_id):
-    _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', user, 'job{}'.format(job_id))
+    _dir = os.path.join(
+        app.config.get('UPLOAD_FOLDER'), 'fit_problems',
+                        user, 'job{}'.format(job_id))
     shutil.rmtree(_dir)
 
 
@@ -139,7 +141,7 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
     _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
 
     execute_slurm_script('bumps', cli_opts.split(),
-                        job_file, job_path)
+                         job_file, job_path)
 
     return
 

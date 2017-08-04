@@ -1,8 +1,7 @@
-import sys
 from flask import Flask
 from flask_redis import FlaskRedis
 from flask_jwt_extended import JWTManager
-from flask_restful  import Api
+from flask_restful import Api
 from .database import Database
 
 # Set app
@@ -23,12 +22,6 @@ redis = FlaskRedis(app)
 
 # Set Redis db
 rdb = Database(redis)
-
-try:
-    rdb.ping()
-except:
-    print("WARNING: Redis isn't running. try `/etc/init.d/redis-server restart`")
-    sys.exit(1)
 
 # Import the Flask views after instancing the app
 import bumps_flask.views

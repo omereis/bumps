@@ -18,7 +18,7 @@ Installation
 
 **Docker Install**
 
-Install an official *Redis* image first::
+Install an official *Redis* image first:
 
     $ docker pull redis:latest
 
@@ -31,7 +31,7 @@ from the directory containing the *Dockerfile* for *bumps_flask* on your server.
 Running the server
 -----------------
 
-Now that there is a *Docker* image for the server installed, it can be daemonized and linked to *Redis* as follows::
+Now that there is a *Docker* image for the server installed, it can be daemonized and linked to *Redis* as follows:
 
     $ docker run --name bumps_redis -d redis
     $ docker run --link bumps_redis -p 5000:5000 bumps_flask
@@ -50,22 +50,9 @@ Do **not** install this for production servers.
 
 To-Do
 -----
-
-[W]
-    Working on it
-
-[x]
-    DONE! (maybe)
-
-[ ]
-    GET TO WORK!
-
-- Todo
-    - [W] Generalize the service to allow for other bumps commands
+- Todo List
+    - [ ] Generalize the service to allow for other bumps commands
     - [ ] Generalize the service to allow for generic queues (priority: support for slurm)
-        - [W] Dockerize a slurm cluster for linking with bumps_flask
-    - [W] Implement client interface for connecting to remote work server
-        - [W] Implement the remaining REST interface
     - [x] Implement generic Slurm script generator from web service form values
         - [x] Allow for downloading of result files
         - [x] Generate unique job ids for organization and DB usage

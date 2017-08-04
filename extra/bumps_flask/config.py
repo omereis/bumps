@@ -4,7 +4,7 @@ from tempfile import gettempdir
 
 # TODO: Fix cookies so they work when options are True
 
-SECRET_KEY = os.urandom(24) # Set a secret key here
+SECRET_KEY = os.urandom(24)  # Set a secret key here
 MAX_CONTENT_LENGHT = 8 * 1024 * 1024  # 8MB
 UPLOAD_FOLDER = os.path.join(gettempdir(), 'bumps_flask')
 REDIS_URL = os.getenv('REDISTOGO_URL', 'redis://bumps_redis:6379')

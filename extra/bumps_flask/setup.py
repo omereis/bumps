@@ -8,9 +8,11 @@ setup(
         'bumps',
         'flask',
         'Flask-JWT-Extended',
-        'flask-redis',
-        'flask-restful',
+        'Flask-Redis',
+        'Flask-RESTful',
         'Flask-WTF',
-        'requests'
+        'mpld3',
+        'requests',
+        'WTForms'
     ],
 )

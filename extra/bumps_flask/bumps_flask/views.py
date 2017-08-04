@@ -91,7 +91,11 @@ def dashboard():
             files[job['_id']] = search_results(job['directory'])
             zip_files(job['directory'], files[job['_id']])
 
-    return render_template('dashboard.html', id=user_token, jobs=user_jobs, files=files)
+    return render_template(
+        'dashboard.html',
+        id=user_token,
+        jobs=user_jobs,
+        files=files)
 
 
 @app.route('/api/register', methods=['GET', 'POST'])
