@@ -29,7 +29,7 @@ def create_user_token():
     Works basically like a username
     '''
 
-    return str(uuid.uuid4())
+    return str(uuid.uuid4())[:6]
 
 
 @jwt_required

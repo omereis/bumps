@@ -1,6 +1,5 @@
 aniso8601==1.2.1
 asn1crypto==0.22.0
-bumps==0.7.6
 certifi==2017.4.17
 cffi==1.10.0
 chardet==3.0.4
