@@ -187,6 +187,12 @@ class Jobs(Resource):
 
     @jwt_required
     def get(self, user_id=None, job_id=None, action=None, _format='json'):
+        try:
+            import datetime
+            f = open('debug_get.txt', 'a')
+            f.write("build_slurm_script: Change time: " + str(datetime.datetime.now()) + "\n")
+        finally:
+            f.close()
         request = flask_request.get_json()
         print(request)
         print(get_jwt_identity())
@@ -239,6 +245,11 @@ class Jobs(Resource):
         # Get the bumps CLI dict and the slurm command dict
         bumps_cmds = json.loads(request.get('bumps_commands'))
         slurm_cmds = json.loads(request.get('slurm_commands'))
+        try:
+            f = open('debug_post.txt', 'a')
+            f.write("Change time: 12:15 PM\n")
+        finally:
+            f.close()
 
         # Format the cmds for compatability moving forward
         cmds = dict(cli=bumps_cmds, slurm=slurm_cmds)

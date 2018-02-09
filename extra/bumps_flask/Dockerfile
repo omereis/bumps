@@ -26,7 +26,7 @@ RUN mkdir templates/ && mkdir static/
 RUN pip install -U pip
 COPY requirements.txt /home/app_user/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
-RUN pip install git+https://github.com/rnegron/bumps.git
+RUN pip install git+https://github.com/omereis/bumps.git
 
 # Include mod_wsgi to run Flask behind Apache in this container
 # RUN pip install mod_wsgi

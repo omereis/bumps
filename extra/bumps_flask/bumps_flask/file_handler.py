@@ -43,7 +43,8 @@ def setup_files(payload, _input, _file, queue='slurm'):
         slurm_file.close()
         try:
             f = open('debug.txt', 'a')
-            f.write("Change time: 4:02 PM\n")
+            f.write("build_slurm_script: Change time: " + str(datetime.datetime.now()) + "\n")
+#            f.write("Change time: 12:24 PM\n")
             f.write("queue: " + str(queue) + "\n")
             f.write("slurm file\n")
             f.write("Folder: " + folder + "\n")
@@ -152,6 +153,13 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
 
     # Write the CLI options
     _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
+
+    try:
+        import datetime
+        f = open('debug.txt', 'a')
+        f.write("build_slurm_script: Change time: " + str(datetime.datetime.now()) + "\n")
+    finally:
+        f.close()
 
     execute_slurm_script('bumps', cli_opts.split(),
                          job_file, job_path)

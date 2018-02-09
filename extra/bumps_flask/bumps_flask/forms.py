@@ -56,7 +56,9 @@ class EmailForm(FlaskForm):
         validators=[
             Email(
                 message='Please enter a valid email address.'),
-            Optional()])
+            Optional()],
+            default='one@nist.gov')
+    
 
 
 # Translating form data to CLI commands for bumps itsel

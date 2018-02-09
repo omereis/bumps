@@ -6,6 +6,6 @@ services:
     - "8888:5000"
     depends_on:
     - redis
-    - slurm
+#    - slurm
   slurm:
       image: giovtorres/docker-centos7-slurm:latest
