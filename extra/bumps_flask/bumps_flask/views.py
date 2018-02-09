@@ -41,6 +41,12 @@ def index():
 
     # Get the WTForm and validate the user token, move them along
     form = TokenForm()
+#    try:
+#        f = open('debug.txt', 'a')
+#        f.write("form: " + str(form))
+#        f.write("form.token: " + str(form.token))
+#    finally:
+#        f.close()
 
     if form.validate_on_submit():
         user_token = form.data['token']
@@ -110,12 +116,27 @@ def tokenizer():
 
     # TODO: Check available resources here
     # Create a UID
+    print("\n\n\n")
+    print("tokenizer")
+    flash("tokenizer")
     user_token = create_user_token()
+    print("tokenizer, 'user_token': " + str(user_token))
 
     # Associate an auth JWT and a refresh JWT to the UID
-    resp = json.loads(register_token(user_token).get_data())
-    jwt_token = resp['access_token']
-    refresh_token = resp['refresh_token']
+    try :
+        rt = register_token(user_token)
+        print("token registered 1")
+        x = register_token(user_token).get_data()
+        print("token registered 2")
+        resp = json.loads(x)
+#        resp = json.loads(register_token(user_token).get_data())
+        print("json loaded")
+        jwt_token = resp['access_token']
+        refresh_token = resp['refresh_token']
+        print("token refreshed")
+        print("\n\n\n")
+    except Exception as excp:
+        print ("Error: " + str(excp.args))
 
     # Working with the client interface
     if flask_request.method == 'POST':

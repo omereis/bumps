@@ -283,6 +283,7 @@ class FitForm(FlaskForm):
     The idea is to test handling data and running a simple fit
     on the server.
     '''
+    print("In FitForm")
     slurm = FormField(SlurmForm)
     steps = FormField(StepForm)
     burn = FormField(BurnForm)

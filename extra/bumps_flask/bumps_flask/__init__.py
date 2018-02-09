@@ -22,6 +22,7 @@ redis = FlaskRedis(app)
 
 # Set Redis db
 rdb = Database(redis)
+print("rdb created: " + str(rdb))
 
 # Import the Flask views after instancing the app
 import bumps_flask.views

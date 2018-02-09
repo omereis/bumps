@@ -28,7 +28,7 @@ def create_user_token():
     Generates a user id for identification.
     Works basically like a username
     '''
-
+    print("str(uuid.uuid4())[:6]: " + str(uuid.uuid4())[:6])
     return str(uuid.uuid4())[:6]
 
 
@@ -54,12 +54,29 @@ def create_auth_token(user_token):
     '''
 
     jwt_token = create_access_token(identity=user_token)
+    print("create_auth_token: access token created")
 
     # Use the token ID for blacklisting purposes
-    access_jti = get_jti(encoded_token=jwt_token)
+    jti = access_jti = get_jti(encoded_token=jwt_token)
+    print("create_auth_token: jlti obtained")
+    print("jti: " + str(jti))
     # Mark the token as not blacklisted
-    rdb.set(access_jti, 'false', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
-
+    x = app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
+    if x:
+        print("create_auth_token: config set")
+        print("x: " + str(x))
+    else:
+        print("create_auth_token: config JWT_ACCESS_TOKEN_EXPIRES NOT set")
+    print("\n\n")
+    try:
+        print("rdb: " + str(rdb))
+        rdb.set(jti, 'false', x)
+#        rdb.set(access_jti, 'false', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
+        print("create_auth_token: rdb set")
+    except Exception as excp:
+        print ("Error: " + str(excp.args))
+        print("create_auth_token: rdb NOT set")
+    print("\n\n")
     return jwt_token
 
 
@@ -72,6 +89,7 @@ def register_token(user_token):
 
     # Create both the auth and refresh tokens
     access_token = create_auth_token(user_token)
+    print("register_token: access created")
     refresh_token = create_refresh_token(identity=user_token)
 
     # Use the refresh token ID for blacklisting purposes
