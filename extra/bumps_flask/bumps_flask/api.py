@@ -189,8 +189,8 @@ class Jobs(Resource):
     def get(self, user_id=None, job_id=None, action=None, _format='json'):
         try:
             import datetime
-            f = open('debug_get.txt', 'a')
-            f.write("build_slurm_script: Change time: " + str(datetime.datetime.now()) + "\n")
+            f = open('debug.txt', 'a')
+            f.write("class job, method 'get':\tChange time: " + str(datetime.datetime.now()) + "\n")
         finally:
             f.close()
         request = flask_request.get_json()
@@ -275,6 +275,12 @@ class Jobs(Resource):
             'submitted': datetime.datetime.now().strftime('%c')
         }
 
+        try:
+            import datetime
+            f = open('debug.txt', 'a')
+            f.write("\nBefore calling 'setup_files':\tChange time: " + str(datetime.datetime.now()) + "\n")
+        finally:
+            f.close()
         # Setup the job files
         setup_files(job_data, cmds, _file, queue)
 

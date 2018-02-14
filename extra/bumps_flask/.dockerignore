@@ -5,3 +5,4 @@
 .bumps_folder
 instance/
 slurm_test/
+*.bat

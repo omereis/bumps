@@ -8,8 +8,10 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     git        \
     python-dev \
-    python-pip
+    python-pip \
+    vim
 
+#RUN apt-get install vim
 # Create the home directory for the new app user.
 RUN mkdir -p /home/app_user
 

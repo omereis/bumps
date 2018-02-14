@@ -195,6 +195,12 @@ def fit_job(results=False):
 
         # Use the parsed data to set up the job related files
         # and build a BumpsJob (json serialized dict)
+        try:
+#            import datetime
+            f = open('debug.txt', 'a')
+            f.write("\nfit_job, Before calling 'setup_files':\tChange time: " + str(datetime.datetime.now()) + "\n")
+        finally:
+            f.close()
         bumps_payload = setup_files(bumps_payload, form_data,
                                     form.upload.data['script'])
 
