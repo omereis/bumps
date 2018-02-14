@@ -97,6 +97,13 @@ def dashboard():
             files[job['_id']] = search_results(job['directory'])
             zip_files(job['directory'], files[job['_id']])
 
+    try:
+#            import datetime
+        f = open('debug.txt', 'a')
+        f.write("\ndashboard():\tChange time: " + str(datetime.datetime.now()) + "\n")
+        f.write("id=" + str(user_token) + "\n")
+    finally:
+        f.close()
     return render_template(
         'dashboard.html',
         id=user_token,
@@ -139,6 +146,13 @@ def tokenizer():
         print ("Error: " + str(excp.args))
 
     # Working with the client interface
+    try:
+#            import datetime
+        f = open('debug.txt', 'a')
+        f.write("\ntokenizer():\tChange time: " + str(datetime.datetime.now()) + "\n")
+        f.write("id=" + str(user_token) + "\n")
+    finally:
+        f.close()
     if flask_request.method == 'POST':
         response = jsonify(
             uid=user_token,
