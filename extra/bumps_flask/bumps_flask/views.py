@@ -123,37 +123,28 @@ def tokenizer():
 
     # TODO: Check available resources here
     # Create a UID
-    print("\n\n\n")
-    print("tokenizer")
-    flash("tokenizer")
     user_token = create_user_token()
-    print("tokenizer, 'user_token': " + str(user_token))
 
     # Associate an auth JWT and a refresh JWT to the UID
     try :
-        rt = register_token(user_token)
-        print("token registered 1")
+#        rt = register_token(user_token)
         x = register_token(user_token).get_data()
-        print("token registered 2")
         resp = json.loads(x)
 #        resp = json.loads(register_token(user_token).get_data())
-        print("json loaded")
         jwt_token = resp['access_token']
         refresh_token = resp['refresh_token']
-        print("token refreshed")
-        print("\n\n\n")
     except Exception as excp:
         print ("Error: " + str(excp.args))
 
     # Working with the client interface
-    try:
-#            import datetime
-        f = open('debug.txt', 'a')
-        f.write("\ntokenizer():\tChange time: " + str(datetime.datetime.now()) + "\n")
-        f.write("id=" + str(user_token) + "\n")
-    finally:
-        f.close()
     if flask_request.method == 'POST':
+        try:
+#            import datetime
+            f = open('debug.txt', 'a')
+            f.write("\nFunction tokenizer()\tChange time: " + str(datetime.datetime.now()) + "\n")
+            f.write("POST request\n")
+        finally:
+            f.close()
         response = jsonify(
             uid=user_token,
             auth_token=jwt_token,
@@ -166,6 +157,13 @@ def tokenizer():
             render_template('tokenizer.html', token=user_token))
 
     # Bundle the JWT cookies into the response object
+    try:
+#            import datetime
+        f = open('debug.txt', 'a')
+        f.write("\nFunction tokenizer()\tChange time: " + str(datetime.datetime.now()) + "\n")
+        f.write("flask_request.method=" + str(flask_request.method) + "\n")
+    finally:
+        f.close()
     set_access_cookies(response, jwt_token)
     set_refresh_cookies(response, refresh_token)
     return response

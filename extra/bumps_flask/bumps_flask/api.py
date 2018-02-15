@@ -89,7 +89,6 @@ def register_token(user_token):
 
     # Create both the auth and refresh tokens
     access_token = create_auth_token(user_token)
-    print("register_token: access created")
     refresh_token = create_refresh_token(identity=user_token)
 
     # Use the refresh token ID for blacklisting purposes
@@ -97,8 +96,7 @@ def register_token(user_token):
     # Mark the refresh token as not blacklisted
     rdb.set(refresh_jti, 'false', app.config.get('JWT_REFRESH_TOKEN_EXPIRES'))
 
-    return make_response(
-        jsonify(refresh_token=refresh_token, access_token=access_token), 201)
+    return make_response(jsonify(refresh_token=refresh_token, access_token=access_token), 201)
 
 
 def add_job(bumps_job):
