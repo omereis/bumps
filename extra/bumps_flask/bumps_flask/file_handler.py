@@ -41,21 +41,6 @@ def setup_files(payload, _input, _file, queue='slurm'):
         build_slurm_script(slurm_file, _input['slurm'], cli_opts, file_path)
 
         slurm_file.close()
-        try:
-            f = open('debug.txt', 'a')
-            f.write("\n'setup_files', queue=slurm:\tChange time: " + str(datetime.datetime.now()) + "\n\n")
-            f.write("\n'folder='" + folder + "'\n")
-#            f.write("Change time: 12:24 PM\n")
-            f.write("queue: " + str(queue) + "\n")
-            f.write("slurm file\n")
-            f.write("Folder: " + folder + "\n")
-            f_src = open(slurm_file.name,'rb')
-            f_dest = open('debug_slurm.txt','wb')
-            f_dest.write(f_src.read())
-        finally:
-            f.close()
-            f_dest.close()
-            f_dest.close()
 
     # Currently only support for slurm is available
     elif queue == 'rq':
@@ -154,13 +139,6 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
 
     # Write the CLI options
     _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
-
-    try:
-        import datetime
-        f = open('debug.txt', 'a')
-        f.write("build_slurm_script:\tChange time: " + str(datetime.datetime.now()) + "\n")
-    finally:
-        f.close()
 
     execute_slurm_script('bumps', cli_opts.split(),
                          job_file, job_path)

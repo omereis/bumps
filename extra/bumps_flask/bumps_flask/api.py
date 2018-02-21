@@ -28,7 +28,7 @@ def create_user_token():
     Generates a user id for identification.
     Works basically like a username
     '''
-    print("str(uuid.uuid4())[:6]: " + str(uuid.uuid4())[:6])
+#    print("str(uuid.uuid4())[:6]: " + str(uuid.uuid4())[:6])
     return str(uuid.uuid4())[:6]
 
 
@@ -54,31 +54,18 @@ def create_auth_token(user_token):
     '''
 
     jwt_token = create_access_token(identity=user_token)
-    print("create_auth_token: access token created")
 
     # Use the token ID for blacklisting purposes
     jti = access_jti = get_jti(encoded_token=jwt_token)
-    print("create_auth_token: jlti obtained")
-    print("jti: " + str(jti))
+
     # Mark the token as not blacklisted
     x = app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
-    if x:
-        print("create_auth_token: config set")
-        print("x: " + str(x))
-    else:
-        print("create_auth_token: config JWT_ACCESS_TOKEN_EXPIRES NOT set")
-    print("\n\n")
     try:
-        print("rdb: " + str(rdb))
         rdb.set(jti, 'false', x)
-#        rdb.set(access_jti, 'false', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
-        print("create_auth_token: rdb set")
+        rdb.set(access_jti, 'false', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
     except Exception as excp:
         print ("Error: " + str(excp.args))
-        print("create_auth_token: rdb NOT set")
-    print("\n\n")
     return jwt_token
-
 
 def register_token(user_token):
     '''
@@ -89,10 +76,13 @@ def register_token(user_token):
 
     # Create both the auth and refresh tokens
     access_token = create_auth_token(user_token)
+
     refresh_token = create_refresh_token(identity=user_token)
 
     # Use the refresh token ID for blacklisting purposes
+
     refresh_jti = get_jti(encoded_token=refresh_token)
+
     # Mark the refresh token as not blacklisted
     rdb.set(refresh_jti, 'false', app.config.get('JWT_REFRESH_TOKEN_EXPIRES'))
 
@@ -185,12 +175,6 @@ class Jobs(Resource):
 
     @jwt_required
     def get(self, user_id=None, job_id=None, action=None, _format='json'):
-        try:
-            import datetime
-            f = open('debug.txt', 'a')
-            f.write("class job, method 'get':\tChange time: " + str(datetime.datetime.now()) + "\n")
-        finally:
-            f.close()
         request = flask_request.get_json()
         print(request)
         print(get_jwt_identity())
@@ -273,12 +257,6 @@ class Jobs(Resource):
             'submitted': datetime.datetime.now().strftime('%c')
         }
 
-        try:
-            import datetime
-            f = open('debug.txt', 'a')
-            f.write("\nBefore calling 'setup_files':\tChange time: " + str(datetime.datetime.now()) + "\n")
-        finally:
-            f.close()
         # Setup the job files
         setup_files(job_data, cmds, _file, queue)
 

@@ -37,12 +37,6 @@ def execute_python_script(job_file, args, job_path):
     """
     TEST
     """
-    try:
-        import datetime
-        f = open('debug.txt', 'a')
-        f.write("execute_python_script: Change time: " + str(datetime.datetime.now()) + "\n")
-    finally:
-        f.close()
     subprocess.Popen(['bumps'] + [job_file] + list(args),
                      cwd=job_path,
                      stdout=subprocess.PIPE,
@@ -53,12 +47,6 @@ def execute_slurm_script(cmd, args, job_file, job_path):
     """
     TEST
     """
-    try:
-        import datetime
-        f = open('debug.txt', 'a')
-        f.write("execute_slurm_script: Change time: " + str(datetime.datetime.now()) + "\n")
-    finally:
-        f.close()
     subprocess.Popen([cmd] + [job_file] + list(args),
                      cwd=job_path,
                      stdout=subprocess.PIPE,

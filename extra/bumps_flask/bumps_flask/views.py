@@ -41,12 +41,6 @@ def index():
 
     # Get the WTForm and validate the user token, move them along
     form = TokenForm()
-#    try:
-#        f = open('debug.txt', 'a')
-#        f.write("form: " + str(form))
-#        f.write("form.token: " + str(form.token))
-#    finally:
-#        f.close()
 
     if form.validate_on_submit():
         user_token = form.data['token']
@@ -97,13 +91,6 @@ def dashboard():
             files[job['_id']] = search_results(job['directory'])
             zip_files(job['directory'], files[job['_id']])
 
-    try:
-#            import datetime
-        f = open('debug.txt', 'a')
-        f.write("\ndashboard():\tChange time: " + str(datetime.datetime.now()) + "\n")
-        f.write("id=" + str(user_token) + "\n")
-    finally:
-        f.close()
     return render_template(
         'dashboard.html',
         id=user_token,
@@ -127,24 +114,16 @@ def tokenizer():
 
     # Associate an auth JWT and a refresh JWT to the UID
     try :
-#        rt = register_token(user_token)
         x = register_token(user_token).get_data()
         resp = json.loads(x)
-#        resp = json.loads(register_token(user_token).get_data())
         jwt_token = resp['access_token']
         refresh_token = resp['refresh_token']
     except Exception as excp:
         print ("Error: " + str(excp.args))
+#    return None
 
     # Working with the client interface
     if flask_request.method == 'POST':
-        try:
-#            import datetime
-            f = open('debug.txt', 'a')
-            f.write("\nFunction tokenizer()\tChange time: " + str(datetime.datetime.now()) + "\n")
-            f.write("POST request\n")
-        finally:
-            f.close()
         response = jsonify(
             uid=user_token,
             auth_token=jwt_token,
@@ -157,13 +136,6 @@ def tokenizer():
             render_template('tokenizer.html', token=user_token))
 
     # Bundle the JWT cookies into the response object
-    try:
-#            import datetime
-        f = open('debug.txt', 'a')
-        f.write("\nFunction tokenizer()\tChange time: " + str(datetime.datetime.now()) + "\n")
-        f.write("flask_request.method=" + str(flask_request.method) + "\n")
-    finally:
-        f.close()
     set_access_cookies(response, jwt_token)
     set_refresh_cookies(response, refresh_token)
     return response
@@ -207,12 +179,6 @@ def fit_job(results=False):
 
         # Use the parsed data to set up the job related files
         # and build a BumpsJob (json serialized dict)
-        try:
-#            import datetime
-            f = open('debug.txt', 'a')
-            f.write("\nfit_job, Before calling 'setup_files':\tChange time: " + str(datetime.datetime.now()) + "\n")
-        finally:
-            f.close()
         bumps_payload = setup_files(bumps_payload, form_data,
                                     form.upload.data['script'])
 
