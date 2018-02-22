@@ -55,6 +55,12 @@ def index():
         # Bundle the JWT cookies into the response object
         set_access_cookies(response, jwt_token)
         set_refresh_cookies(response, refresh_token)
+        try:
+            import datetime
+            f = open('debug.txt', 'a')
+            f.write("views.py-index: logged in\n")
+        finally:
+            f.close()
         flash('Logged in!')
         return response
 
@@ -80,10 +86,37 @@ def dashboard():
     # Retrieve the UID
     user_token = get_jwt_identity()
 
+    try:
+#        import datetime
+        f = open('debug.txt', 'a')
+        f.write("---------------------------------------\n")
+        f.write("views.py, dashboard, exploring 'user_token'\n")
+        if user_token:
+            f.write("views.py, dashboard, user_token = " + str(user_token) + "\n")
+        else:
+            f.write("views.py, dashboard, user_jobs= is null\n")
+    finally:
+        f.close()
+
     update_job_info(user_token)  # DEBUG (Polling job status here)  # POST/GET
 
     # Get the database info for the current user
     user_jobs = rdb.hvals(user_token)
+    '''
+    '''
+    try:
+#        import datetime
+        f = open('debug.txt', 'a')
+        f.write("---------------------------------------\n")
+        f.write("views.py, dashboard, exploring 'user_jobs'\n")
+        if user_jobs:
+            f.write("views.py, dashboard, len(user_jobs)= " + str(len(user_jobs)) + "\n")
+            f.write("views.py, dashboard, user_jobs= " + str(user_jobs) + "\n")
+        else:
+            f.write("views.py, dashboard, user_jobs= is null\n")
+    finally:
+        f.close()
+
 
     files = {}
     for job in user_jobs:
