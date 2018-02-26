@@ -86,6 +86,7 @@ def dashboard():
     # Retrieve the UID
     user_token = get_jwt_identity()
 
+    '''
     try:
 #        import datetime
         f = open('debug.txt', 'a')
@@ -97,12 +98,11 @@ def dashboard():
             f.write("views.py, dashboard, user_jobs= is null\n")
     finally:
         f.close()
-
+    '''
     update_job_info(user_token)  # DEBUG (Polling job status here)  # POST/GET
 
     # Get the database info for the current user
     user_jobs = rdb.hvals(user_token)
-    '''
     '''
     try:
 #        import datetime
@@ -110,12 +110,14 @@ def dashboard():
         f.write("---------------------------------------\n")
         f.write("views.py, dashboard, exploring 'user_jobs'\n")
         if user_jobs:
+            f.write("views.py, dashboard, user_token: " + str(user_token) + "\n")
             f.write("views.py, dashboard, len(user_jobs)= " + str(len(user_jobs)) + "\n")
             f.write("views.py, dashboard, user_jobs= " + str(user_jobs) + "\n")
         else:
             f.write("views.py, dashboard, user_jobs= is null\n")
     finally:
         f.close()
+    '''
 
 
     files = {}

@@ -174,6 +174,15 @@ def update_job_info(user):
         try:
             with open(os.path.join(job['directory'], 'results',
                                    '{}-steps.json'.format(job['filebase'])), 'r') as j:
+                try:
+                    f1 = open('debug.txt', 'a')
+                    f1.write("---------------------------------------\n")
+                    f1.write("file_handler.py, update_job_info, exploring jobs status\n")
+                    f1.write("user: " + str(user) + "\n")
+                    f1.write("BEFORE status change to RUNNING, job: " + str(job) + "\n")
+                    f1.write("job: " + str(job) + "\n")
+                finally:
+                    f1.close()
                 job['status'] = 'RUNNING'
 
         except IOError:
@@ -182,8 +191,23 @@ def update_job_info(user):
         try:
             with open(os.path.join(job['directory'], 'results',
                                    '{}-model.html'.format(job['filebase'])), 'r') as f:
+                try:
+                    f1 = open('debug.txt', 'a')
+                    f1.write("---------------------------------------\n")
+                    f1.write("file_handler.py, update_job_info, exploring jobs status\n")
+                    f1.write("BEFORE status change, job: " + str(job) + "\n")
+                    f1.write("job: " + str(job) + "\n")
+                finally:
+                    f1.close()
                 job['status'] = 'COMPLETED'
                 job['completed'] = datetime.datetime.now().strftime('%c')
+                try:
+                    f1 = open('debug.txt', 'a')
+                    f1.write("---------------------------------------\n")
+                    f1.write("file_handler.py, update_job_info, exploring jobs status\n")
+                    f1.write("AFTER status change, job: " + str(job) + "\n")
+                finally:
+                    f1.close()
         except BaseException:
             pass
 
