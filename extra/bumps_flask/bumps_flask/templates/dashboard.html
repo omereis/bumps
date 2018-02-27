@@ -3,32 +3,36 @@
     <p>Logged in as token {{ id }}.</p>
     <div>
         {% if jobs and jobs != [] %}
-        <p> View the status of your jobs... </p>
+        <p>View the status of your jobs...</p>
             {% for job in jobs %}
             <br><br>
                 {% if job['status'] == 'COMPLETED' %}
                         <p> Job #{{ job['_id'] }} (Submitted on {{ job['submitted'] }}) | Results available! </p>
-
+                    <table border="0" cellspacing="7">
                     {% for result_file in files[job['_id']] %}
                         {% if result_file.split('.')[-1] != 'png' %}
                             <form action="/api/users/{{ id }}/job{{ job['_id'] }}/{{ result_file }}" method="GET">
-                                <p style="padding-left:5em; display:list-item"> File: {{ result_file|safe }} <input type="submit" value="Download"/>
-                                </p>
+                            <tr>
+                                <td align="left"><u>
+                                    File:</u> {{ result_file|safe }}
+                                </td>
+                                <td align="center">
+                                    <input type="submit" value="Download"/>
+                                </td>
+                            </tr>
                             </form>
                         {% endif %}
                     {% endfor %}
-
+                    </table>
                     <form action="/api/users/{{ id }}/job{{ job['_id'] }}/job_results.zip" method="GET">
                     <p style="padding-left:5em; font-weight: bold;"> Download zipped results (excluding .mc files) <input type="submit" value="Download"/> </p>
                     </form>
 
                     <h3 align="center"> Generated graphs (click to interact) </h3>
-                    <table id="graphs" align="center">
-                    <div>
-                        <tr>
+                    <table id="graphs" align="center" border="2">
                         {% for result_file in files[job['_id']] if '-model' not in result_file and result_file.split('.')[-1] == 'png' %}
                             {% if loop.index is divisibleby(4) %}
-                                </tr><tr>
+                            <tr>
                             {% endif %}
                             <td>
                                 <form action="/api/users/{{ id }}/job{{ job['_id'] }}/{{ result_file.split('.')[0] + '.html' }}/1" method="GET">
@@ -36,7 +40,6 @@
                                 </form>
                                 <div class='graph_btn'>
                                     <form action="/api/users/{{ id }}/job{{ job['_id'] }}/{{ result_file }}"><input name="graph_btn" type="submit" value="Download .png file"/></form>
-                                </div>
                             </td>
                         {% endfor %}
                         {% for result_file in files[job['_id']] if '-model' in result_file and result_file.split('.')[-1] == 'png' %}
