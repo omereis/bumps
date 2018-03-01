@@ -187,15 +187,22 @@ def fit_job(results=False):
     '''
 
     form = FitForm()
+
     if form.validate_on_submit():
         # Parse through the form data
-        form_data = (process_request_form(form.data))
+        form_data = process_request_form(form.data)
 
         # Assuming the UIDs are unique enough, a job_id
         # can be an incremental integer associated with a UID.
         job_id = str(rdb.hlen(get_jwt_identity()) + 1)
 
         # Build job directory
+        try:
+            f = open('debug.txt', 'a')
+            f.write("views.py-fit_job, type(form):" + str(type(form)) + "\n")
+            f.write("app.config.get('UPLOAD_FOLDER'): '" + str(app.config.get('UPLOAD_FOLDER')) + "'\n")
+        finally:
+            f.close()
         _dir = os.path.join(app.config.get('UPLOAD_FOLDER'),
                             'fit_problems', get_jwt_identity(), 'job' + job_id)
 
@@ -203,7 +210,7 @@ def fit_job(results=False):
         # queue = 'rq'
 
         # TODO: Add extra keys from form_data
-        bumps_payload = {
+        payload_defaults = {
             'user': get_jwt_identity(),
             '_id': job_id,
             'origin': flask_request.remote_addr,
@@ -214,8 +221,15 @@ def fit_job(results=False):
 
         # Use the parsed data to set up the job related files
         # and build a BumpsJob (json serialized dict)
-        bumps_payload = setup_files(bumps_payload, form_data,
-                                    form.upload.data['script'])
+        bumps_payload = setup_files(payload_defaults, form_data, form.upload.data['script'])
+
+        try:
+            f = open('debug.txt', 'a')
+            f.write("views.py-fit_job, Line #229, str(payload_defaults): " + str(payload_defaults) + "\n")
+            f.write("views.py-fit_job, Line #229, str(bumps_payload): " + str(bumps_payload) + "\n")
+            f.write("views.py-fit_job, redirect(url_for('dashboard'): " + str (redirect(url_for('dashboard'))) + "\n")
+        finally:
+            f.close()
 
         add_job(bumps_payload)
         flash('Job submitted successfully.')
