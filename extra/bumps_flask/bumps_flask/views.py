@@ -86,39 +86,10 @@ def dashboard():
     # Retrieve the UID
     user_token = get_jwt_identity()
 
-    '''
-    try:
-#        import datetime
-        f = open('debug.txt', 'a')
-        f.write("---------------------------------------\n")
-        f.write("views.py, dashboard, exploring 'user_token'\n")
-        if user_token:
-            f.write("views.py, dashboard, user_token = " + str(user_token) + "\n")
-        else:
-            f.write("views.py, dashboard, user_jobs= is null\n")
-    finally:
-        f.close()
-    '''
     update_job_info(user_token)  # DEBUG (Polling job status here)  # POST/GET
 
     # Get the database info for the current user
     user_jobs = rdb.hvals(user_token)
-    '''
-    try:
-#        import datetime
-        f = open('debug.txt', 'a')
-        f.write("---------------------------------------\n")
-        f.write("views.py, dashboard, exploring 'user_jobs'\n")
-        if user_jobs:
-            f.write("views.py, dashboard, user_token: " + str(user_token) + "\n")
-            f.write("views.py, dashboard, len(user_jobs)= " + str(len(user_jobs)) + "\n")
-            f.write("views.py, dashboard, user_jobs= " + str(user_jobs) + "\n")
-        else:
-            f.write("views.py, dashboard, user_jobs= is null\n")
-    finally:
-        f.close()
-    '''
-
 
     files = {}
     for job in user_jobs:
@@ -197,12 +168,6 @@ def fit_job(results=False):
         job_id = str(rdb.hlen(get_jwt_identity()) + 1)
 
         # Build job directory
-        try:
-            f = open('debug.txt', 'a')
-            f.write("views.py-fit_job, type(form):" + str(type(form)) + "\n")
-            f.write("app.config.get('UPLOAD_FOLDER'): '" + str(app.config.get('UPLOAD_FOLDER')) + "'\n")
-        finally:
-            f.close()
         _dir = os.path.join(app.config.get('UPLOAD_FOLDER'),
                             'fit_problems', get_jwt_identity(), 'job' + job_id)
 
@@ -223,17 +188,16 @@ def fit_job(results=False):
         # and build a BumpsJob (json serialized dict)
         bumps_payload = setup_files(payload_defaults, form_data, form.upload.data['script'])
 
-        try:
-            f = open('debug.txt', 'a')
-            f.write("views.py-fit_job, Line #229, str(payload_defaults): " + str(payload_defaults) + "\n")
-            f.write("views.py-fit_job, Line #229, str(bumps_payload): " + str(bumps_payload) + "\n")
-            f.write("views.py-fit_job, redirect(url_for('dashboard'): " + str (redirect(url_for('dashboard'))) + "\n")
-        finally:
-            f.close()
-
         add_job(bumps_payload)
         flash('Job submitted successfully.')
         return redirect(url_for('dashboard'))
+    try:
+        f = open('debug.txt', 'a')
+        f.write("-----------------------------\n")
+        f.write("views.py-fit_job, form invalid\n")
+        f.write("views.py-fit_job, str(form): " + str(form) + "\n")
+    finally:
+        f.close()
 
     return render_template('service.html', form=form)
 
