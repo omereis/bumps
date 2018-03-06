@@ -186,10 +186,23 @@ def fit_job(results=False):
 
         # Use the parsed data to set up the job related files
         # and build a BumpsJob (json serialized dict)
+        try:
+            f = open('debug.txt', 'a')
+            f.write("-----------------------------\n")
+            f.write("views.py-fit_job\n")
+            f.write("\tbefore calling 'setup_files'\n")
+        finally:
+            f.close()
         bumps_payload = setup_files(payload_defaults, form_data, form.upload.data['script'])
 
         add_job(bumps_payload)
         flash('Job submitted successfully.')
+        try:
+            f = open('debug.txt', 'a')
+            f.write("-----------------------------\n")
+            f.write("views.py-fit_job, str(bumps_payload): " + str(bumps_payload) + "\n")
+        finally:
+            f.close()
         return redirect(url_for('dashboard'))
     try:
         f = open('debug.txt', 'a')

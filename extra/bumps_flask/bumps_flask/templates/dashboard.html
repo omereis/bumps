@@ -60,7 +60,11 @@
                     </div>
                     </table>
 
-                <p> <form action="/api/jobs/{{ id }}/job{{ job['_id'] }}/delete.html" method="GET"> Delete job #{{ job['_id'] }}: <input style="display:inline;" type="submit" value="Delete"/></form> </p>
+                <p>
+                    <form action="/api/jobs/{{ id }}/job{{ job['_id'] }}/delete.html" method="GET">
+                        Delete job #{{ job['_id'] }}: <input style="display:inline;" type="submit" value="Delete"/>
+                    </form>
+                </p>
 
                 {% elif job['status'] == 'RUNNING' %}
                     <p> Job #{{ job['_id'] }} (Submitted on {{ job['submitted'] }}) | Status: running... </p>

@@ -57,7 +57,7 @@ class EmailForm(FlaskForm):
             Email(
                 message='Please enter a valid email address.'),
             Optional()],
-            default='one@nist.gov')
+            default='one4@nist.gov')
     
 
 
@@ -276,7 +276,7 @@ class SlurmForm(FlaskForm):
     walltime = DateTimeField(
         label='Walltime (HH:MM:SS)', default=time(
             00, 30, 00), format='%H:%M:%S')
-    jobname = StringField(validators=[Optional()])
+    jobname = StringField(validators=[Optional()], default='Job')
 
 
 class FitForm(FlaskForm):
