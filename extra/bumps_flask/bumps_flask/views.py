@@ -55,12 +55,6 @@ def index():
         # Bundle the JWT cookies into the response object
         set_access_cookies(response, jwt_token)
         set_refresh_cookies(response, refresh_token)
-        try:
-            import datetime
-            f = open('debug.txt', 'a')
-            f.write("views.py-index: logged in\n")
-        finally:
-            f.close()
         flash('Logged in!')
         return response
 
@@ -186,31 +180,11 @@ def fit_job(results=False):
 
         # Use the parsed data to set up the job related files
         # and build a BumpsJob (json serialized dict)
-        try:
-            f = open('debug.txt', 'a')
-            f.write("-----------------------------\n")
-            f.write("views.py-fit_job\n")
-            f.write("\tbefore calling 'setup_files'\n")
-        finally:
-            f.close()
         bumps_payload = setup_files(payload_defaults, form_data, form.upload.data['script'])
 
         add_job(bumps_payload)
         flash('Job submitted successfully.')
-        try:
-            f = open('debug.txt', 'a')
-            f.write("-----------------------------\n")
-            f.write("views.py-fit_job, str(bumps_payload): " + str(bumps_payload) + "\n")
-        finally:
-            f.close()
         return redirect(url_for('dashboard'))
-    try:
-        f = open('debug.txt', 'a')
-        f.write("-----------------------------\n")
-        f.write("views.py-fit_job, form invalid\n")
-        f.write("views.py-fit_job, str(form): " + str(form) + "\n")
-    finally:
-        f.close()
 
     return render_template('service.html', form=form)
 
@@ -234,6 +208,7 @@ def refresh():
 @jwt_required
 def logout():
     # Get the JWT identifier and set logged_out to 'true' in DB
+    raw_jwt = get_raw_jwt()
     jti = get_raw_jwt()['jti']
     rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
 

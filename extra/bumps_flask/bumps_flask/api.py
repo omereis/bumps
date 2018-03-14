@@ -175,18 +175,6 @@ class Jobs(Resource):
     @jwt_required
     def get(self, user_id=None, job_id=None, action=None, _format='json'):
         request = flask_request.get_json()
-        try:
-            f = open('debug.txt', 'a')
-            f.write("-----------------------------\n")
-            f.write("api.py-jobs.get\n")
-            f.write("\tuser_id: " + str(user_id) + "\n")
-            f.write("\tjob_id : " + str(job_id) + "\n")
-            f.write("\t_format: " + str(_format) + "\n")
-            f.write("\taction : " + str(action) + "\n")
-        finally:
-            f.close()
-        print(request)
-        print(get_jwt_identity())
         if user_id != get_jwt_identity():
             abort(404)
 
@@ -207,17 +195,6 @@ class Jobs(Resource):
 
         # A delete was requested, delete the job record and files
         elif action == 'delete':
-            try:
-                import traceback
-                f = open('debug.txt', 'a')
-                f.write("-----------------------------\n")
-                f.write("api.py-get(action=delete). stack:\n")
-                stack = traceback.extract_stack ()
-                f.write("Stack length: " + str(len(stack)) + "\n")
-                for n in range(len(stack)):
-                    f.write(str(n+1) + ": " + str(stack[n]) + "\n")
-            finally:
-                f.close()
             # Check if the user actually has a DB entry
             if not rdb.hexists(user_id, job_id):
                 abort(404)
@@ -273,26 +250,11 @@ class Jobs(Resource):
         }
 
         # Setup the job files
-        try:
-            f = open('debug.txt', 'a')
-            f.write("-----------------------------\n")
-            f.write("api.py-jobs.post\n")
-            f.write("\tbefore calling setup_files\n")
-        finally:
-            f.close()
         return jsonify(Submitted=True)
         setup_files(job_data, cmds, _file, queue)
 
         # Add job to redis
         add_job(job_data)
-        try:
-            f = open('debug.txt', 'a')
-            f.write("-----------------------------\n")
-            f.write("api.py-jobs.post\n")
-            f.write("\tstr(bumps_cmds): " + str(bumps_cmds) + "\n")
-            f.write("\tstr(slurm_cmds): " + str(slurm_cmds) + "\n")
-        finally:
-            f.close()
         return jsonify(Submitted=True)
 
 
@@ -338,8 +300,6 @@ class Users(Resource):
             return jsonify(rdb.get_users())
 
 
-    '''
-    '''
 api.add_resource(
     Jobs,
     '/api/jobs',

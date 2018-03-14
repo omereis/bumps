@@ -37,19 +37,6 @@ def execute_python_script(job_file, args, job_path):
     """
     TEST
     """
-    try:
-        import traceback
-        f = open('debug.txt', 'a')
-        f.write("-----------------------------\n")
-        f.write("run_job.py-execute_python_script. stack:\n")
-        stack = traceback.extract_stack ()
-        f.write("Stack length: " + str(len(stack)) + "\n")
-        for n in range(len(stack)):
-            f.write(str(n+1) + ": " + stack[n])
-        for s in stack:
-            f.write(str(s) + "\n")
-    finally:
-        f.close()
     subprocess.Popen(['bumps'] + [job_file] + list(args),
                      cwd=job_path,
                      stdout=subprocess.PIPE,
@@ -61,19 +48,6 @@ def execute_slurm_script(cmd, args, job_file, job_path):
     TEST
     """
 
-    """
-    """
-    try:
-        import traceback
-        f = open('debug.txt', 'a')
-        f.write("-----------------------------\n")
-        f.write("run_job.py-execute_slurm_script. stack:\n")
-        stack = traceback.extract_stack ()
-        f.write("Stack length: " + str(len(stack)) + "\n")
-        for n in range(len(stack)):
-            f.write(str(n+1) + ": " + str(stack[n]) + "\n")
-    finally:
-        f.close()
     subprocess.Popen([cmd] + [job_file] + list(args),
                      cwd=job_path,
                      stdout=subprocess.PIPE,

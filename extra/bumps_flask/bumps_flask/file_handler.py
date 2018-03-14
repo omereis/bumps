@@ -24,15 +24,6 @@ def setup_files(payload, _input, _file, queue='slurm'):
     # Sanitize the filename
     filename = secure_filename(_file.filename)
     file_path = os.path.join(folder, filename)
-    try:
-        f = open('debug.txt', 'a')
-        f.write("-----------------------------\n")
-        f.write("file_handler.py-setup_files\n")
-        f.write("\tfilename : '" + filename + "'\n")
-        f.write("\tfile_path: '" + file_path + "'\n")
-        f.write("\tqueue    : '" + queue + "'\n")
-    finally:
-        f.close()
     # Save the uploaded file
     _file.save(file_path)
 
@@ -149,14 +140,6 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
     # Write the CLI options
     _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
 
-    try:
-        f = open('debug.txt', 'a')
-        f.write("-----------------------------\n")
-        f.write("file_handler.py-build_slurm_script, executing slurm script\n")
-        f.write("\tjob_file: '" + job_file + "'\n")
-        f.write("\tjob_path: '" + job_path + "'\n")
-    finally:
-        f.close()
     execute_slurm_script('bumps', cli_opts.split(),
                          job_file, job_path)
 
@@ -191,15 +174,6 @@ def update_job_info(user):
         try:
             with open(os.path.join(job['directory'], 'results',
                                    '{}-steps.json'.format(job['filebase'])), 'r') as j:
-                try:
-                    f1 = open('debug.txt', 'a')
-                    f1.write("---------------------------------------\n")
-                    f1.write("file_handler.py, update_job_info, exploring jobs status\n")
-                    f1.write("user: " + str(user) + "\n")
-                    f1.write("BEFORE status change to RUNNING, job: " + str(job) + "\n")
-                    f1.write("job: " + str(job) + "\n")
-                finally:
-                    f1.close()
                 job['status'] = 'RUNNING'
 
         except IOError:
@@ -208,23 +182,8 @@ def update_job_info(user):
         try:
             with open(os.path.join(job['directory'], 'results',
                                    '{}-model.html'.format(job['filebase'])), 'r') as f:
-                try:
-                    f1 = open('debug.txt', 'a')
-                    f1.write("---------------------------------------\n")
-                    f1.write("file_handler.py, update_job_info, exploring jobs status\n")
-                    f1.write("BEFORE status change, job: " + str(job) + "\n")
-                    f1.write("job: " + str(job) + "\n")
-                finally:
-                    f1.close()
                 job['status'] = 'COMPLETED'
                 job['completed'] = datetime.datetime.now().strftime('%c')
-                try:
-                    f1 = open('debug.txt', 'a')
-                    f1.write("---------------------------------------\n")
-                    f1.write("file_handler.py, update_job_info, exploring jobs status\n")
-                    f1.write("AFTER status change, job: " + str(job) + "\n")
-                finally:
-                    f1.close()
         except BaseException:
             pass
 
