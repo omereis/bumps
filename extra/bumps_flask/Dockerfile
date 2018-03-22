@@ -5,11 +5,12 @@ FROM ubuntu:16.04
 RUN apt-get update && apt-get install -y \
     apache2 \
     apache2-dev \
-    libssl-dev \
-    git        \
-    python-dev \
-    python-pip \
-    vim
+    libssl-dev  \
+    git         \
+    python-dev  \
+    python-pip  \
+    vim         \
+    munge
 
 #RUN apt-get install vim
 # Create the home directory for the new app user.
