@@ -3,15 +3,21 @@ FROM ubuntu:16.04
 
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y \
-    apache2 \
-    apache2-dev \
-    libssl-dev  \
-    git         \
-    python-dev  \
-    python-pip  \
-    vim         \
+    build-essential \
+    apache2         \
+    apache2-dev     \
+    libssl-dev      \
+    git             \
+    python-dev      \
+    python-pip      \
+    vim             \
+    libmunge-dev    \
+    python          \
+    iputils-ping    \
+    net-tools       \
     munge
 
+ADD https://download.schedmd.com/slurm/slurm-17.11.5.tar.bz2 /tmp/slurm.tgz
 #RUN apt-get install vim
 # Create the home directory for the new app user.
 RUN mkdir -p /home/app_user
