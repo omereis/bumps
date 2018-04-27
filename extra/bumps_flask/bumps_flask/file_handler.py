@@ -9,6 +9,7 @@ from werkzeug.utils import secure_filename
 from . import app, rdb
 from .run_job import execute_python_script, execute_slurm_script
 
+SASMODELS_DRIVER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'sasbumps.py')
 
 def setup_files(payload, _input, _file, queue='slurm'):
 
@@ -21,17 +22,24 @@ def setup_files(payload, _input, _file, queue='slurm'):
     if not os.path.exists(folder):
         os.makedirs(_input['cli']['store'])
 
-    # Sanitize the filename
-    filename = secure_filename(_file.filename)
-    file_path = os.path.join(folder, filename)
-    # Save the uploaded file
-    _file.save(file_path)
-
     # Parse the CLI options
     cli_opts = cli_commands(_input['cli'])
 
+    # Sanitize the filename
+    filename = secure_filename(_file.filename)
+    file_path = os.path.join(folder, filename)
+
+    # Save the uploaded file
+    _file.save(file_path)
+
+    # Hack to allow sasview .svs/.fitv files to run:
+    #     bumps bumps_flask/sasbumps.py targetfile ...
+    if file_path.endswith('.svs') or file_path.endswith('.fitv'):
+        cli_opts.insert(0, file_path)
+        file_path = SASMODELS_DRIVER
+
     # Add the filename to the payload
-    payload['filebase'] = filename.split('.')[0]
+    payload['filebase'] = os.path.basename(file_path).split('.')[0]
 
     # Build the slurm batch script for running the job
     if queue == 'slurm':
@@ -45,7 +53,7 @@ def setup_files(payload, _input, _file, queue='slurm'):
     # Currently only support for slurm is available
     elif queue == 'rq':
         payload = execute_python_script.queue(
-            _file, cli_opts.split(), file_path)
+            _file, cli_opts, file_path)
 
     # TODO: Add some info to the job dict here
     return payload
@@ -75,7 +83,7 @@ def slurm_commands(slurm_dict):
     and returns the string for writing to a file.
     '''
 
-    output_s = '#!/bin/bash\n\n'
+    output = ['#!/bin/bash\n']
 
     # Handle the commands which are formatted differently
     for key in slurm_dict:
@@ -84,7 +92,7 @@ def slurm_commands(slurm_dict):
             # output_s += '#SBATCH --gres=gpu:{}\n'.format(slurm_dict[key])
 
         elif key == 'limit_node':
-            output_s += '#SBATCH --nodes=1\n'
+            output.append('#SBATCH --nodes=1')
 
         elif key == '--mem-per-cpu' or key == 'mem_unit':
             # Handle these in the end, since they should be as one in the slurm
@@ -92,13 +100,13 @@ def slurm_commands(slurm_dict):
             pass
 
         else:
-            output_s += '#SBATCH {}={}\n'.format(key, slurm_dict[key])
+            output.append('#SBATCH {}={}'.format(key, slurm_dict[key]))
 
     # Handle the mem-per-cpu and mem_unit here
-    output_s += '#SBATCH --mem-per-cpu={}{}\n'.format(
-                slurm_dict['--mem-per-cpu'], slurm_dict['mem_unit'])
+    output.append('#SBATCH --mem-per-cpu={}{}'.format(
+                      slurm_dict['--mem-per-cpu'], slurm_dict['mem_unit']))
 
-    return output_s
+    return output
 
 
 def cli_commands(cli_dict):
@@ -108,20 +116,14 @@ def cli_commands(cli_dict):
     TODO: Consider the CLI args which are just switches (if/else?)
     '''
 
-    output_s = ''
+    # Generate --key=value command line pairs
+    options = ['--{}={}'.format(key, value) for key, value in cli_dict.items()]
 
-    # Handle the toggles
-    # Toggle batch mode so we don't display interactive plots
-    output_s += ' --batch'
-    # Toggle stepmon so we can get some useful data from each step
-    output_s += ' --stepmon'
+    # add --batch and --stepmon options
+    options.extend(('--batch', '--stepmon'))
 
-    for key in cli_dict:
-
-        # Handle the options
-        output_s += ' --{}={}'.format(key, cli_dict[key])
-
-    return output_s.lstrip()
+    # join them together in a command line
+    return options
 
 
 def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
@@ -135,15 +137,12 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
     # Parse the slurm options and write them
     # on the open _file
     slurm_opts = slurm_commands(slurm_dict)
-    _file.write(slurm_opts)
+    _file.write('\n'.join(slurm_opts))
 
     # Write the CLI options
-    _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
+    _file.write('\nbumps {} {}\n'.format(file_path, ' '.join(cli_opts)))
 
-    execute_slurm_script('bumps', cli_opts.split(),
-                         job_file, job_path)
-
-    return
+    execute_slurm_script('bumps', cli_opts, job_file, job_path)
 
 
 def search_results(path):

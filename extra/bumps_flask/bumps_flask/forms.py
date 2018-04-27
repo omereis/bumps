@@ -23,8 +23,7 @@ class TokenForm(FlaskForm):
 
     token = StringField(
         'Enter your token: ', validators=[
-            DataRequired(
-                message='Please enter a token.')])
+            DataRequired(message='Please enter a token.')])
 
     def validate_token(form, field):
         '''
@@ -33,9 +32,7 @@ class TokenForm(FlaskForm):
         '''
         if not rdb.exists(str(field.data)):
             raise ValidationError(
-                'Token \"' +
-                field.data +
-                '\" does not exist in the database.')
+                'Token %r does not exist in the database.'%field.data)
 
 
 class UploadForm(FlaskForm):
@@ -46,18 +43,18 @@ class UploadForm(FlaskForm):
         Validation consists of checking the file extension
         '''
         filename = secure_filename(field.data.filename)
-        if not filename.rsplit('.', 1)[1].lower() == 'py':
-            raise ValidationError('Only .py files allowed!')
+        #if not filename.rsplit('.', 1)[1].lower() == 'py':
+        #    raise ValidationError('Only .py files allowed!')
 
 
 class EmailForm(FlaskForm):
     email = StringField(
         label='Email address: ',
         validators=[
-            Email(
-                message='Please enter a valid email address.'),
-            Optional()],
-            default='one4@nist.gov')
+            Optional(),
+            Email(message='Please enter a valid email address.'),
+            ],
+        default='one4@nist.gov')
     
 
 
@@ -291,4 +288,4 @@ class FitForm(FlaskForm):
     burn = FormField(BurnForm)
     optimizer = FormField(OptimizerForm)
     upload = FormField(UploadForm)
-    email = FormField(EmailForm)
+    #email = FormField(EmailForm)
