@@ -9,26 +9,33 @@ IMAGE ?= $(image)
 
 .PHONY: build run clean distclean
 
-all: build run
+all: build run clean build-redis run-redis
 
 clean:
-	# Kill the existing bumps:port container
+	# Stop the container if it is running
+	-docker container ls | grep -q $(IMAGE) && docker stop -t 0 $(IMAGE)
+	# Remove the container if it exists
 	-docker container ls -a | grep -q $(IMAGE) && docker container rm $(IMAGE)
-	# Kill the existing bumps:port image
+	# Remove the image if it exists
 	-docker image ls | grep -q $(IMAGE) && docker image rm $(IMAGE)
 
-build:
-    # Grab the latest redis
-	docker pull redis:latest
-	# Build the new bumps:port container
+build: build-redis
+	# Build or update the image ("make clean build" to build without cache)
 	docker build . -t $(IMAGE)
 
-run:
-	# Start redis if it is not already started
-	-docker ps | grep -q bumps_redis || docker run --name bumps_redis -d redis
-	# Stop the existing bumps:port container
+run: run-redis
+	# Stop the container if it is running
 	-docker container ls | grep -q $(IMAGE) && docker stop -t 0 $(IMAGE)
-	# Kill the existing bumps:port container
+	# Remove the container if it exists
 	-docker container ls -a | grep -q $(IMAGE) && docker container rm $(IMAGE)
-	# Start redis if it is not already started
+	# Start the container and connect it to redis
+	# Note: make sure the selected port is accessible via the firewall
 	docker run -d --link bumps_redis -e PORT=$(PORT) -e HOST=$(HOST) -p $(PORT):$(PORT) --name $(IMAGE) $(IMAGE)
+
+build-redis:
+    # Grab the latest redis image
+	docker pull redis:latest
+
+run-redis:
+	# Start the redis container if it is not already started
+	-docker ps | grep -q bumps_redis || docker run --name bumps_redis -d redis
