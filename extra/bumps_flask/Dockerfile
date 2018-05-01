@@ -1,9 +1,45 @@
 # Using the latest long-term-support Ubuntu OS
 FROM ubuntu:16.04
 
+# Warning: on linux systems DNS lookup was failing.  Needed to find
+# the DNS IP addresses with:
+#     nmcli dev show | grep 'IP4.DNS'
+# and add them to docker using the following in /etc/docker/daemon.json:
+#     {
+#         "dns": ["first ip", "second ip"],
+#         ...
+#     }
+# May need to kill the docker daemon before it works:
+#     sudo pkill docker
+# Note that the nvidia runtime configuration ends up in the same file, so
+# you may need some fiddling after installing it.
+
+# Update the apt-get index and then install project dependencies
+RUN apt-get update && apt-get install -y \
+    iputils-ping    \
+    net-tools       \
+    build-essential \
+    apache2         \
+    apache2-dev     \
+    libssl-dev      \
+    git             \
+    vim             \
+    libmunge-dev    \
+    munge           \
+    python          \
+    python-dev      \
+    python-pip      \
+    python-numpy    \
+    #python-scipy    \
+    python-matplotlib \
+    ocl-icd-libopencl1 \
+    python-pyopencl \
+    clinfo \
+    && rm -rf /var/lib/apt/lists/*
+
 # Intel OpenCL
 # based on the Intel OpenCL installation instructions and the Intel docker file
-# in https://github.com/chihchun/opencl-docker 
+# in https://github.com/chihchun/opencl-docker
 #RUN apt-get update && apt-get install -y unzip tar xz-utils clinfo
 #ADD http://registrationcenter-download.intel.com/akdlm/irc_nas/11396/SRB5.0_linux64.zip /tmp/intel-opencl-driver
 #WORKDIR /tmp/intel-opencl-driver
@@ -13,21 +49,22 @@ FROM ubuntu:16.04
 #    ldconfig \
 #    clinfo
 
-# Update the apt-get index and then install project dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    apache2         \
-    apache2-dev     \
-    libssl-dev      \
-    git             \
-    python-dev      \
-    python-pip      \
-    vim             \
-    libmunge-dev    \
-    python          \
-    iputils-ping    \
-    net-tools       \
-    munge
+# NVidia OpenCL
+# In order to run against nvidia GPU need the docker-ce package:
+#   https://docs.docker.com/install/linux/docker-ce/ubuntu/#install-docker-ce
+# then the nvidia-docker2 package:
+#   https://github.com/NVIDIA/nvidia-docker
+# The commands to compose the nvidia opencl configuration come from
+# the nvidia docker containers in opencl/runtime/Dockerfile at:
+#   https://gitlab.com/nvidia/opencl
+# These are also hosted on docker hub and can be used as the base container:
+#   https://hub.docker.com/r/nvidia/opencl/
+RUN mkdir -p /etc/OpenCL/vendors && \
+    echo "libnvidia-opencl.so.1" > /etc/OpenCL/vendors/nvidia.icd
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
+
+RUN rm /etc/OpenCL/vendors/mesa.icd
 
 #ADD https://download.schedmd.com/slurm/slurm-17.11.5.tar.bz2 /tmp/slurm.tgz
 #RUN apt-get install vim
