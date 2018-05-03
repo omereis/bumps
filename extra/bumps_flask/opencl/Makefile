@@ -42,7 +42,10 @@ clean: stop
 
 build: $(INTEL_DRIVER)
 	# Build or update the image ("make clean build" to build without cache)
-	docker build . -t $(IMAGE) --build-arg INTEL_DRIVER=$(INTEL_DRIVER) \
+	docker build . -t $(IMAGE) \
+		--build-arg INTEL_DRIVER_URL=$(INTEL_DRIVER_URL) \
+		--build-arg INTEL_DRIVER=$(INTEL_DRIVER) \
+		--build-arg AMD_DRIVER_URL=$(AMD_DRIVER_URL) \
 		--build-arg AMD_DRIVER=$(AMD_DRIVER)
 
 run: stop

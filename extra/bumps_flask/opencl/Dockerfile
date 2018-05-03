@@ -18,19 +18,22 @@ ARG INTEL_DRIVER
 RUN mkdir -p /tmp/opencl-driver-intel
 COPY $INTEL_DRIVER /tmp/opencl-driver-intel/$INTEL_DRIVER
 WORKDIR /tmp/opencl-driver-intel
-# SRB 5 uses a zip file
-#RUN echo INTEL_DRIVER is $INTEL_DRIVER; \
-#    unzip $INTEL_DRIVER; \
-#    mkdir fakeroot; \
-#    for f in intel-opencl-*.tar.xz; do tar -C fakeroot -Jxvf $f; done; \
-#    cp -R fakeroot/* /; \
-#    ldconfig;
-RUN tar -xzf $INTEL_DRIVER; \
-    for i in $(basename $INTEL_DRIVER .tgz)/rpm/*.rpm; do alien --to-deb $i; done; \
-    dpkg -i *.deb; \
-    rm -rf $INTEL_DRIVER $(basename $INTEL_DRIVER .tgz) *.deb; \
-    mkdir -p /etc/OpenCL/vendors; \
-    echo /opt/intel/*/lib64/libintelocl.so > /etc/OpenCL/vendors/intel.icd;
+# SRB 5 uses a zip file; older drivers use .tgz
+RUN echo INTEL_DRIVER is $INTEL_DRIVER; \
+    if echo $INTEL_DRIVER | grep -q "[.]zip$"; then \
+        unzip $INTEL_DRIVER; \
+        mkdir fakeroot; \
+        for f in intel-opencl-*.tar.xz; do tar -C fakeroot -Jxvf $f; done; \
+        cp -R fakeroot/* /; \
+        ldconfig; \
+    else \
+        tar -xzf $INTEL_DRIVER; \
+        for i in $(basename $INTEL_DRIVER .tgz)/rpm/*.rpm; do alien --to-deb $i; done; \
+        dpkg -i *.deb; \
+        rm -rf $INTEL_DRIVER $(basename $INTEL_DRIVER .tgz) *.deb; \
+        mkdir -p /etc/OpenCL/vendors; \
+        echo /opt/intel/*/lib64/libintelocl.so > /etc/OpenCL/vendors/intel.icd; \
+    fi;
 
 # Install AMD Radeon drivers
 ARG AMD_DRIVER
