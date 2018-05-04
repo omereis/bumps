@@ -19,19 +19,19 @@ INTEL_DRIVER_URL = http://registrationcenter-download.intel.com/akdlm/irc_nas/90
 #AMD_DRIVER = amdgpu-pro-17.40-492261.tar.xz
 AMD_DRIVER = amdgpu-pro-18.10-572953.tar.xz
 AMD_DRIVER_URL = https://www2.ati.com/drivers/linux/ubuntu/$(AMD_DRIVER)
-AMD_OPTS = --device=/dev/kfd --device=/dev/dri --group-add video
 
-# Nvidia
+# Specify the type of gpu (amd, nvidia, intel).
+# This defines the run options needed for the docker container to access the
+# GPU resources on the (Linux) host.  The nvidia container needs a special
+# nvidia runtime installed, which depends on the docker-ce package from docker
+# rather than the base docker package in debian/ubuntu.
+# Note: Intel beignet gets confused by multiple cards... may need relabel
+# the card and renderer as shown in the comment below.  This option can be
+# specified using RUN_OPTS="..." on the call to Make.
 NVIDIA_OPTS = --runtime=nvidia
-
-# Intel beignet driver needs /dev/dri
-# Note: beignet gets confused by multiple cards... may need second option if
-# gpu is device 1 rather than device 0.
+AMD_OPTS = --device=/dev/kfd --device=/dev/dri --group-add video
 INTEL_OPTS = --device=/dev/dri
 #INTEL_OPTS = --device=/dev/dri/card1:/dev/dri/card0 --device=/dev/dri/renderD129:/dev/dri/renderD128
-
-# Specify the type of gpu (amd, nvidia, intel).  Note that this only works on
-# linux systems which can forward the device drivers to docker.
 gpu ?= none
 ifeq ($(gpu), amd)
 	RUN_OPTS = $(AMD_OPTS)
