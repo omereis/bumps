@@ -18,15 +18,30 @@ INTEL_DRIVER_URL = http://registrationcenter-download.intel.com/akdlm/irc_nas/90
 # TODO: this should be replaced by the ROCm drivers...
 #AMD_DRIVER = amdgpu-pro-17.40-492261.tar.xz
 AMD_DRIVER = amdgpu-pro-18.10-572953.tar.xz
-AMD_DRIVER_URL = http://www2.ati.com/drivers/linux/ubuntu/$(AMD_DRIVER)
+AMD_DRIVER_URL = https://www2.ati.com/drivers/linux/ubuntu/$(AMD_DRIVER)
 AMD_OPTS = --device=/dev/kfd --device=/dev/dri --group-add video
 
 # Nvidia
 NVIDIA_OPTS = --runtime=nvidia
 
-RUN_OPTS = $(AMD_OPTS)
+# Intel beignet driver needs /dev/dri
+# Note: beignet gets confused by multiple cards... may need second option if
+# gpu is device 1 rather than device 0.
+INTEL_OPTS = --device=/dev/dri
+#INTEL_OPTS = --device=/dev/dri/card1:/dev/dri/card0 --device=/dev/dri/renderD129:/dev/dri/renderD128
 
-.PHONY: stop build run clean fetch 
+# Specify the type of gpu (amd, nvidia, intel).  Note that this only works on
+# linux systems which can forward the device drivers to docker.
+gpu ?= none
+ifeq ($(gpu), amd)
+	RUN_OPTS = $(AMD_OPTS)
+else ifeq ($(gpu), nvidia)
+	RUN_OPTS = $(NVIDIA_OPTS)
+else ifeq ($(gpu), intel)
+	RUN_OPTS = $(INTEL_OPTS)
+endif
+
+.PHONY: stop build run clean fetch
 
 all: build run
 
@@ -40,7 +55,7 @@ clean: stop
 	# Remove the image if it exists
 	-docker image ls | grep -q $(IMAGE) && docker image rm $(IMAGE)
 
-build: $(INTEL_DRIVER)
+build: $(INTEL_DRIVER) $(AMD_DRIVER)
 	# Build or update the image ("make clean build" to build without cache)
 	docker build . -t $(IMAGE) \
 		--build-arg INTEL_DRIVER_URL=$(INTEL_DRIVER_URL) \
@@ -63,7 +78,10 @@ attach:
 fetch: $(AMD_DRIVER) $(INTEL_DRIVER)
 
 $(AMD_DRIVER):
-	wget $(AMD_DRIVER_URL)
+	# AMD requires referer to be ati.com in order to download
+	#wget --referer https://www2.ati.com $(AMD_DRIVER_URL)
+	curl --referer https://www2.ati.com -O $(AMD_DRIVER_URL)
 
 $(INTEL_DRIVER):
-	wget $(INTEL_DRIVER_URL)
+	#wget $(INTEL_DRIVER_URL)
+	curl -O $(INTEL_DRIVER_URL)

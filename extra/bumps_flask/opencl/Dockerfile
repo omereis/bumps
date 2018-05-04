@@ -7,12 +7,13 @@ RUN apt-get update && apt-get install -y \
     tar \
     xz-utils \
     alien \
+    beignet-opencl-icd \
     clinfo \
     ;
 
 # Install Intel OpenCL drivers
 # based on the Intel OpenCL installation instructions and the Intel docker file
-# in https://github.com/chihchun/opencl-docker 
+# in https://github.com/chihchun/opencl-docker
 #ADD http://registrationcenter-download.intel.com/akdlm/irc_nas/11396/SRB5.0_linux64.zip /tmp/intel-opencl-driver
 ARG INTEL_DRIVER
 RUN mkdir -p /tmp/opencl-driver-intel
@@ -46,7 +47,7 @@ RUN echo AMD_DRIVER is $AMD_DRIVER; \
     cd amdgpu-pro-*; \
     ./amdgpu-install; \
     apt-get install opencl-amdgpu-pro -y;
-     
+
 #RUN apt-get install -y alien
 
 # Install NVidia OpenCL drivers
@@ -67,4 +68,3 @@ ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
 RUN rm -f /etc/OpenCL/vendors/mesa.icd
 
 CMD clinfo
-    
