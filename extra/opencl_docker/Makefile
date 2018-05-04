@@ -1,24 +1,25 @@
 
-image ?= opencl_$(USER)
+# Name of the docker image (default is opencl, but override with image=<name>)
+image ?= opencl
 IMAGE ?= $(image)
 
 # Intel OpenCL 2.0
-#INTEL_DRIVER = SRB5.0_linux64.zip
-#INTEL_DRIVER_URL = http://registrationcenter-download.intel.com/akdlm/irc_nas/11396/$(INTEL_DRIVER)
+#INTEL_DRIVER=SRB5.0_linux64.zip
+#INTEL_DRIVER_URL=http://registrationcenter-download.intel.com/akdlm/irc_nas/11396
 
 # Intel OpenCL 1.2 16.1.2
-#INTEL_DRIVER = opencl_runtime_16.1.2_x64_rh_6.4.0.37.tgz
-#INTEL_DRIVER_URL = http://registrationcenter-download.intel.com/akdlm/irc_nas/12556/$(INTEL_DRIVER)
+#INTEL_DRIVER=opencl_runtime_16.1.2_x64_rh_6.4.0.37.tgz
+#INTEL_DRIVER_URL=http://registrationcenter-download.intel.com/akdlm/irc_nas/12556
 
 # Intel OpenCL 1.2 16.1.1
-INTEL_DRIVER = opencl_runtime_16.1.1_x64_ubuntu_6.4.0.25.tgz
-INTEL_DRIVER_URL = http://registrationcenter-download.intel.com/akdlm/irc_nas/9019/$(INTEL_DRIVER)
+INTEL_DRIVER=opencl_runtime_16.1.1_x64_ubuntu_6.4.0.25.tgz
+INTEL_DRIVER_URL=http://registrationcenter-download.intel.com/akdlm/irc_nas/9019
 
 # AMDGPU-PRO
 # TODO: this should be replaced by the ROCm drivers...
 #AMD_DRIVER = amdgpu-pro-17.40-492261.tar.xz
-AMD_DRIVER = amdgpu-pro-18.10-572953.tar.xz
-AMD_DRIVER_URL = https://www2.ati.com/drivers/linux/ubuntu/$(AMD_DRIVER)
+AMD_DRIVER=amdgpu-pro-18.10-572953.tar.xz
+AMD_DRIVER_URL=https://www2.ati.com/drivers/linux/ubuntu
 
 # Specify the type of gpu (amd, nvidia, intel).
 # This defines the run options needed for the docker container to access the
@@ -55,13 +56,16 @@ clean: stop
 	# Remove the image if it exists
 	-docker image ls | grep -q $(IMAGE) && docker image rm $(IMAGE)
 
-build: $(INTEL_DRIVER) $(AMD_DRIVER)
+# Make build depend on fetch if you want to cache the drivers locally; need
+# to update the docker file appropriately.
+#build: fetch
+build:
 	# Build or update the image ("make clean build" to build without cache)
 	docker build . -t $(IMAGE) \
+		--build-arg INTEL_DRIVER_URL=$(INTEL_DRIVER_URL) \
+		--build-arg AMD_DRIVER_URL=$(AMD_DRIVER_URL) \
 		--build-arg INTEL_DRIVER=$(INTEL_DRIVER) \
 		--build-arg AMD_DRIVER=$(AMD_DRIVER)
-	#	--build-arg INTEL_DRIVER_URL=$(INTEL_DRIVER_URL)
-	#	--build-arg AMD_DRIVER_URL=$(AMD_DRIVER_URL)
 
 run: stop
 	# Run the container
@@ -80,8 +84,8 @@ fetch: $(AMD_DRIVER) $(INTEL_DRIVER)
 $(AMD_DRIVER):
 	# AMD requires referer to be ati.com in order to download
 	#wget --referer https://www2.ati.com $(AMD_DRIVER_URL)
-	curl --referer https://www2.ati.com -O $(AMD_DRIVER_URL)
+	curl --referer https://www2.ati.com -O $(AMD_DRIVER_URL)/$(AMD_DRIVER)
 
 $(INTEL_DRIVER):
 	#wget $(INTEL_DRIVER_URL)
-	curl -O $(INTEL_DRIVER_URL)
+	curl -O $(INTEL_DRIVER_URL)/$(INTEL_DRIVER)
