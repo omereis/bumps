@@ -1,6 +1,6 @@
 # Using the latest long-term-support Ubuntu OS
-FROM ubuntu:16.04
-#FROM pkienzle/opencl:latest
+#FROM ubuntu:16.04
+FROM pkienzle/opencl_docker:latest
 
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y \
