@@ -1,0 +1,15 @@
+-----------------------------
+fitproblem-BaseFitProblem.plot()
+figfile=.\res_cf1\cf1
+fignum is None
+type (fignum)=<class 'NoneType'>
+pylab.gcf()=Figure(640x480)
+Error:
+("Object of type 'ndarray' is not JSON serializable",)-----------------------------
+fitproblem-BaseFitProblem.plot()
+figfile=.\res_cf1\cf1
+fignum is None
+type (fignum)=<class 'NoneType'>
+pylab.gcf()=Figure(640x480)
+Error:
+("Object of type 'ndarray' is not JSON serializable",)

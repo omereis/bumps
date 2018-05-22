@@ -1,0 +1,66 @@
+# Using the latest long-term-support Ubuntu OS
+FROM ubuntu:16.04
+
+# docker build --rm -t oe_bumps -f Dockerfile_bumps.oe .
+# Update the apt-get index and then install project dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    apache2         \
+    apache2-dev     \
+    libssl-dev      \
+    git             \
+    python-dev      \
+    python-pip      \
+    vim             \
+    libmunge-dev    \
+    python          \
+    iputils-ping    \
+    net-tools
+
+# Create the home directory for the new appCelery user.
+RUN mkdir -p /home/appCelery_user
+
+# Set the home directory to our appCelery user's home.
+ENV HOME=/home/appCelery_user
+ENV LINES=45
+
+# Set the directory for relative file paths
+WORKDIR /home/appCelery_user/bumps_flask/bumps_flask
+
+# Create the folder for the html templates and static assets
+RUN mkdir templates/ && mkdir static/
+
+# Install the appCelery dependencies using pip
+RUN pip install -U pip
+COPY requirements.txt /home/appCelery_user/bumps_flask/
+RUN pip install --no-cache-dir -r ../requirements.txt
+#RUN pip install git+https://github.com/omereis/bumps.git
+
+# Copy appCelery files to the container
+COPY ./ /home/appCelery_user/bumps_flask
+
+# Celery
+#RUN pip install celery
+RUN pip install redis 
+
+# Make the 5000 port available from outside the container
+EXPOSE 5000
+
+# Create a new user called 'appCelery_user' and set it up on the OS
+RUN groupadd -r appCelery_user && useradd --no-log-init -r -g appCelery_user appCelery_user
+
+# Install the appCelerylication locally
+RUN pip install --no-cache-dir -e ..
+
+# Log in with 'appCelery_user' for the rest of the process
+# USER appCelery_user
+
+# Set the environment variables for Flask
+ENV FLASK_APP=bumps_flask
+
+#ENV COLUMNS=120
+#ENV LINES=45
+
+
+# Launch the appCelery
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:appCelery"]

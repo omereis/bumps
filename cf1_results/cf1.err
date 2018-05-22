@@ -1,0 +1,10 @@
+.b = Parameter(0.451163, name='b', bounds=(-5,5))
+.m = Parameter(2.00642, name='m', bounds=(0,4))
+
+[chisq=22.74(13), nllf=204.683]
+C:\Users\one4\AppData\Local\Continuum\anaconda3\lib\site-packages\matplotlib\pyplot.py:3238: MatplotlibDeprecationWarning: The 'hold' keyword argument is deprecated since 2.0.
+  mplDeprecation)
+C:\Users\one4\AppData\Local\Continuum\anaconda3\lib\site-packages\matplotlib\pyplot.py:2541: MatplotlibDeprecationWarning: The 'hold' keyword argument is deprecated since 2.0.
+  mplDeprecation)
+C:\Users\one4\AppData\Local\Continuum\anaconda3\lib\site-packages\mpld3\mplexporter\exporter.py:84: UserWarning: Blended transforms not yet supported. Zoom behavior may not work as expected.
+  warnings.warn("Blended transforms not yet supported. "
