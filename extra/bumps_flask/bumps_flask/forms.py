@@ -289,5 +289,5 @@ class FitForm(FlaskForm):
     burn = FormField(BurnForm)
     optimizer = FormField(OptimizerForm)
     upload = FormField(UploadForm)
-    email = FormField(EmailForm)
+#    email = FormField(EmailForm)
 #    print("Completed FitForm")

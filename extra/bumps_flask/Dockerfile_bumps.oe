@@ -40,7 +40,7 @@ RUN pip install git+https://github.com/omereis/bumps.git
 COPY ./ /home/app_user/bumps_flask
 
 # Celery
-#RUN pip install celery
+RUN pip install celery
 RUN pip install redis 
 
 # Make the 5000 port available from outside the container
@@ -58,9 +58,12 @@ RUN pip install --no-cache-dir -e ..
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
 
+ENV BACKEND_SERVER=bumps-redis
+
 ENV COLUMNS=120
 ENV LINES=45
 
+#RUN chmod a+x /home/app_user/test/run_b.sh
 
 # Launch the app
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
