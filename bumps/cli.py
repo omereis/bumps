@@ -51,6 +51,7 @@ from . import options
 
 from .util import pushdir
 
+from .celery import appCelery
 
 def install_plugin(p):
     """
@@ -432,6 +433,7 @@ def warn_with_traceback(message, category, filename, lineno,
     log = file if hasattr(file, 'write') else sys.stderr
     log.write(warnings.formatwarning(message, category, filename, lineno, line))
 
+@appCelery.task
 def main():
     """
     Run the bumps program with the command line interface.
@@ -581,6 +583,8 @@ def main():
             beep()
             import pylab
             pylab.show()
+    sys.stdout = sys.__stdout__
+    return problem.output_path
 
 
 # Allow  "$python -m bumps.cli args" calling pattern

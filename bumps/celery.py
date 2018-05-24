@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 from celery import Celery
 
-app = Celery('bumps',
+appCelery = Celery('bumps',
              broker='amqp://rabbit-server',
              backend='redis://redis-server')
 
