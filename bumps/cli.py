@@ -434,7 +434,7 @@ def warn_with_traceback(message, category, filename, lineno,
     log.write(warnings.formatwarning(message, category, filename, lineno, line))
 
 @appCelery.task
-def main():
+def main(argv=None):
     """
     Run the bumps program with the command line interface.
 
@@ -443,26 +443,31 @@ def main():
     # add full traceback to warnings
     #warnings.showwarning = warn_with_traceback
 
-    if len(sys.argv) == 1:
-        sys.argv.append("-?")
+    if (argv == None):
+        argv = sys.argv
+    else:
+        sys.argv = argv
+
+    if len(argv) == 1:
+        argv.append("-?")
         print("\nNo modelfile parameter was specified.\n")
 
     # run command with bumps in the environment
-    if sys.argv[1] == '-m':
+    if argv[1] == '-m':
         import runpy
-        sys.argv = sys.argv[2:]
-        runpy.run_module(sys.argv[0], run_name="__main__")
+        argv = argv[2:]
+        runpy.run_module(argv[0], run_name="__main__")
         sys.exit()
-    elif sys.argv[1] == '-p':
+    elif argv[1] == '-p':
         import runpy
-        sys.argv = sys.argv[2:]
-        runpy.run_path(sys.argv[0], run_name="__main__")
+        argv = argv[2:]
+        runpy.run_path(argv[0], run_name="__main__")
         sys.exit()
-    elif sys.argv[1] == '-c':
-        run_command(sys.argv[2])
+    elif argv[1] == '-c':
+        run_command(argv[2])
         sys.exit()
-    elif sys.argv[1] == '-i':
-        sys.argv = ["ipython", "--pylab"]
+    elif argv[1] == '-i':
+        argv = ["ipython", "--pylab"]
         from IPython import start_ipython
         sys.exit(start_ipython())
 
@@ -552,7 +557,7 @@ def main():
         make_store(problem, opts, exists_handler=store_overwrite_query)
 
         # Show command line arguments and initial model
-        print("#", " ".join(sys.argv))
+        print("#", " ".join(argv))
         problem.show()
         if opts.stepmon:
             fid = open(problem.output_path + '.log', 'w')
