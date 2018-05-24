@@ -1,7 +1,7 @@
 # Using the latest long-term-support Ubuntu OS
 FROM ubuntu:16.04
 
-# docker build --rm -t oe_bumps -f Dockerfile_bumps.oe .
+# docker build --rm -t oe_bumps_worker -f Dockerfile_bumps_worker.oe .
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -67,4 +67,4 @@ ENV LINES=45
 #RUN chmod a+x /home/app_user/test/run_b.sh
 
 # Launch the app
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+#CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
