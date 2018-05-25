@@ -1,6 +1,7 @@
 # Using the latest long-term-support Ubuntu OS
 FROM ubuntu:16.04
 
+# docker build --rm -t oe_bumps -f Dockerfile_bumps.oe . --build-arg container_type=client
 # docker build --rm -t oe_bumps -f Dockerfile_bumps.oe .
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y \
@@ -68,6 +69,10 @@ ENV LINES=45
 #RUN chmod a+x /home/app_user/test/run_b.sh
 
 WORKDIR /home/app_user/bumps_flask
+
+#ARG container_type
+
+#CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
 
 # Launch the app
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]

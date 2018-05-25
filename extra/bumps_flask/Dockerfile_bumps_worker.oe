@@ -26,6 +26,7 @@ ENV HOME=/home/app_user
 ENV LINES=45
 
 # Set the directory for relative file paths
+#WORKDIR /home/app_user/
 WORKDIR /home/app_user/bumps_flask/bumps_flask
 
 # Create the folder for the html templates and static assets
@@ -33,7 +34,7 @@ RUN mkdir templates/ && mkdir static/
 
 # Install the app dependencies using pip
 RUN pip install -U pip
-COPY requirements.txt /home/app_user/bumps_flask/
+COPY ./requirements.txt /home/app_user/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
 #RUN pip install git+https://github.com/omereis/bumps.git
 RUN pip install git+https://github.com/omereis/bumps.git@master
@@ -60,12 +61,24 @@ RUN pip install --no-cache-dir -e ..
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
 
-ENV BACKEND_SERVER=bumps-redis
+ENV BACKEND_SERVER=redis-server
 
 ENV COLUMNS=120
 ENV LINES=45
 
 #RUN chmod a+x /home/app_user/test/run_b.sh
 
+WORKDIR /home/app_user/bumps_flask
+
+#ARG container_type
+
+#start_celery.sh
+#CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
+
 # Launch the app
 #CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+#CMD ["celery -A celery_bumps worker -E -l info"]
+#CMD ["ls", "celery_bumps"]
+RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
+RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
+CMD ["/home/app_user/bumps_flask/start_celery.sh"]

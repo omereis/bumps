@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 from .celery import app
 from bumps import cli
 
-
+'''
 @app.task
 def add(x, y):
     return x + y
@@ -16,6 +16,7 @@ def mult(x, y):
 @app.task
 def xsum(numbers):
     return sum(numbers)
+'''
 
 @app.task
 def run_bumps(params):
