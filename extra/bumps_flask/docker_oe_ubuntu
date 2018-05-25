@@ -1,7 +1,8 @@
 # Using the latest long-term-support Ubuntu OS
 FROM ubuntu:16.04
 
-# docker build --rm -t oe_bumps -f Dockerfile_bumps.oe .
+# docker build --rm -t oe_ubuntu -f docker_oe_ubuntu .
+# docker run -d --name oe_ubuntu oe_ubuntu
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -25,7 +26,6 @@ ENV HOME=/home/app_user
 ENV LINES=45
 
 # Set the directory for relative file paths
-#WORKDIR /home/app_user/
 WORKDIR /home/app_user/bumps_flask/bumps_flask
 
 # Create the folder for the html templates and static assets
@@ -33,9 +33,9 @@ RUN mkdir templates/ && mkdir static/
 
 # Install the app dependencies using pip
 RUN pip install -U pip
-COPY ./requirements.txt /home/app_user/bumps_flask/
+COPY requirements.txt /home/app_user/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
-#RUN pip install git+https://github.com/omereis/bumps.git
+#RUN pip install https://github.com/omereis/bumps.git
 RUN pip install git+https://github.com/omereis/bumps.git@master
 
 # Copy app files to the container
@@ -60,14 +60,12 @@ RUN pip install --no-cache-dir -e ..
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
 
-ENV BACKEND_SERVER=redis-server
+ENV BACKEND_SERVER=bumps-redis
 
 ENV COLUMNS=120
 ENV LINES=45
 
 #RUN chmod a+x /home/app_user/test/run_b.sh
 
-WORKDIR /home/app_user/bumps_flask
-
 # Launch the app
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+#CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]

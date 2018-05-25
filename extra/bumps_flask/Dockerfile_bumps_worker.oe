@@ -2,6 +2,7 @@
 FROM ubuntu:16.04
 
 # docker build --rm -t oe_bumps_worker -f Dockerfile_bumps_worker.oe .
+# docker run -d -it --link redis-server --link rabbit-server -e "REDIS_SERVER=redis-server" -h oe_bumps_worker --name oe_bumps_worker oe_bumps_worker
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
