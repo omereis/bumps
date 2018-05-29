@@ -62,6 +62,7 @@ RUN pip install --no-cache-dir -e ..
 ENV FLASK_APP=bumps_flask
 
 ENV BACKEND_SERVER=redis-server
+ENV REDIS_SERVER=redis-server
 
 ENV COLUMNS=120
 ENV LINES=45
@@ -76,9 +77,16 @@ WORKDIR /home/app_user/bumps_flask
 #CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
 
 # Launch the app
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+#CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
 #CMD ["celery -A celery_bumps worker -E -l info"]
 #CMD ["ls", "celery_bumps"]
-RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
+#RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
+#RUN celery -A celery_bumps worker -E -l info&
+#RUN /home/app_user/bumps_flask/start_celery.sh
 #RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
 #CMD ["/home/app_user/bumps_flask/start_celery.sh"]
+#CMD ["celery", " -A celery_bumps", "worker", "-E", "-l info"]
+#CMD ["celery", "-A", "celery_bumps"]
+#CMD ["pwd"]
+#CMD ["bash"]
+ENTRYPOINT celery -A celery_bumps worker --concurrency=20 --loglevel=info
