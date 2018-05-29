@@ -62,6 +62,7 @@ RUN pip install --no-cache-dir -e ..
 ENV FLASK_APP=bumps_flask
 
 ENV BACKEND_SERVER=redis-server
+ENV REDIS_SERVER=redis-server
 
 ENV COLUMNS=120
 ENV LINES=45

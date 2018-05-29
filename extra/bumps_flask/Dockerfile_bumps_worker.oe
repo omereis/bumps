@@ -76,9 +76,9 @@ WORKDIR /home/app_user/bumps_flask
 #CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
 
 # Launch the app
-#CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
 #CMD ["celery -A celery_bumps worker -E -l info"]
 #CMD ["ls", "celery_bumps"]
 RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
-RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
-CMD ["/home/app_user/bumps_flask/start_celery.sh"]
+#RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
+#CMD ["/home/app_user/bumps_flask/start_celery.sh"]
