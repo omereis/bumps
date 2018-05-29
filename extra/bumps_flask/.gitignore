@@ -2,6 +2,9 @@
 *.egg
 *.egg-info
 *.rdb
+&*.pdf
+*.doc
+*.docx
 .bumps_folder
 instance/
 slurm_test/
