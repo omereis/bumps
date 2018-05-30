@@ -13,9 +13,7 @@
 # sys.argv=['','/home/app_user/bumps_flask/test/cf1.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/app_user/results', '--fit=newton']
 # cli.main()
 # cli.main(['/usr/local/lib/python2.7/dist-packages/bumps/cli.py','/home/app_user/bumps_flask/test/cf1.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/app_user/results', '--fit=newton'])
-# cli.main(['/usr/local/lib/python2.7/dist-packages/bumps/cli.py','/home/app_user/bumps_flask/test/cf2.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/app_user/results', '--fit=newton'])
 # cli.main.delay(['/usr/local/lib/python2.7/dist-packages/bumps/cli.py','/home/app_user/bumps_flask/test/cf1.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/app_user/results', '--fit=newton'])
-# cli.main.delay(['/usr/local/lib/python2.7/dist-packages/bumps/cli.py','/home/app_user/bumps_flask/test/cf2.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/app_user/results', '--fit=newton'])
 
 python -m bumps.cli /home/app_user/bumps_flask/test/cf1.py --batch --stepmon --burn=100 --steps=100 --store=/home/app_user/results --fit=newton
 
