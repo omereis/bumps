@@ -67,6 +67,9 @@ ENV REDIS_SERVER=redis-server
 ENV COLUMNS=120
 ENV LINES=45
 
+RUN useradd bumps_client
+#/home/app_user
+#USER bumps_client
 #RUN chmod a+x /home/app_user/test/run_b.sh
 
 WORKDIR /home/app_user/bumps_flask

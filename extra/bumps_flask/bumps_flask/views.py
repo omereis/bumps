@@ -21,6 +21,15 @@ from .api import (
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
 from .file_handler import setup_files, update_job_info, search_results, zip_files
 
+import datetime
+
+def print_debug(strMessage):
+    f = open ("oe_debug.txt", "a+")
+    f.write("\n--------------------------------------------------\n")
+    f.write(str(datetime.datetime.now()) + "\n")
+    f.write("Message: " + strMessage + "\n")
+    f.write("--------------------------------------------------\n")
+    f.close()
 
 @app.route('/', methods=['GET', 'POST'])
 @jwt_optional
@@ -31,10 +40,11 @@ def index():
     JWT auth token that must be sent in every subsequent request to the
     server in order to maintain a sort of session.
     '''
-    print("in index")
+    print_debug("in index")
     
     # Will return None if the current user does not have a JWT (cookie/header)
     jwt_id = get_jwt_identity()
+    print_debug("in index, jwt_id obtained")
 
     # The user already has a valid JWT, let them move along
     if jwt_id:
@@ -103,8 +113,7 @@ def dashboard():
         id=user_token,
         jobs=user_jobs,
         files=files)
-
-
+########################################################################################
 @app.route('/api/register', methods=['GET', 'POST'])
 def tokenizer():
     '''
@@ -117,30 +126,24 @@ def tokenizer():
 
     # TODO: Check available resources here
     # Create a UID
-    print("\n\n\n")
-    print("tokenizer")
     flash("tokenizer")
     user_token = create_user_token()
-    print("tokenizer, 'user_token': " + str(user_token))
 
     # Associate an auth JWT and a refresh JWT to the UID
     try :
         rt = register_token(user_token)
-        print("token registered 1")
         x = register_token(user_token).get_data()
-        print("token registered 2")
         resp = json.loads(x)
 #        resp = json.loads(register_token(user_token).get_data())
-        print("json loaded")
         jwt_token = resp['access_token']
         refresh_token = resp['refresh_token']
-        print("token refreshed")
-        print("\n\n\n")
     except Exception as excp:
         print ("Error: " + str(excp.args))
 
     # Working with the client interface
     if flask_request.method == 'POST':
+        flash("POST")
+        print_debug("POST")
         response = jsonify(
             uid=user_token,
             auth_token=jwt_token,
@@ -148,6 +151,8 @@ def tokenizer():
 
     # Working with the web page interface
     else:
+        flash("GET")
+        print_debug("GET")
         # Build the response object to a template
         response = make_response(
             render_template('tokenizer.html', token=user_token))
@@ -155,9 +160,106 @@ def tokenizer():
     # Bundle the JWT cookies into the response object
     set_access_cookies(response, jwt_token)
     set_refresh_cookies(response, refresh_token)
+    print_debug("user token: " + user_token)
+
     return response
+########################################################################################
+from celery import Celery
+@app.route('/api/celery', methods=['GET', 'POST'])
+def check_celery():
+    '''
+    View for showing the user their unique ID, which they should remember
+    in order to refresh their JWT authentication.
+    Uses the API to create a unique user_token which is
+    then associated to an authentication JWT
+    and saved as a cookie or in a header by the client
+    '''
 
+    # TODO: Check available resources here
+    # Create a UID
+#    appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
+    appCeleryBumps = Celery('proj',
+             broker='amqp://rabbit-server',
+             backend='redis://redis-server')
+    flash("Celery Tester 08:31")
+    msg = ""
+    msg1 = ""
+    msgQueue = ""
+    inspect = None
+    try:
+        msgQueue = str(appCeleryBumps.control.inspect().stats().keys())
+        from celery.task.control import inspect
+        msg = "Celery imported"
+#        msg1 = get_celery_worker_status()
+    except Exception as e:
+        msgQueue = "Nada"
+        msg = "Error: " + str(e.args)
+        msg1 = "basa"
+    flash ("Celery Status: " + msg)
+    try:
+        insp = inspect()
+        msg = "Celery inspected"
+        d = insp.stats()
+        msg = "inspection results: " + d
+    except Exception as e:
+           msg = "Error: " + str(e.args)
+#    flash ("Celery Status: " + get_celery_worker_status())
+    flash ("msg: " + msg)
+    flash ("msgQ: " + msgQueue)
+    user_token = create_user_token()
+    render_template('tokenizer.html')
 
+    # Associate an auth JWT and a refresh JWT to the UID
+    try :
+        rt = register_token(user_token)
+        x = register_token(user_token).get_data()
+        resp = json.loads(x)
+#        resp = json.loads(register_token(user_token).get_data())
+        jwt_token = resp['access_token']
+        refresh_token = resp['refresh_token']
+    except Exception as excp:
+        print ("Error: " + str(excp.args))
+
+    # Working with the client interface
+    if flask_request.method == 'POST':
+        flash("POST")
+        response = jsonify(
+            uid=user_token,
+            auth_token=jwt_token,
+            refresh_token=refresh_token)
+
+    # Working with the web page interface
+    else:
+        flash("GET")
+        # Build the response object to a template
+#        response = make_response(
+#            render_template('dashboard.html', token=user_token))
+        response = make_response(
+            render_template('tokenizer.html', token=user_token))
+
+    # Bundle the JWT cookies into the response object
+    set_access_cookies(response, jwt_token)
+    set_refresh_cookies(response, refresh_token)
+    return response
+########################################################################################
+def get_celery_worker_status():
+    ERROR_KEY = "ERROR"
+    try:
+        from celery.task.control import inspect
+        insp = inspect()
+        d = insp.stats()
+        if not d:
+            d = { ERROR_KEY: 'No running Celery workers were found.' }
+    except IOError as e:
+        from errno import errorcode
+        msg = "Error connecting to the backend: " + str(e)
+        if len(e.args) > 0 and errorcode.get(e.args[0]) == 'ECONNREFUSED':
+            msg += ' Check that the RabbitMQ server is running.'
+        d = { ERROR_KEY: msg }
+    except ImportError as e:
+        d = { ERROR_KEY: str(e)}
+    return d
+########################################################################################
 @app.route('/api/fit', methods=['GET', 'POST'])
 @jwt_required
 def fit_job(results=False):
@@ -168,7 +270,9 @@ def fit_job(results=False):
     by working with the API functions.
     '''
 
+    print_debug("inside fit_job. before calling FitForm")
     form = FitForm()
+    print_debug("inside fit_job. got form")
     if form.validate_on_submit():
         # Parse through the form data
         form_data = (process_request_form(form.data))
@@ -203,7 +307,9 @@ def fit_job(results=False):
         flash('Job submitted successfully.')
         return redirect(url_for('dashboard'))
 
-    return render_template('service.html', form=form)
+    # Retrieve the UID
+    user_token = get_jwt_identity()
+    return render_template('service.html', form=form, id = user_token)
 
 
 @app.route('/refresh')

@@ -20,28 +20,28 @@ RUN apt-get update && apt-get install -y \
     net-tools
 
 # Create the home directory for the new app user.
-RUN mkdir -p /home/app_user
+RUN mkdir -p /home/bumps_worker
 
 # Set the home directory to our app user's home.
-ENV HOME=/home/app_user
+ENV HOME=/home/bumps_worker
 ENV LINES=45
 
 # Set the directory for relative file paths
-#WORKDIR /home/app_user/
-WORKDIR /home/app_user/bumps_flask/bumps_flask
+#WORKDIR /home/bumps_worker/
+WORKDIR /home/bumps_worker/bumps_flask/bumps_flask
 
 # Create the folder for the html templates and static assets
 RUN mkdir templates/ && mkdir static/
 
 # Install the app dependencies using pip
 RUN pip install -U pip
-COPY ./requirements.txt /home/app_user/bumps_flask/
+COPY ./requirements.txt /home/bumps_worker/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
 #RUN pip install git+https://github.com/omereis/bumps.git
 RUN pip install git+https://github.com/omereis/bumps.git@master
 
 # Copy app files to the container
-COPY ./ /home/app_user/bumps_flask
+COPY ./ /home/bumps_worker/bumps_flask
 
 # Celery
 RUN pip install celery
@@ -50,14 +50,14 @@ RUN pip install redis
 # Make the 5000 port available from outside the container
 EXPOSE 5000
 
-# Create a new user called 'app_user' and set it up on the OS
-#RUN groupadd -r app_user && useradd --no-log-init -r -g app_user app_user
+# Create a new user called 'bumps_worker' and set it up on the OS
+#RUN groupadd -r bumps_worker && useradd --no-log-init -r -g bumps_worker bumps_worker
 
 # Install the application locally
 RUN pip install --no-cache-dir -e ..
 
-# Log in with 'app_user' for the rest of the process
-#USER app_user
+# Log in with 'bumps_worker' for the rest of the process
+#USER bumps_worker
 
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
@@ -68,24 +68,27 @@ ENV REDIS_SERVER=redis-server
 ENV COLUMNS=120
 ENV LINES=45
 
-#RUN chmod a+x /home/app_user/test/run_b.sh
+#RUN chmod a+x /home/bumps_worker/test/run_b.sh
 
-WORKDIR /home/app_user/bumps_flask
+WORKDIR /home/bumps_worker/bumps_flask
 
 #ARG container_type
 
 #start_celery.sh
 #CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
 
+#USER oe
+RUN useradd bumps_worker
+USER bumps_worker
 # Launch the app
 #CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
 #CMD ["celery -A celery_bumps worker -E -l info"]
 #CMD ["ls", "celery_bumps"]
-#RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
+#RUN chmod a+x /home/bumps_worker/bumps_flask/start_celery.sh
 #RUN celery -A celery_bumps worker -E -l info&
-#RUN /home/app_user/bumps_flask/start_celery.sh
-#RUN chmod a+x /home/app_user/bumps_flask/start_celery.sh
-#CMD ["/home/app_user/bumps_flask/start_celery.sh"]
+#RUN /home/bumps_worker/bumps_flask/start_celery.sh
+#RUN chmod a+x /home/bumps_worker/bumps_flask/start_celery.sh
+#CMD ["/home/bumps_worker/bumps_flask/start_celery.sh"]
 #CMD ["celery", " -A celery_bumps", "worker", "-E", "-l info"]
 #CMD ["celery", "-A", "celery_bumps"]
 #CMD ["pwd"]
