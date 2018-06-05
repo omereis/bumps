@@ -148,19 +148,20 @@ def tokenizer():
             uid=user_token,
             auth_token=jwt_token,
             refresh_token=refresh_token)
-
+        set_access_cookies(response, jwt_token)
+        set_refresh_cookies(response, refresh_token)
+        return response
     # Working with the web page interface
     else:
         flash("GET")
         print_debug("GET")
         # Build the response object to a template
-        response = make_response(
-            render_template('tokenizer.html', token=user_token))
+        response = make_response(render_template('tokenizer.html', token=user_token))
+        set_access_cookies(response, jwt_token)
+        set_refresh_cookies(response, refresh_token)
+        print_debug("user token: " + user_token)
 
     # Bundle the JWT cookies into the response object
-    set_access_cookies(response, jwt_token)
-    set_refresh_cookies(response, refresh_token)
-    print_debug("user token: " + user_token)
 
     return response
 ########################################################################################
@@ -357,6 +358,7 @@ def expired_token_callback():
     '''
     Function to call when an expired token accesses a protected endpoint
     '''
+    print_debug ("token expired")
     return render_template(
         'error.html', reason="Expired token", expired=True), 401
 
@@ -369,6 +371,7 @@ def unauthorized_token_callback(error):
     Takes one argument - an error string indicating why the request in unauthorized
     '''
 
+    print_debug ("token unauthorized")
     return render_template('error.html', reason=error), 401
 
 
@@ -386,6 +389,7 @@ def invalid_token_callback(error):
         flash('Invalid token detected, redirected to the frontpage.')
         return response
 
+    print_debug ("invalid token callback")
     return render_template('error.html', reason=error), 401
 
 
@@ -395,5 +399,6 @@ def revoked_token_callback():
     Function to call when a revoked token accesses a protected endpoint
     '''
 
+    print_debug ("revoked_token_callback")
     return render_template(
         'error.html', reason='You are not logged in!'), 401
