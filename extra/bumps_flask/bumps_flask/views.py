@@ -156,13 +156,8 @@ def tokenizer():
         # Build the response object to a template
         form = FitForm()
         response_service = make_response (render_template('service.html', form=form, id = user_token))
-        response = make_response(render_template('tokenizer.html', token=user_token))
         set_access_cookies(response_service, jwt_token)
         set_refresh_cookies(response_service, refresh_token)
-#        response = response_service
-    # Bundle the JWT cookies into the response object
-        set_access_cookies(response, jwt_token)
-        set_refresh_cookies(response, refresh_token)
         print_debug("View.py, tokenizer, get, user token: " + user_token)
         return response_service
     return response
