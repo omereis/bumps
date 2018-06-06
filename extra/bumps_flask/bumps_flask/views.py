@@ -21,15 +21,7 @@ from .api import (
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
 from .file_handler import setup_files, update_job_info, search_results, zip_files
 
-import datetime
-
-def print_debug(strMessage):
-    f = open ("oe_debug.txt", "a+")
-    f.write("\n--------------------------------------------------\n")
-    f.write(str(datetime.datetime.now()) + "\n")
-    f.write("Message: " + strMessage + "\n")
-    f.write("--------------------------------------------------\n")
-    f.close()
+from .misc import print_debug, print_stack
 
 @app.route('/', methods=['GET', 'POST'])
 @jwt_optional
@@ -40,24 +32,19 @@ def index():
     JWT auth token that must be sent in every subsequent request to the
     server in order to maintain a sort of session.
     '''
-    print_debug("in index")
-    
     # Will return None if the current user does not have a JWT (cookie/header)
     jwt_id = get_jwt_identity()
-    print_debug("in index, jwt_id obtained")
-
-    # The user already has a valid JWT, let them move along
-    if jwt_id:
-        return redirect(url_for('dashboard'))
+    print_debug("in index, jwt_id obtained:" + str(jwt))
 
     # Get the WTForm and validate the user token, move them along
     form = TokenForm()
-#    try:
-#        f = open('debug.txt', 'a')
-#        f.write("form: " + str(form))
-#        f.write("form.token: " + str(form.token))
-#    finally:
-#        f.close()
+
+    # The user already has a valid JWT, let them move along
+    flash (str(jwt_id))
+    if jwt_id:
+        print_debug("going to dashboard")
+        form.data['token'] = jwt_id
+#        return redirect(url_for('dashboard'))
 
     if form.validate_on_submit():
         user_token = form.data['token']
@@ -74,16 +61,56 @@ def index():
         set_refresh_cookies(response, refresh_token)
         flash('Logged in!')
         return response
-
     # If the user does not yet have a JWT token and has not filled the form,
     # display the main login page
     else:
         if form.errors:
             flash('Error: {}'.format(''.join(form.errors['token'])))
-
         return render_template('index.html', form=form)
+#################################################################################
+def perform_logout():
+    jti = get_raw_jwt()['jti']
+    rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
+    response = make_response(redirect(url_for('index')))
+    unset_jwt_cookies(response)
+    return (response)
+#################################################################################
+@app.route('/index/continue', methods=['GET', 'POST'])
+@jwt_optional
+def index_continue_current_token():
+    print_debug("requested")
+    jwt_id = get_jwt_identity()
+    if jwt_id:
+        print_debug("going to dashboard")
+        return redirect(url_for('dashboard'))
+    else:
+#        form = TokenForm()
+        response = make_response(redirect(url_for('index')))
+#        return render_template('index.html', form=form)
+#        unset_jwt_cookies(response)
+        return response
+#################################################################################
+@app.route('/api/request', methods=['GET', 'POST'])
+@jwt_optional
+def index_logout():
+    jwt_id = get_jwt_identity()
+    if jwt_id:
+        response = perform_logout()
+    else:
+        response = make_response(redirect(url_for('index')))
+    return response
 
-
+    print_debug("requested")
+    jwt_id = get_jwt_identity()
+    if jwt_id:
+        print_debug("going to dashboard")
+        return redirect(url_for('dashboard'))
+    else:
+        form = TokenForm()
+        response = make_response(redirect(url_for('index')))
+#        return render_template('index.html', form=form)
+#        unset_jwt_cookies(response)
+#################################################################################
 @app.route('/api/dashboard', methods=['GET', 'POST'])
 @jwt_required
 def dashboard():
@@ -126,7 +153,6 @@ def tokenizer():
 
     # TODO: Check available resources here
     # Create a UID
-    flash("tokenizer")
     user_token = create_user_token()
 
     # Associate an auth JWT and a refresh JWT to the UID
@@ -148,19 +174,25 @@ def tokenizer():
             uid=user_token,
             auth_token=jwt_token,
             refresh_token=refresh_token)
-        set_access_cookies(response, jwt_token)
-        set_refresh_cookies(response, refresh_token)
-        return response
+        print_debug("POST, response prepared")
     # Working with the web page interface
     else:
         # Build the response object to a template
-        form = FitForm()
-        response_service = make_response (render_template('service.html', form=form, id = user_token))
-        set_access_cookies(response_service, jwt_token)
-        set_refresh_cookies(response_service, refresh_token)
-        print_debug("View.py, tokenizer, get, user token: " + user_token)
-        return response_service
+        update_job_info(user_token)  # DEBUG (Polling job status here)  # POST/GET
+    # Get the database info for the current user
+        user_jobs = rdb.hvals(user_token)
+        files = {}
+        for job in user_jobs:
+            if job['status'] == 'COMPLETED':
+                files[job['_id']] = search_results(job['directory'])
+                zip_files(job['directory'], files[job['_id']])
+        response = make_response(render_template('dashboard.html',id=user_token,jobs=user_jobs,files=files))
+#        response = make_response (render_template('service.html', form=FitForm(), id = user_token))
+    set_access_cookies(response, jwt_token)
+    set_refresh_cookies(response, refresh_token)
+    print_debug("View.py, tokenizer, user token: " + user_token)
     return response
+
 ########################################################################################
 from celery import Celery
 @app.route('/api/celery', methods=['GET', 'POST'])
@@ -332,11 +364,9 @@ def logout():
     jti = get_raw_jwt()['jti']
     rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
 
-    resp = make_response(redirect(url_for('index')))
-    unset_jwt_cookies(resp)
-
-    flash('Logged out successfully!')
-    return resp
+    response = make_response(redirect(url_for('index')))
+    unset_jwt_cookies(response)
+    return response
 
 
 # The following functions define the responses for JWT callbacks

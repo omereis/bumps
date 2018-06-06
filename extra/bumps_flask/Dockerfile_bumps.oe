@@ -19,28 +19,36 @@ RUN apt-get update && apt-get install -y \
     net-tools
 
 # Create the home directory for the new app user.
-RUN mkdir -p /home/app_user
+RUN apt-get install -y sudo
+RUN apt-get install -y tzdata
+RUN cp /usr/share/zoneinfo/EST /etc/localtime
+
+# Set the timezone.
+#RUN sudo echo "America/New_York" > /etc/timezone
+#RUN sudo dpkg-reconfigure -f noninteractive tzdata
+RUN mkdir -p /home/bumps_client
 
 # Set the home directory to our app user's home.
-ENV HOME=/home/app_user
+ENV HOME=/home/bumps_client
 ENV LINES=45
+ENV COLUMNS=150
 
 # Set the directory for relative file paths
-#WORKDIR /home/app_user/
-WORKDIR /home/app_user/bumps_flask/bumps_flask
+#WORKDIR /home/bumps_client/
+WORKDIR /home/bumps_client/bumps_flask/bumps_flask
 
 # Create the folder for the html templates and static assets
 RUN mkdir templates/ && mkdir static/
 
 # Install the app dependencies using pip
 RUN pip install -U pip
-COPY ./requirements.txt /home/app_user/bumps_flask/
+COPY ./requirements.txt /home/bumps_client/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
 #RUN pip install git+https://github.com/omereis/bumps.git
 RUN pip install git+https://github.com/omereis/bumps.git@master
 
 # Copy app files to the container
-COPY ./ /home/app_user/bumps_flask
+COPY ./ /home/bumps_client/bumps_flask
 
 # Celery
 RUN pip install celery
@@ -49,14 +57,14 @@ RUN pip install redis
 # Make the 5000 port available from outside the container
 EXPOSE 5000
 
-# Create a new user called 'app_user' and set it up on the OS
-#RUN groupadd -r app_user && useradd --no-log-init -r -g app_user app_user
+# Create a new user called 'bumps_client' and set it up on the OS
+#RUN groupadd -r bumps_client && useradd --no-log-init -r -g bumps_client bumps_client
 
 # Install the application locally
 RUN pip install --no-cache-dir -e ..
 
-# Log in with 'app_user' for the rest of the process
-#USER app_user
+# Log in with 'bumps_client' for the rest of the process
+#USER bumps_client
 
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
@@ -64,15 +72,13 @@ ENV FLASK_APP=bumps_flask
 ENV BACKEND_SERVER=redis-server
 ENV REDIS_SERVER=redis-server
 
-ENV COLUMNS=120
-ENV LINES=45
-
+RUN echo "root:Docker!" | chpasswd
 RUN useradd bumps_client
-#/home/app_user
-#USER bumps_client
-#RUN chmod a+x /home/app_user/test/run_b.sh
+RUN chown -R bumps_client /home/bumps_client/
+USER bumps_client
+#RUN chmod a+x /home/bumps_client/test/run_b.sh
 
-WORKDIR /home/app_user/bumps_flask
+WORKDIR /home/bumps_client/bumps_flask
 
 #ARG container_type
 

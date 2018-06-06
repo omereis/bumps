@@ -79,6 +79,7 @@ WORKDIR /home/bumps_worker/bumps_flask
 
 #USER oe
 RUN useradd bumps_worker
+RUN chown bumps_worker /home/bumps_worker/
 USER bumps_worker
 # Launch the app
 #CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]

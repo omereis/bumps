@@ -15,25 +15,43 @@
         <input type="submit" value="Submit" /> </p>
     </form>
 
-<table border="1" width="100%">
+<br>
+<center>
+</center>
+<table align="center" border="2" width="100%">
 	<tr>
-		<td width=50%>
+		<td align="center">
 			<form action = "{{ url_for('tokenizer') }}" method="GET">
-				<p> Don't have access?
-				<input type="submit" value="Request" /></p>
+				Need new token?<br>
+				<input type="submit" value="Request" />
 			</form>
 		</td>
-		<td>
-			<center>Version of Tuesday 09:06</center>
-			<form action = "{{ url_for('check_celery') }}" method="GET">
-				<p>Is there a <a href="http://www.celeryproject.org/">Celelry</a> Worker?
-				<input type="submit" value="Check Celery" /></p>
+		<td align="center">
+			<form action="{{ url_for('index_continue_current_token') }}" method="GET">
+				Already logged in<br>
+				<input type="submit" value="Continue"/>
+			</form>
+		</td>
+		<td align="center">
+			<form action="{{ url_for('index_logout') }}" method="GET">
+				Already logged in<br>
+				<input type="submit" value="Logout" />
 			</form>
 		</td>
 	</tr>
 </table>
-
-    <p><em> Note: This page currently uses cookies to remember your authorization token.</em></p>
+<table>
+<tr>
+	<td>
+	<center>Version of Wednsday 16:31</center>
+	<form action = "{{ url_for('check_celery') }}" method="GET">
+		<p>Is there a <a href="http://www.celeryproject.org/">Celelry</a> Worker?
+		<input type="submit" value="Check Celery" /></p>
+	</form>
+</td>
+</tr>
+</table>
+<p><em> Note: This page currently uses cookies to remember your authorization token.</em></p>
 
     {% endif %}
 {% endblock %}

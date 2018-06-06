@@ -22,13 +22,11 @@ from .file_handler import setup_files, clean_job_files
 
 # def create_user_token(resources):
 
-
 def create_user_token():
     '''
     Generates a user id for identification.
     Works basically like a username
     '''
-    print("str(uuid.uuid4())[:6]: " + str(uuid.uuid4())[:6])
     return str(uuid.uuid4())[:6]
 
 
