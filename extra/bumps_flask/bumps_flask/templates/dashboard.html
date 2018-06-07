@@ -82,10 +82,23 @@
 			Submit a new job...<input style="display:inline;"type="submit" value="Go"/>
 		</form>
 	</p>
-
-    <br>
     <hr>
-    <form action="{{ url_for('logout', redirect=1) }}" method="GET">
-        <p><input type="submit" value="Logout"/></p>
-    </form>
+    <table border="0" cellspacing="15" align="center">
+        <tr>
+            <td>
+                <form action="{{ url_for('logout', redirect=1) }}" method="GET">
+                    <input type="submit" value="Logout"/>
+                </form>
+            </td>
+            <td>
+                <button onclick="goBack()">Back</button>
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+    </script>
 {% endblock %}
