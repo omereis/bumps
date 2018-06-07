@@ -45,36 +45,31 @@ def disconnect():
 
     return resp
 
+from .misc import print_debug
 
 def create_auth_token(user_token):
     '''
     Creates a JWT token given a UID
     '''
 
+    jwt_id = get_jwt_identity()
+    token_str = str(jwt_id)
+    print_debug("in create_auth_token, jwt_id obtained:" + token_str)
     jwt_token = create_access_token(identity=user_token)
-    print("create_auth_token: access token created")
-
     # Use the token ID for blacklisting purposes
     jti = access_jti = get_jti(encoded_token=jwt_token)
-    print("create_auth_token: jlti obtained")
-    print("jti: " + str(jti))
     # Mark the token as not blacklisted
     x = app.config.get('JWT_ACCESS_TOKEN_EXPIRES')
-    if x:
-        print("create_auth_token: config set")
-        print("x: " + str(x))
-    else:
-        print("create_auth_token: config JWT_ACCESS_TOKEN_EXPIRES NOT set")
-    print("\n\n")
     try:
-        print("rdb: " + str(rdb))
         rdb.set(jti, 'false', x)
 #        rdb.set(access_jti, 'false', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
-        print("create_auth_token: rdb set")
+        print_debug("create_auth_token: jti: " + str(jti))
+        print_debug("create_auth_token: jwt_token: " + str(jwt_token))
     except Exception as excp:
         print ("Error: " + str(excp.args))
-        print("create_auth_token: rdb NOT set")
-    print("\n\n")
+    jwt_id = get_jwt_identity()
+    token_str = str(jwt_id)
+    print_debug("in create_auth_token, jwt_id obtained:" + token_str)
     return jwt_token
 
 

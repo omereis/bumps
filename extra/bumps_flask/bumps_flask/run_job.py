@@ -37,12 +37,6 @@ def execute_python_script(job_file, args, job_path):
     """
     TEST
     """
-    try:
-        f = open('debug.txt', 'a+')
-        f.write('execute_python_script')
-        f.close()
-    except:
-        print('error opening file')
     subprocess.Popen(['bumps'] + [job_file] + list(args),
                      cwd=job_path,
                      stdout=subprocess.PIPE,

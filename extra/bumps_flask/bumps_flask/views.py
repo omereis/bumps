@@ -22,29 +22,34 @@ from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
 from .file_handler import setup_files, update_job_info, search_results, zip_files
 
 from .misc import print_debug, print_stack
-
-@app.route('/', methods=['GET', 'POST'])
+#################################################################################
+@app.route('/oe_index', methods=['GET', 'POST'])
 @jwt_optional
-def index():
+def oe_index():
     '''
     View for the main landing page. Works as a simple authentication page.
     User can request a new UID (user token), which will also assign to them a
     JWT auth token that must be sent in every subsequent request to the
     server in order to maintain a sort of session.
     '''
+    print_debug("in index")
+    
     # Will return None if the current user does not have a JWT (cookie/header)
     jwt_id = get_jwt_identity()
-    print_debug("in index, jwt_id obtained:" + str(jwt))
+    print_debug("in index, jwt_id obtained")
+
+    # The user already has a valid JWT, let them move along
+    if jwt_id:
+        return redirect(url_for('dashboard'))
 
     # Get the WTForm and validate the user token, move them along
     form = TokenForm()
-
-    # The user already has a valid JWT, let them move along
-    flash (str(jwt_id))
-    if jwt_id:
-        print_debug("going to dashboard")
-        form.data['token'] = jwt_id
-#        return redirect(url_for('dashboard'))
+#    try:
+#        f = open('debug.txt', 'a')
+#        f.write("form: " + str(form))
+#        f.write("form.token: " + str(form.token))
+#    finally:
+#        f.close()
 
     if form.validate_on_submit():
         user_token = form.data['token']
@@ -61,16 +66,80 @@ def index():
         set_refresh_cookies(response, refresh_token)
         flash('Logged in!')
         return response
+
     # If the user does not yet have a JWT token and has not filled the form,
     # display the main login page
     else:
         if form.errors:
             flash('Error: {}'.format(''.join(form.errors['token'])))
+
         return render_template('index.html', form=form)
+
+#################################################################################
+@app.route('/', methods=['GET', 'POST'])
+@jwt_optional
+def index():
+    '''
+    View for the main landing page. Works as a simple authentication page.
+    User can request a new UID (user token), which will also assign to them a
+    JWT auth token that must be sent in every subsequent request to the
+    server in order to maintain a sort of session.
+    '''
+    # Will return None if the current user does not have a JWT (cookie/header)
+    jwt_id = get_jwt_identity()
+
+    # Get the WTForm and validate the user token, move them along
+    form = TokenForm()
+
+    # The user already has a valid JWT, let them move along
+    token_str = str(jwt_id)
+    flash (str(jwt_id))
+    flash("token_str: " + token_str)
+#    print_debug("in index, #98, jwt_id obtained:" + str(jwt))
+    print_debug("in index, #99, jwt_id obtained:" + token_str)
+#    user_token = None
+    if jwt_id:
+        try:
+            user_token  = form.data['token']
+        except:
+            user_token = None
+#    print_debug("user_token: " + str(user_token))
+#        return redirect(url_for('dashboard'))
+    if (form.is_submitted()):
+        print_debug("views.py, index, form.is_submitted() returned true")
+        strDir = str(dir(form))
+        print_debug("form: " + strDir)
+    if form.validate_on_submit():
+        user_token = form.data['token']
+        # Get the auth and refresh tokens from the api
+        print_debug("views.py, index, form.validate_on_submit() returned false")
+        resp = json.loads(register_token(user_token).get_data())  # POST/GET
+        jwt_token = resp['access_token']
+        refresh_token = resp['refresh_token']
+
+        # Prepare a redirect for a successful login
+        response = make_response(redirect(url_for('dashboard')))
+
+        # Bundle the JWT cookies into the response object
+        set_access_cookies(response, jwt_token)
+        set_refresh_cookies(response, refresh_token)
+        flash('Logged in!')
+        return response
+    # If the user does not yet have a JWT token and has not filled the form,
+    # display the main login page
+    else:
+        print_debug("views.py, index, form.validate_on_submit() returned false")
+#        perform_logout()
+#        if form.errors:
+#            flash('Error: {}'.format(''.join(form.errors['token'])))
+        return render_template('index.html', form=form, stam_patam='stam')
 #################################################################################
 def perform_logout():
-    jti = get_raw_jwt()['jti']
-    rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
+    try:
+        jti = get_raw_jwt()['jti']
+        rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
+    except:
+        jti = None
     response = make_response(redirect(url_for('index')))
     unset_jwt_cookies(response)
     return (response)
@@ -78,12 +147,14 @@ def perform_logout():
 @app.route('/index/continue', methods=['GET', 'POST'])
 @jwt_optional
 def index_continue_current_token():
-    print_debug("requested")
     jwt_id = get_jwt_identity()
+    token_str = str(jwt_id)
+    print_debug("index_continue_current_token(), got jwt_id: " + token_str)
     if jwt_id:
-        print_debug("going to dashboard")
+        print_debug("index_continue_current_token(), got jwt_id")
         return redirect(url_for('dashboard'))
     else:
+        print_debug("index_continue_current_token(), jwt_id is NULL")
 #        form = TokenForm()
         response = make_response(redirect(url_for('index')))
 #        return render_template('index.html', form=form)
@@ -100,19 +171,15 @@ def index_logout():
         response = make_response(redirect(url_for('index')))
     return response
 
-    print_debug("requested")
     jwt_id = get_jwt_identity()
     if jwt_id:
-        print_debug("going to dashboard")
         return redirect(url_for('dashboard'))
     else:
         form = TokenForm()
         response = make_response(redirect(url_for('index')))
-#        return render_template('index.html', form=form)
-#        unset_jwt_cookies(response)
 #################################################################################
 @app.route('/api/dashboard', methods=['GET', 'POST'])
-@jwt_required
+@jwt_optional
 def dashboard():
     '''
     View for the user's dashboard. They can see their
@@ -168,13 +235,7 @@ def tokenizer():
 
     # Working with the client interface
     if flask_request.method == 'POST':
-        flash("POST")
-        print_debug("POST")
-        response = jsonify(
-            uid=user_token,
-            auth_token=jwt_token,
-            refresh_token=refresh_token)
-        print_debug("POST, response prepared")
+        response = jsonify(uid=user_token,auth_token=jwt_token,refresh_token=refresh_token)
     # Working with the web page interface
     else:
         # Build the response object to a template
@@ -190,7 +251,6 @@ def tokenizer():
 #        response = make_response (render_template('service.html', form=FitForm(), id = user_token))
     set_access_cookies(response, jwt_token)
     set_refresh_cookies(response, refresh_token)
-    print_debug("View.py, tokenizer, user token: " + user_token)
     return response
 
 ########################################################################################
@@ -426,6 +486,7 @@ def revoked_token_callback():
     Function to call when a revoked token accesses a protected endpoint
     '''
 
+    print_stack()
     print_debug ("revoked_token_callback")
     return render_template(
         'error.html', reason='You are not logged in!'), 401

@@ -10,7 +10,7 @@ from wtforms.validators import DataRequired, Optional, Email, ValidationError
 from werkzeug.utils import secure_filename
 
 from . import rdb
-from .misc import print_debug
+#from .misc import print_debug, print_stack
 
 # Consider that --remote is implied, --parallel, --notify, --queue and
 # --time are built-in
@@ -21,17 +21,15 @@ class TokenForm(FlaskForm):
     and anywhere else.
     '''
 
-    token = StringField(
-        'Enter your token: ', validators=[
-            DataRequired(
-                message='Please enter a token.')])
+    token = StringField('Enter your token: ', validators=
+                [DataRequired(message='Please enter a token.')])
 
     def validate_token(form, field):
         '''
         Validation consists of checking whether or not the submitted
         value corresponds to an existing database token
         '''
-        print_debug ("validate_token, str(field.data)=: " + str(field.data))
+#        print_stack()
         if not rdb.exists(str(field.data)):
             raise ValidationError(
                 'Token \"' +
@@ -284,10 +282,11 @@ class FitForm(FlaskForm):
     The idea is to test handling data and running a simple fit
     on the server.
     '''
-    print("In FitForm")
+#    print("In FitForm")
     slurm = FormField(SlurmForm)
     steps = FormField(StepForm)
     burn = FormField(BurnForm)
     optimizer = FormField(OptimizerForm)
     upload = FormField(UploadForm)
-    email = FormField(EmailForm)
+#    email = FormField(EmailForm)
+#    print("Completed FitForm")

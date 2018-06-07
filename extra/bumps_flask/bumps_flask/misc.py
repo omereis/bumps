@@ -16,13 +16,13 @@ def print_stack():
         import traceback
         f = open ("oe_debug.txt", "a+")
         f.write("-----------------------------\n")
-        f.write("run_job.py-execute_python_script. stack:\n")
+        f.write("Printing Stack:\n")
         stack = traceback.extract_stack ()
         f.write("Stack length: " + str(len(stack)) + "\n")
         for n in range(len(stack)):
-            f.write(str(n+1) + ": " + str(stack[n]))
-        for s in stack:
-            f.write(str(s) + "\n")
+            f.write(str(n+1) + ": " + str(stack[n]) + "\n")
+#        for s in stack:
+#            f.write(str(s) + "\n")
     finally:
         f.close()
 ########################################################################################
