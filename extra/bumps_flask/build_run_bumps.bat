@@ -17,3 +17,6 @@ rem bumps cf1.py --batch --stepmon --burn=100 --steps=100 --store=/home/root/cel
 rem bumps cf1.py --batch --stepmon --burn=100 --steps=100 --store=/tmp/test/result --fit=newton
 
 e7ab0d
+<br>
+Including <i>bottom</i>
+<div w3-include-html="bottom.html"></div>

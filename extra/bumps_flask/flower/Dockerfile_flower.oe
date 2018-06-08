@@ -1,7 +1,6 @@
 FROM ubuntu:16.04
 
 # docker build --rm -t oe_flower  -f Dockerfile_flower.oe .
-# docker run -h oe_flower --name oe_flower --link oe_celery --link redis-server --link rabbit-server -it -d -p 5555:5555 oe_flower
 # docker run -h oe_flower --name oe_flower --link redis-server --link rabbit-server -it -d -p 5555:5555 oe_flower
 # docker run -h oe_flower --name oe_flower -it -d -p 5555:5555 oe_flower bash
 # $ flower -A proj --port=5555

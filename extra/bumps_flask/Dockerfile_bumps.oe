@@ -26,29 +26,29 @@ RUN cp /usr/share/zoneinfo/EST /etc/localtime
 # Set the timezone.
 #RUN sudo echo "America/New_York" > /etc/timezone
 #RUN sudo dpkg-reconfigure -f noninteractive tzdata
-RUN mkdir -p /home/bumps_client
+RUN mkdir -p /home/bumps_user
 
 # Set the home directory to our app user's home.
-ENV HOME=/home/bumps_client
+ENV HOME=/home/bumps_user
 ENV LINES=45
 ENV COLUMNS=150
 
 # Set the directory for relative file paths
-#WORKDIR /home/bumps_client/
-WORKDIR /home/bumps_client/bumps_flask/bumps_flask
+#WORKDIR /home/bumps_user/
+WORKDIR /home/bumps_user/bumps_flask/bumps_flask
 
 # Create the folder for the html templates and static assets
 RUN mkdir templates/ && mkdir static/
 
 # Install the app dependencies using pip
 RUN pip install -U pip
-COPY ./requirements.txt /home/bumps_client/bumps_flask/
+COPY ./requirements.txt /home/bumps_user/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
 #RUN pip install git+https://github.com/omereis/bumps.git
 RUN pip install git+https://github.com/omereis/bumps.git@master
 
 # Copy app files to the container
-COPY ./ /home/bumps_client/bumps_flask
+COPY ./ /home/bumps_user/bumps_flask
 
 # Celery
 RUN pip install celery
@@ -73,12 +73,20 @@ ENV BACKEND_SERVER=redis-server
 ENV REDIS_SERVER=redis-server
 
 RUN echo "root:Docker!" | chpasswd
-RUN useradd bumps_client
-RUN chown -R bumps_client /home/bumps_client/
-USER bumps_client
-#RUN chmod a+x /home/bumps_client/test/run_b.sh
 
-WORKDIR /home/bumps_client/bumps_flask
+#RUN useradd bumps_client
+#RUN chown -R bumps_client /home/bumps_user/
+#USER bumps_client
+
+RUN groupadd -g 5000 bumps
+RUN useradd -g bumps bumps_user
+RUN chown -R bumps_user:bumps /home/bumps_user/
+
+USER bumps_user
+
+#RUN chmod a+x /home/bumps_user/test/run_b.sh
+
+WORKDIR /home/bumps_user/bumps_flask
 
 #ARG container_type
 

@@ -1,10 +1,10 @@
-# Using the latest long-term-support Ubuntu OS
-FROM ubuntu:16.04
-
 # docker build --rm -t oe_bumps_worker -f Dockerfile_bumps_worker.oe .
 # docker run -d -it --link redis-server --link rabbit-server -h oe_bumps_worker --name oe_bumps_worker oe_bumps_worker
 # docker run -d -it --link redis-server --link rabbit-server -h oe_bumps_worker2 --name oe_bumps_worker2 oe_bumps_worker
 # Update the apt-get index and then install project dependencies
+
+FROM ubuntu:16.04
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     apache2         \
@@ -20,28 +20,36 @@ RUN apt-get update && apt-get install -y \
     net-tools
 
 # Create the home directory for the new app user.
-RUN mkdir -p /home/bumps_worker
+RUN apt-get install -y sudo
+RUN apt-get install -y tzdata
+RUN cp /usr/share/zoneinfo/EST /etc/localtime
+
+# Set the timezone.
+#RUN sudo echo "America/New_York" > /etc/timezone
+#RUN sudo dpkg-reconfigure -f noninteractive tzdata
+RUN mkdir -p /home/bumps_user
 
 # Set the home directory to our app user's home.
-ENV HOME=/home/bumps_worker
+ENV HOME=/home/bumps_user
 ENV LINES=45
+ENV COLUMNS=150
 
 # Set the directory for relative file paths
-#WORKDIR /home/bumps_worker/
-WORKDIR /home/bumps_worker/bumps_flask/bumps_flask
+#WORKDIR /home/bumps_user/
+WORKDIR /home/bumps_user/bumps_flask/bumps_flask
 
 # Create the folder for the html templates and static assets
 RUN mkdir templates/ && mkdir static/
 
 # Install the app dependencies using pip
 RUN pip install -U pip
-COPY ./requirements.txt /home/bumps_worker/bumps_flask/
+COPY ./requirements.txt /home/bumps_user/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
 #RUN pip install git+https://github.com/omereis/bumps.git
 RUN pip install git+https://github.com/omereis/bumps.git@master
 
 # Copy app files to the container
-COPY ./ /home/bumps_worker/bumps_flask
+COPY ./ /home/bumps_user/bumps_flask
 
 # Celery
 RUN pip install celery
@@ -50,14 +58,14 @@ RUN pip install redis
 # Make the 5000 port available from outside the container
 EXPOSE 5000
 
-# Create a new user called 'bumps_worker' and set it up on the OS
-#RUN groupadd -r bumps_worker && useradd --no-log-init -r -g bumps_worker bumps_worker
+# Create a new user called 'bumps_client' and set it up on the OS
+#RUN groupadd -r bumps_client && useradd --no-log-init -r -g bumps_client bumps_client
 
 # Install the application locally
 RUN pip install --no-cache-dir -e ..
 
-# Log in with 'bumps_worker' for the rest of the process
-#USER bumps_worker
+# Log in with 'bumps_client' for the rest of the process
+#USER bumps_client
 
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
@@ -65,33 +73,24 @@ ENV FLASK_APP=bumps_flask
 ENV BACKEND_SERVER=redis-server
 ENV REDIS_SERVER=redis-server
 
-ENV COLUMNS=120
-ENV LINES=45
+RUN echo "root:Docker!" | chpasswd
 
-#RUN chmod a+x /home/bumps_worker/test/run_b.sh
+#RUN useradd bumps_client
+#RUN chown -R bumps_client /home/bumps_user/
+#USER bumps_client
 
-WORKDIR /home/bumps_worker/bumps_flask
+RUN groupadd -g 5000 bumps
+RUN useradd -g bumps bumps_user
+RUN chown -R bumps_user:bumps /home/bumps_user/
+
+USER bumps_user
+
+#RUN chmod a+x /home/bumps_user/test/run_b.sh
+
+WORKDIR /home/bumps_user/bumps_flask
 
 #ARG container_type
 
-#start_celery.sh
 #CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
 
-#USER oe
-RUN useradd bumps_worker
-RUN chown bumps_worker /home/bumps_worker/
-USER bumps_worker
 # Launch the app
-#CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
-#CMD ["celery -A celery_bumps worker -E -l info"]
-#CMD ["ls", "celery_bumps"]
-#RUN chmod a+x /home/bumps_worker/bumps_flask/start_celery.sh
-#RUN celery -A celery_bumps worker -E -l info&
-#RUN /home/bumps_worker/bumps_flask/start_celery.sh
-#RUN chmod a+x /home/bumps_worker/bumps_flask/start_celery.sh
-#CMD ["/home/bumps_worker/bumps_flask/start_celery.sh"]
-#CMD ["celery", " -A celery_bumps", "worker", "-E", "-l info"]
-#CMD ["celery", "-A", "celery_bumps"]
-#CMD ["pwd"]
-#CMD ["bash"]
-#ENTRYPOINT celery -A celery_bumps worker --concurrency=20 --loglevel=info
