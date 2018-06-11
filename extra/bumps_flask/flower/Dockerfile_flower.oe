@@ -56,3 +56,4 @@ EXPOSE 5555
 
 ENTRYPOINT flower -A celery_bumps --port=5555
 #CMD flower -A celery_bumps --port=5555
+
