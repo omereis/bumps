@@ -29,3 +29,8 @@ sys.argv = ()
 main()
 
 celery multi start 10 -A celery_bumps -l info -Q:1-3 images,video -Q:4,5 data -Q default -L:4,5 debug
+<!--
+    <bottom>
+    {% include 'bottom_html.html' %}
+</bottom>
+-->

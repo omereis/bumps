@@ -15,7 +15,7 @@
         <input type="submit" value="Submit" /> </p>
     </form>
 
-<table align="center" border="2" width="100%">
+<table align="Left" border="0" width="100%">
 	<tr>
 		<td align="center">
 			<form action = "{{ url_for('tokenizer') }}" method="GET">
@@ -31,17 +31,19 @@
 		</td>
 		<td align="center">
 			<form action="{{ url_for('index_logout') }}" method="GET">
-				Already logged in<br>
+				Different User?<br>
 				<input type="submit" value="Logout" />
 			</form>
 		</td>
 	</tr>
 </table>
 <br>
+<br>
+<br>
 <table>
 <tr>
 	<td>
-		<center>Version of Thursday 16:28</center>
+		<center>Version of Tuesday 09:09</center>
 		<form action = "{{ url_for('check_celery') }}" method="GET">
 			Is there a <a href="http://www.celeryproject.org/">Celelry</a> Worker?
 			<input type="submit" value="Check Celery" /></p>

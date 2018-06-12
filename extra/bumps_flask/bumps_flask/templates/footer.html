@@ -1,0 +1,28 @@
+        <hr>
+        <table border="0" cellspacing="10" align="Left">
+            <tr>
+                <td>
+                    <form action="{{ url_for('logout', redirect=1) }}" method="GET">
+                            <input type="submit" value="Logout"/>
+                    </form>
+                </td>
+                <td>
+                    <button onclick="goBack()">Back</button>
+                </td>
+                <td>
+                    <form action="{{ url_for('index', redirect=1) }}" method="GET">
+                        <input type="submit" value="Home"/>
+                    </form>
+                </td>
+                </tr>
+        </table>
+        <br>
+        <p> For help, please contact <a href="mailto:ren5@nist.gov">support</a>.</p>
+        
+        
+        
+        <script>
+            function goBack() {
+                window.history.back();
+            }
+        </script>

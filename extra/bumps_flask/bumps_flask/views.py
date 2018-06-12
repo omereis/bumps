@@ -268,9 +268,7 @@ def check_celery():
     # TODO: Check available resources here
     # Create a UID
 #    appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
-    appCeleryBumps = Celery('proj',
-             broker='amqp://rabbit-server',
-             backend='redis://redis-server')
+    appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
     flash("Celery Tester 08:31")
     msg = ""
     msg1 = ""
