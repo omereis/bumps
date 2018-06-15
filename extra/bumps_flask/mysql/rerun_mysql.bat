@@ -5,4 +5,5 @@ docker run -d -it -p 3306 -h oe_mysql --name oe_mysql oe_mysql
 docker exec -i -t oe_mysql "bash"
 rem docker run -d --link oe_bumps -e MARIADB_ROOT_PASSWORD="masterkey" --name mariadb partlab/ubuntu-mariadb
 rem docker run -d -e MARIADB_ROOT_PASSWORD="masterkey" --name oe_mariadb --link oe_bumps oe_mariadb
-rem docker run --name some-mariadb -v D:\Omer\Source\omer_bumps\bumps\extra\bumps_flask\mysql\Data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=masterkey -d mariadb
+rem docker run --name mariadb -v /home/one4/omer_bumps/extra/bumps_flask/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=masterkey -d mariadb
+rem cnx = mysql.connector.connect(user='bumps', password='bumps_dba', host='127.0.0.1', database='bumps_db')

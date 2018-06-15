@@ -21,6 +21,12 @@ RUN apt-get update && apt-get install -y \
 # Create the home directory for the new app user.
 RUN apt-get install -y sudo
 RUN apt-get install -y tzdata
+##RUN apt-get install -y libmysqlclient-dev
+#RUN apt-get install -y mysql
+#RUN pip install mysqlclient
+RUN pip install --upgrade pip
+RUN pip install mysql-connector-python
+
 RUN cp /usr/share/zoneinfo/EST /etc/localtime
 
 # Set the timezone.

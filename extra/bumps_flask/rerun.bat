@@ -9,3 +9,5 @@ rem bumps cf1.py --batch --stepmon --burn=100 --steps=100 --store=cf1_results --
 rem docker run --link redis-server --link rabbit-server -e "BACKEND_SERVER=redis-server" -p 5000:5000 --name oe_bumps oe_bumps
 rem app = Celery('proj', broker='amqp://rabbit-server', backend='redis://redis-server')
 
+
+rem docker run -d -it -h oe_bumps --name oe_bumps oe_bumps
