@@ -1,4 +1,5 @@
 from tasks import app
+#from celery import app
 
 """
 Celery fails to find the file when you pass "celeryconfig" as a string.
