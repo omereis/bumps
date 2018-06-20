@@ -4,7 +4,7 @@
 *.rdb
 &*.pdf
 *.doc
-*.docx
+#*.docx
 *.zip
 .bumps_folder
 instance/

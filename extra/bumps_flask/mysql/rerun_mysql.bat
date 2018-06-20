@@ -7,3 +7,6 @@ rem docker run -d --link oe_bumps -e MARIADB_ROOT_PASSWORD="masterkey" --name ma
 rem docker run -d -e MARIADB_ROOT_PASSWORD="masterkey" --name oe_mariadb --link oe_bumps oe_mariadb
 rem docker run --name mariadb -v /home/one4/omer_bumps/extra/bumps_flask/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=masterkey -d mariadb
 rem cnx = mysql.connector.connect(user='bumps', password='bumps_dba', host='127.0.0.1', database='bumps_db')
+rem cnx = mysql.connector.connect(user='bumps', password='bumps_dba', host='p858547', database='bumps_db')
+pip install protobuf
+pip install mysqlclient
