@@ -255,58 +255,33 @@ def tokenizer():
 
 ########################################################################################
 from celery import Celery
+from .misc import get_celery_queue_names
 @app.route('/api/celery', methods=['GET', 'POST'])
 def check_celery():
     '''
-    View for showing the user their unique ID, which they should remember
-    in order to refresh their JWT authentication.
-    Uses the API to create a unique user_token which is
-    then associated to an authentication JWT
-    and saved as a cookie or in a header by the client
-    '''
+    View current Celery queue data
 
-    # TODO: Check available resources here
-    # Create a UID
-#    appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
-    '''
     app = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
     app.control.inspect().active_queues()
     '''
     appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
     flash("Celery Tester 08:31")
-    msg = ""
-    msg1 = ""
-    msgQueue = ""
+#    msgQueue = ""
     msgAllQueues = ""
     inspect = None
     try:
-#        print_debug("Preparing...")
-        dictQueues = appCeleryBumps.control.inspect().active_queues()
-#        print_debug("Length(dictQueues="+str(len(dictQueues)))
-        for email in dictQueues:
-            for n in range(len(dictQueues[email])):
-                s = dictQueues[email][n]['name']
-                msgAllQueues += s + ","
-        msgQueue = str(appCeleryBumps.control.inspect().stats().keys())
-        from celery.task.control import inspect
+        queues = get_celery_queue_names()
+        msgAllQueues = ", ".join(queues)
+#        msgQueue = str(appCeleryBumps.control.inspect().stats().keys())
         msg = "Celery imported"
-#        msg1 = get_celery_worker_status()
     except Exception as e:
-        msgQueue = "Nada"
+#        msgQueue = "Nada"
         msg = "Error: " + str(e.args)
         msg1 = "basa"
         print_debug("Basa:"+str(e.args))
     flash ("Celery Status: " + msg)
-    try:
-        insp = inspect()
-        msg = "Celery inspected"
-        d = insp.stats()
-        msg = "inspection results: " + d
-    except Exception as e:
-           msg = "Error: " + str(e.args)
-#    flash ("Celery Status: " + get_celery_worker_status())
-    flash ("msg: " + msg)
-    flash ("msgQ: " + msgQueue)
+#    flash ("msg: " + msg)
+#    flash ("msgQ: " + msgQueue)
     flash ("Qeues Names: " + msgAllQueues)
     user_token = create_user_token()
     render_template('tokenizer.html')

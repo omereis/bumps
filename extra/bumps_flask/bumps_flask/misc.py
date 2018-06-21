@@ -1,4 +1,5 @@
 import datetime
+from celery import Celery
 ########################################################################################
 def print_debug(strMessage):
     try:
@@ -26,3 +27,17 @@ def print_stack():
     finally:
         f.close()
 ########################################################################################
+def get_celery_queue_names():
+    lstQueueNames = []
+    appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', \
+                    backend='redis://redis-server')
+    dictQueues = appCeleryBumps.control.inspect().active_queues()
+    for email in dictQueues:
+        queue_list = dictQueues[email]
+        for n in range(len(queue_list)):
+            try:
+                s = dictQueues[email][n]['name']
+            except:
+                s = ""
+            lstQueueNames.append(s)
+    return lstQueueNames
