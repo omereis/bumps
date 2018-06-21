@@ -54,7 +54,6 @@ def create_auth_token(user_token):
 
     jwt_id = get_jwt_identity()
     token_str = str(jwt_id)
-    print_debug("in create_auth_token, jwt_id obtained:" + token_str)
     jwt_token = create_access_token(identity=user_token)
     # Use the token ID for blacklisting purposes
     jti = access_jti = get_jti(encoded_token=jwt_token)
@@ -63,13 +62,10 @@ def create_auth_token(user_token):
     try:
         rdb.set(jti, 'false', x)
 #        rdb.set(access_jti, 'false', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
-        print_debug("create_auth_token: jti: " + str(jti))
-        print_debug("create_auth_token: jwt_token: " + str(jwt_token))
     except Exception as excp:
         print ("Error: " + str(excp.args))
     jwt_id = get_jwt_identity()
     token_str = str(jwt_id)
-    print_debug("in create_auth_token, jwt_id obtained:" + token_str)
     return jwt_token
 
 

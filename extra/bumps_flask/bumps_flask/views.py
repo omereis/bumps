@@ -268,13 +268,25 @@ def check_celery():
     # TODO: Check available resources here
     # Create a UID
 #    appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
+    '''
+    app = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
+    app.control.inspect().active_queues()
+    '''
     appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
     flash("Celery Tester 08:31")
     msg = ""
     msg1 = ""
     msgQueue = ""
+    msgAllQueues = ""
     inspect = None
     try:
+#        print_debug("Preparing...")
+        dictQueues = appCeleryBumps.control.inspect().active_queues()
+#        print_debug("Length(dictQueues="+str(len(dictQueues)))
+        for email in dictQueues:
+            for n in range(len(dictQueues[email])):
+                s = dictQueues[email][n]['name']
+                msgAllQueues += s + ","
         msgQueue = str(appCeleryBumps.control.inspect().stats().keys())
         from celery.task.control import inspect
         msg = "Celery imported"
@@ -283,6 +295,7 @@ def check_celery():
         msgQueue = "Nada"
         msg = "Error: " + str(e.args)
         msg1 = "basa"
+        print_debug("Basa:"+str(e.args))
     flash ("Celery Status: " + msg)
     try:
         insp = inspect()
@@ -294,6 +307,7 @@ def check_celery():
 #    flash ("Celery Status: " + get_celery_worker_status())
     flash ("msg: " + msg)
     flash ("msgQ: " + msgQueue)
+    flash ("Qeues Names: " + msgAllQueues)
     user_token = create_user_token()
     render_template('tokenizer.html')
 
