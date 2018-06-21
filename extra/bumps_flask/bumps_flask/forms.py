@@ -52,12 +52,10 @@ class UploadForm(FlaskForm):
 
 
 class EmailForm(FlaskForm):
-    email = StringField(
-        label='Email address: ',
-        validators=[
-            Email(
-                message='Please enter a valid email address.'),
-            Optional()])
+    email = StringField(label='Email address: ',
+                        validators=[
+                        Email(message='Please enter a valid email address.'),
+                        Optional()])
 
 
 # Translating form data to CLI commands for bumps itsel
@@ -100,15 +98,27 @@ class SeedForm(FlaskForm):
 
 ####################
 # Stopping condition forms
-
-
+########################################################################################
 class StepForm(FlaskForm):
     '''Corresponds to the bumps CLI command --steps'''
     steps = IntegerField(
         label='steps: ',
         validators=[Optional()], default=100)
-
-
+########################################################################################
+from .misc import get_celery_queue_names, print_debug
+class CeleryQueueForm(FlaskForm):
+    queues = get_celery_queue_names()
+    lQueue=[]
+    print_debug("queues length: " + str(len(queues)))
+    for n in range(len(queues)):
+        t=(queues[n],queues[n])
+        lQueue.append(t)
+    print_debug("lQueue: " + str(lQueue))
+    celery_queues = SelectField('Celery Queue',
+            choices=lQueue)
+#            choices=[('cpp', 'C++'), ('py', 'Python'), ('text', 'Plain Text')])
+#            choices=[('cpp','C++')])
+########################################################################################
 class SampleForm(FlaskForm):
     '''Corresponds to the bumps CLI command --sample'''
     pass
@@ -284,9 +294,10 @@ class FitForm(FlaskForm):
     The idea is to test handling data and running a simple fit
     on the server.
     '''
-    print("In FitForm")
     slurm = FormField(SlurmForm)
     steps = FormField(StepForm)
+    celery = FormField (CeleryQueueForm)
+    
     burn = FormField(BurnForm)
     optimizer = FormField(OptimizerForm)
     upload = FormField(UploadForm)

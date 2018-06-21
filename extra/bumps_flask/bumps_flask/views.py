@@ -32,11 +32,8 @@ def oe_index():
     JWT auth token that must be sent in every subsequent request to the
     server in order to maintain a sort of session.
     '''
-    print_debug("in index")
-    
     # Will return None if the current user does not have a JWT (cookie/header)
     jwt_id = get_jwt_identity()
-    print_debug("in index, jwt_id obtained")
 
     # The user already has a valid JWT, let them move along
     if jwt_id:
@@ -95,24 +92,18 @@ def index():
     token_str = str(jwt_id)
     flash (str(jwt_id))
     flash("token_str: " + token_str)
-#    print_debug("in index, #98, jwt_id obtained:" + str(jwt))
-    print_debug("in index, #99, jwt_id obtained:" + token_str)
 #    user_token = None
     if jwt_id:
         try:
             user_token  = form.data['token']
         except:
             user_token = None
-#    print_debug("user_token: " + str(user_token))
 #        return redirect(url_for('dashboard'))
     if (form.is_submitted()):
-        print_debug("views.py, index, form.is_submitted() returned true")
         strDir = str(dir(form))
-        print_debug("form: " + strDir)
     if form.validate_on_submit():
         user_token = form.data['token']
         # Get the auth and refresh tokens from the api
-        print_debug("views.py, index, form.validate_on_submit() returned false")
         resp = json.loads(register_token(user_token).get_data())  # POST/GET
         jwt_token = resp['access_token']
         refresh_token = resp['refresh_token']
@@ -128,7 +119,6 @@ def index():
     # If the user does not yet have a JWT token and has not filled the form,
     # display the main login page
     else:
-        print_debug("views.py, index, form.validate_on_submit() returned false")
 #        perform_logout()
 #        if form.errors:
 #            flash('Error: {}'.format(''.join(form.errors['token'])))
@@ -149,12 +139,9 @@ def perform_logout():
 def index_continue_current_token():
     jwt_id = get_jwt_identity()
     token_str = str(jwt_id)
-    print_debug("index_continue_current_token(), got jwt_id: " + token_str)
     if jwt_id:
-        print_debug("index_continue_current_token(), got jwt_id")
         return redirect(url_for('dashboard'))
     else:
-        print_debug("index_continue_current_token(), jwt_id is NULL")
 #        form = TokenForm()
         response = make_response(redirect(url_for('index')))
 #        return render_template('index.html', form=form)
@@ -265,23 +252,16 @@ def check_celery():
     app.control.inspect().active_queues()
     '''
     appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
-    flash("Celery Tester 08:31")
-#    msgQueue = ""
     msgAllQueues = ""
     inspect = None
     try:
         queues = get_celery_queue_names()
         msgAllQueues = ", ".join(queues)
-#        msgQueue = str(appCeleryBumps.control.inspect().stats().keys())
         msg = "Celery imported"
     except Exception as e:
-#        msgQueue = "Nada"
         msg = "Error: " + str(e.args)
         msg1 = "basa"
-        print_debug("Basa:"+str(e.args))
     flash ("Celery Status: " + msg)
-#    flash ("msg: " + msg)
-#    flash ("msgQ: " + msgQueue)
     flash ("Qeues Names: " + msgAllQueues)
     user_token = create_user_token()
     render_template('tokenizer.html')
@@ -347,9 +327,7 @@ def fit_job(results=False):
     by working with the API functions.
     '''
 
-    print_debug("inside fit_job. before calling FitForm")
     form = FitForm()
-    print_debug("inside fit_job. got form")
     if form.validate_on_submit():
         # Parse through the form data
         form_data = (process_request_form(form.data))
@@ -432,7 +410,6 @@ def expired_token_callback():
     '''
     Function to call when an expired token accesses a protected endpoint
     '''
-    print_debug ("token expired")
     return render_template(
         'error.html', reason="Expired token", expired=True), 401
 
@@ -445,7 +422,6 @@ def unauthorized_token_callback(error):
     Takes one argument - an error string indicating why the request in unauthorized
     '''
 
-    print_debug ("token unauthorized")
     return render_template('error.html', reason=error), 401
 
 
@@ -463,7 +439,6 @@ def invalid_token_callback(error):
         flash('Invalid token detected, redirected to the frontpage.')
         return response
 
-    print_debug ("invalid token callback")
     return render_template('error.html', reason=error), 401
 
 
@@ -473,7 +448,7 @@ def revoked_token_callback():
     Function to call when a revoked token accesses a protected endpoint
     '''
 
-    print_stack()
-    print_debug ("revoked_token_callback")
+#    print_stack()
+#    print_debug ("revoked_token_callback")
     return render_template(
         'error.html', reason='You are not logged in!'), 401

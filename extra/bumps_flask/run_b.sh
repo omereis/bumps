@@ -34,3 +34,5 @@ celery multi start 10 -A celery_bumps -l info -Q:1-3 images,video -Q:4,5 data -Q
     {% include 'bottom_html.html' %}
 </bottom>
 -->
+
+    language = SelectField('Programming Language', choices=[('cpp', 'C++'), ('py', 'Python'), ('text', 'Plain Text')]
