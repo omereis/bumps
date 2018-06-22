@@ -41,20 +41,6 @@ def setup_files(payload, _input, _file, queue='slurm'):
         build_slurm_script(slurm_file, _input['slurm'], cli_opts, file_path)
 
         slurm_file.close()
-        try:
-            f = open('debug.txt', 'a')
-            f.write("Change time: 4:02 PM\n")
-            f.write("queue: " + str(queue) + "\n")
-            f.write("slurm file\n")
-            f.write("Folder: " + folder + "\n")
-            f_src = open(slurm_file.name,'rb')
-            f_dest = open('debug_slurm.txt','wb')
-            f_dest.write(f_src.read())
-        finally:
-            f.close()
-            f_dest.close()
-            f_dest.close()
-
     # Currently only support for slurm is available
     elif queue == 'rq':
         payload = execute_python_script.queue(

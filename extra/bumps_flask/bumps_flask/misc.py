@@ -32,12 +32,13 @@ def get_celery_queue_names():
     appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', \
                     backend='redis://redis-server')
     dictQueues = appCeleryBumps.control.inspect().active_queues()
-    for email in dictQueues:
-        queue_list = dictQueues[email]
-        for n in range(len(queue_list)):
-            try:
-                s = dictQueues[email][n]['name']
-            except:
-                s = ""
-            lstQueueNames.append(s)
+    if dictQueues:
+        for email in dictQueues:
+            queue_list = dictQueues[email]
+            for n in range(len(queue_list)):
+                try:
+                    s = dictQueues[email][n]['name']
+                except:
+                    s = ""
+                lstQueueNames.append(s)
     return lstQueueNames

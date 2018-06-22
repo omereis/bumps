@@ -94,6 +94,7 @@ def add_job(bumps_job):
     # Add job to the DB
     rdb.hset(bumps_job['user'], bumps_job['_id'], bumps_job)
 
+from .forms import CeleryQueueForm
 
 def process_request_form(request):
     '''
@@ -106,6 +107,7 @@ def process_request_form(request):
 
     # Catch the CLI related options here
     for form in request:
+
         if 'optimizer' == form:
             response['cli']['fit'] = request[form]['fitter']
 
@@ -119,6 +121,19 @@ def process_request_form(request):
 
         elif 'email' == form and request[form]['email']:
             response['slurm']['--mail-user'] = request[form]['email']
+
+        elif 'celery' == form:# and request[form]['celery']:
+            x = CeleryQueueForm.celery_choices
+            err_txt = ""
+            try:
+                index = request[form]['celery_queue']
+                index = request[form]
+            except Exception as e:
+                err_txt = str(e)
+                index = -1
+            print_debug("api.py,process_request_form, CeleryQueueForm.celery_choices: " + str(CeleryQueueForm.celery_choices))
+            print_debug("selcted index: " + str(index))
+            print_debug("error: " + err_txt)
 
         # Catch the slurm related variables here
         elif 'slurm' == form:
@@ -177,8 +192,7 @@ class Jobs(Resource):
     @jwt_required
     def get(self, user_id=None, job_id=None, action=None, _format='json'):
         request = flask_request.get_json()
-        print(request)
-        print(get_jwt_identity())
+
         if user_id != get_jwt_identity():
             abort(404)
 

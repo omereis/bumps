@@ -32,12 +32,27 @@
 
         <h4>Specify job options</h4>
         <br>
+        Logged in with ID of {{ id }}
+        <br>
         <form method="POST" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
             {% for field in form if field.widget.input_type != 'hidden' %}
                 {{ with_errors(field, style='font-weight: bold; margin-top:1em;') }}
             {% endfor %}
-        <br><br>
+<!--
+            <br>
+        <table>
+            <tr>
+                <td>
+                    Celery Queue:
+                </td>
+                <td>
+
+                </td>
+            </tr>
+        </table>
+-->
+            <br>
         <input style="margin-bottom:1em;" type="submit" value="Submit Job" />
         </form>
 
@@ -46,26 +61,4 @@
     <bottom>
         {% include 'footer.html' %}
     </bottom>
-<hr>
-<table border="0" cellspacing="30" align="center">
-    <tr>
-        <td>
-            <form action="{{ url_for('logout', redirect=1) }}" method="GET">
-                <input type="submit" value="Logout"/>
-            </form>
-        </td>
-        <td>
-            <button onclick="goBack()">Back</button>
-        </td>
-    </tr>
-</table>
-<br>
-
-
-
-<script>
-    function goBack() {
-        window.history.back();
-    }
-</script>
 {% endblock %}

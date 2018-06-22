@@ -98,27 +98,35 @@ class SeedForm(FlaskForm):
 
 ####################
 # Stopping condition forms
-########################################################################################
+#--------------------------------------
 class StepForm(FlaskForm):
     '''Corresponds to the bumps CLI command --steps'''
     steps = IntegerField(
         label='steps: ',
         validators=[Optional()], default=100)
-########################################################################################
+#------------------------------------------------------------------------------
 from .misc import get_celery_queue_names, print_debug
+#--------------------------------------
 class CeleryQueueForm(FlaskForm):
+    celery_choices = []
     queues = get_celery_queue_names()
-    lQueue=[]
-    print_debug("queues length: " + str(len(queues)))
-    for n in range(len(queues)):
-        t=(queues[n],queues[n])
-        lQueue.append(t)
-    print_debug("lQueue: " + str(lQueue))
-    celery_queues = SelectField('Celery Queue',
-            choices=lQueue)
+    celery_choices.append(('',''))
+    if queues:
+        for n in range(len(queues)):
+            t=(queues[n],queues[n])
+            celery_choices.append(t)
+    celery_queue = SelectField('Celery Queue', choices=sorted(celery_choices))
+#    celery_queue = SelectField('Celery Queue', choices=celery_choices)
+#--------------------------------------
+#    def update_chices():
+#        print_debug("dir(celery_queue): ", dir(celery_queue))
+#--------------------------------------
+#    def __init__(self, *args, **kwargs):
+#        super(CeleryQueueForm, self).__init__(*args, **kwargs)
+#        self.celery_queue.choices = get_celery_queue_names()
 #            choices=[('cpp', 'C++'), ('py', 'Python'), ('text', 'Plain Text')])
 #            choices=[('cpp','C++')])
-########################################################################################
+#------------------------------------------------------------------------------
 class SampleForm(FlaskForm):
     '''Corresponds to the bumps CLI command --sample'''
     pass
@@ -294,7 +302,7 @@ class FitForm(FlaskForm):
     The idea is to test handling data and running a simple fit
     on the server.
     '''
-    slurm = FormField(SlurmForm)
+#    slurm = FormField(SlurmForm)
     steps = FormField(StepForm)
     celery = FormField (CeleryQueueForm)
     

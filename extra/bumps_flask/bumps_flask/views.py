@@ -316,7 +316,9 @@ def get_celery_worker_status():
     except ImportError as e:
         d = { ERROR_KEY: str(e)}
     return d
-########################################################################################
+#------------------------------------------------------------------------------
+from .misc import get_celery_queue_names, print_debug
+#------------------------------------------------------------------------------
 @app.route('/api/fit', methods=['GET', 'POST'])
 @jwt_required
 def fit_job(results=False):
@@ -355,16 +357,17 @@ def fit_job(results=False):
 
         # Use the parsed data to set up the job related files
         # and build a BumpsJob (json serialized dict)
-        bumps_payload = setup_files(bumps_payload, form_data,
-                                    form.upload.data['script'])
+        bumps_payload = setup_files(bumps_payload, form_data, form.upload.data['script'],queue='')
 
         add_job(bumps_payload)
         flash('Job submitted successfully.')
         return redirect(url_for('dashboard'))
 
     # Retrieve the UID
+    #queues = get_celery_queue_names()
     user_token = get_jwt_identity()
-    return render_template('service.html', form=form, id = user_token)
+    return render_template('service.html', form=form, id=user_token)
+#    return render_template('service.html', form=form, id=user_token, celery_queue=queues)
 
 
 @app.route('/refresh')
