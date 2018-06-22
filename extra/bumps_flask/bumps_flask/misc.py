@@ -1,6 +1,6 @@
 import datetime
 from celery import Celery
-########################################################################################
+#-------------------------------------------------------------------------------
 def print_debug(strMessage):
     try:
         f = open ("oe_debug.txt", "a+")
@@ -11,7 +11,7 @@ def print_debug(strMessage):
         f.close()
     finally:
         f.close()
-########################################################################################
+#-------------------------------------------------------------------------------
 def print_stack():
     try:
         import traceback
@@ -26,7 +26,7 @@ def print_stack():
 #            f.write(str(s) + "\n")
     finally:
         f.close()
-########################################################################################
+#-------------------------------------------------------------------------------
 def get_celery_queue_names():
     lstQueueNames = []
     appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', \
@@ -42,3 +42,17 @@ def get_celery_queue_names():
                     s = ""
                 lstQueueNames.append(s)
     return lstQueueNames
+#-------------------------------------------------------------------------------
+#        elif 'celery' == form:# and request[form]['celery']:
+#            x = CeleryQueueForm.celery_choices#
+#            err_txt = "#"
+#            try:
+#                index = request[form]['celery_queue']
+#                index = request[form]
+#            except Exception as e:
+#               err_txt = str(e)
+#                index = -1
+#            print_debug("api.py,process_request_form, CeleryQueueForm.celery_choices: " + str(CeleryQueueForm.celery_choices))
+#            print_debug("selcted index: " + str(index))
+#            print_debug("error: " + err_txt)
+

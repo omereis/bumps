@@ -118,14 +118,8 @@ class CeleryQueueForm(FlaskForm):
     celery_queue = SelectField('Celery Queue', choices=sorted(celery_choices))
 #    celery_queue = SelectField('Celery Queue', choices=celery_choices)
 #--------------------------------------
-#    def update_chices():
-#        print_debug("dir(celery_queue): ", dir(celery_queue))
-#--------------------------------------
-#    def __init__(self, *args, **kwargs):
-#        super(CeleryQueueForm, self).__init__(*args, **kwargs)
-#        self.celery_queue.choices = get_celery_queue_names()
-#            choices=[('cpp', 'C++'), ('py', 'Python'), ('text', 'Plain Text')])
-#            choices=[('cpp','C++')])
+    def update_chices(self):
+        print_debug("dir(celery_queue): " +  str(self.queues))
 #------------------------------------------------------------------------------
 class SampleForm(FlaskForm):
     '''Corresponds to the bumps CLI command --sample'''
@@ -302,7 +296,7 @@ class FitForm(FlaskForm):
     The idea is to test handling data and running a simple fit
     on the server.
     '''
-#    slurm = FormField(SlurmForm)
+    slurm = FormField(SlurmForm)
     steps = FormField(StepForm)
     celery = FormField (CeleryQueueForm)
     

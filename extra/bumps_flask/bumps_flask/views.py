@@ -331,6 +331,12 @@ def fit_job(results=False):
 
     form = FitForm()
     if form.validate_on_submit():
+
+#        try:
+#            form.celery.update_chices()
+#        except Exception as e:
+#            print_debug ("error: " + str(e))
+
         # Parse through the form data
         form_data = (process_request_form(form.data))
 
@@ -357,7 +363,7 @@ def fit_job(results=False):
 
         # Use the parsed data to set up the job related files
         # and build a BumpsJob (json serialized dict)
-        bumps_payload = setup_files(bumps_payload, form_data, form.upload.data['script'],queue='')
+        bumps_payload = setup_files(bumps_payload, form_data, form.upload.data['script'])
 
         add_job(bumps_payload)
         flash('Job submitted successfully.')

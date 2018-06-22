@@ -12,3 +12,5 @@ rem app = Celery('proj', broker='amqp://rabbit-server', backend='redis://redis-s
 
 
 rem docker run -d -it -h oe_bumps --name oe_bumps oe_bumps
+
+

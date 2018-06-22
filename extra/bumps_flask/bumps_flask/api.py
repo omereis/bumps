@@ -122,19 +122,6 @@ def process_request_form(request):
         elif 'email' == form and request[form]['email']:
             response['slurm']['--mail-user'] = request[form]['email']
 
-        elif 'celery' == form:# and request[form]['celery']:
-            x = CeleryQueueForm.celery_choices
-            err_txt = ""
-            try:
-                index = request[form]['celery_queue']
-                index = request[form]
-            except Exception as e:
-                err_txt = str(e)
-                index = -1
-            print_debug("api.py,process_request_form, CeleryQueueForm.celery_choices: " + str(CeleryQueueForm.celery_choices))
-            print_debug("selcted index: " + str(index))
-            print_debug("error: " + err_txt)
-
         # Catch the slurm related variables here
         elif 'slurm' == form:
             for key in request[form]:
