@@ -1,0 +1,58 @@
+########################################################################################
+from celery import Celery
+from .misc import get_celery_queue_names
+@app.route('/api/celery', methods=['GET', 'POST'])
+def check_celery():
+    '''
+    View current Celery queue data
+
+    app = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
+    app.control.inspect().active_queues()
+    '''
+    appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
+    msgAllQueues = ""
+    inspect = None
+    try:
+        queues = get_celery_queue_names()
+        msgAllQueues = ", ".join(queues)
+        msg = "Celery imported"
+    except Exception as e:
+        msg = "Error: " + str(e.args)
+        msg1 = "basa"
+    flash ("Celery Status: " + msg)
+    flash ("Qeues Names: " + msgAllQueues)
+    user_token = create_user_token()
+    render_template('tokenizer.html')
+
+    # Associate an auth JWT and a refresh JWT to the UID
+    try :
+        rt = register_token(user_token)
+        x = register_token(user_token).get_data()
+        resp = json.loads(x)
+#        resp = json.loads(register_token(user_token).get_data())
+        jwt_token = resp['access_token']
+        refresh_token = resp['refresh_token']
+    except Exception as excp:
+        print ("Error: " + str(excp.args))
+
+    # Working with the client interface
+    if flask_request.method == 'POST':
+        flash("POST")
+        response = jsonify(
+            uid=user_token,
+            auth_token=jwt_token,
+            refresh_token=refresh_token)
+
+    # Working with the web page interface
+    else:
+        flash("GET")
+        # Build the response object to a template
+#        response = make_response(
+#            render_template('dashboard.html', token=user_token))
+        response = make_response(
+            render_template('tokenizer.html', token=user_token))
+
+    # Bundle the JWT cookies into the response object
+    set_access_cookies(response, jwt_token)
+    set_refresh_cookies(response, refresh_token)
+    return response

@@ -304,19 +304,14 @@ class Users(Resource):
 
             return jsonify(rdb.get_users())
 #------------------------------------------------------------------------------
-from celery import Celery
+#from celery import Celery
 #------------------------------------------------------------------------------
 from .misc import get_celery_queue_names, print_debug
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
 @app.route('/api/celery', methods=['GET', 'POST'])
 def check_celery():
-    '''
-    View current Celery queue data
-
-    app = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
-    app.control.inspect().active_queues()
-    '''
-    appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
+#    if appCeleryBumps == None:
+#        appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
     msgAllQueues = ""
     inspect = None
     try:
@@ -364,6 +359,62 @@ def check_celery():
     set_refresh_cookies(response, refresh_token)
     return response
 #------------------------------------------------------------------------------
+from celery_bumps import tasks
+#from celery_bumps import tasks
+import run_cel
+#import os
+#------------------------------------------------------------------------------
+@app.route('/api/celery_test_add', methods=['GET', 'POST'])
+def api_celery_add():
+    try:
+#        if (appCeleryBumps == None):
+#            appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
+#        res = tasks.add.delay(4,5)
+        print_debug ("Current directory is: " + os.getcwd())
+        res = tasks.add(4,5)
+        print_debug("add(4,5):" + str(res))
+#        run_cel.run_celery_bumps()
+        tEnd = tStart = time.time()
+        tDelta = tEnd - tStart
+        resCelery = tasks.run_bumps1.delay('/home/bumps_user/bumps_flask/test/cf1.py')
+        fReady = resCelery.ready()
+        while ((fReady == False) and (tDelta < 10)):
+            fReady = resCelery.ready()
+            tDelta = time.time() - tStart
+        if (resCelery.ready()):
+            output = str(resCelery.get()) + ", Performance time: " + str(tDelta)
+        else:
+            output = "Timeout :-("
+        print_debug("add.delay(4,5): " + str(resCelery.get()))
+    except Exception as e:
+        print_debug("Error:\n" + str(e))
+    flash ("Results: " + output)
+    response = make_response(render_template('tokenizer.html', output=output))
+    return (response)
+#------------------------------------------------------------------------------
+import time
+#------------------------------------------------------------------------------
+def get_celery_worker_status():
+    ERROR_KEY = "ERROR"
+    try:
+        from celery.task.control import inspect
+        insp = inspect()
+        d = insp.stats()
+        if not d:
+            d = { ERROR_KEY: 'No running Celery workers were found.' }
+    except IOError as e:
+        from errno import errorcode
+        msg = "Error connecting to the backend: " + str(e)
+        if len(e.args) > 0 and errorcode.get(e.args[0]) == 'ECONNREFUSED':
+            msg += ' Check that the RabbitMQ server is running.'
+        d = { ERROR_KEY: msg }
+    except ImportError as e:
+        d = { ERROR_KEY: str(e)}
+    return d
+    
+#------------------------------------------------------------------------------
+
+
 
 api.add_resource(
     Jobs,

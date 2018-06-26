@@ -104,3 +104,4 @@ WORKDIR /home/bumps_user/bumps_flask
 #CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
 
 # Launch the app
+#CMD ["celery", "-A ", "bumps_flask.celery_bumps", "-E", "-l info"]

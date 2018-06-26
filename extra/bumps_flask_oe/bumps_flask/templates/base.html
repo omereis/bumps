@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            /*.graphs {margin: 5em;}*/
+            table#graphs {border-collapse: separate; border-spacing: 35px 35px;}
+            input.thumbnail {width: 26em; height: 26em;}
+            input[name="graph_btn"] {display: block; width: 100%; margin: 0; text-align: center;}
+        </style>
+
+        <title>bumps distribution server</title>
+        <div class="container">
+            <h2 align="center"><i>bumps</i> distribution server</h2>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul class="flashes, container"> {% for message in messages %}
+                        <li>{{ message }}</li>{% endfor %}
+                    </ul> {% endif %}
+
+                {% endwith %}
+        <h2> NCNR bumps Fitting Test Server</h2>
+        </div>
+    </head>
+
+    <body>
+
+        <div class="container">
+            {% block content %} {% endblock %}
+            <p> For help, please contact <a href="mailto:ren5@nist.gov">support</a>.</p>
+        </div>
+    </body>
+
+</html>
