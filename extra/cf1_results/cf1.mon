@@ -1,8 +1,0 @@
-# C:\Users\one4\AppData\Local\Continuum\anaconda3\lib\site-packages\bumps\cli.py cf1.py --batch --stepmon --burn=100 --steps=100 --store=cf1_results --fit=newton
-.b = Parameter(2, name='b', bounds=(-5,5))
-.m = Parameter(2, name='m', bounds=(0,4))
-
-[chisq=587.61(13), nllf=5288.5]
-step 1 cost 190.13(13)
-                                       b ......|...    1.98869 in (-5,5)
-                                       m ....|.....    1.88445 in (0,4)

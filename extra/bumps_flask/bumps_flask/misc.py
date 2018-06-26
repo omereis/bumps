@@ -1,5 +1,7 @@
 import datetime
 from celery import Celery
+from flask_jwt_extended import (get_jwt_identity)
+import os
 #-------------------------------------------------------------------------------
 def print_debug(strMessage):
     try:
@@ -42,17 +44,10 @@ def get_celery_queue_names():
                     s = ""
                 lstQueueNames.append(s)
     return lstQueueNames
-#-------------------------------------------------------------------------------
-#        elif 'celery' == form:# and request[form]['celery']:
-#            x = CeleryQueueForm.celery_choices#
-#            err_txt = "#"
-#            try:
-#                index = request[form]['celery_queue']
-#                index = request[form]
-#            except Exception as e:
-#               err_txt = str(e)
-#                index = -1
-#            print_debug("api.py,process_request_form, CeleryQueueForm.celery_choices: " + str(CeleryQueueForm.celery_choices))
-#            print_debug("selcted index: " + str(index))
-#            print_debug("error: " + err_txt)
-
+#------------------------------------------------------------------------------
+def get_results_dir (upload_folder, job_id, add_results=False):
+    dir = os.path.join(upload_folder, 'fit_problems', get_jwt_identity(), 'job' + str(job_id))
+    if (add_results):
+        dir = os.path.join(dir, 'results')
+    return (dir)
+#------------------------------------------------------------------------------

@@ -16,12 +16,8 @@ from flask_jwt_extended import (
 
 from . import app, rdb, jwt, api
 from .file_handler import setup_files, clean_job_files
-
-# def check_available_resources():
-#     pass
-
-# def create_user_token(resources):
-
+from .misc import get_celery_queue_names, print_debug, get_results_dir
+#------------------------------------------------------------------------------
 def create_user_token():
     '''
     Generates a user id for identification.
@@ -232,7 +228,6 @@ class Jobs(Resource):
 
         # Format the cmds for compatability moving forward
         cmds = dict(cli=bumps_cmds, slurm=slurm_cmds)
-
         # Get the specified queue
         queue = request.get('queue')
 
@@ -241,8 +236,12 @@ class Jobs(Resource):
         job_id = str(rdb.hlen(request['user']) + 1)
 
         # Build job directory
-        _dir = os.path.join(app.config.get('UPLOAD_FOLDER'),
-                            'fit_problems', request['user'], 'job' + job_id)
+        _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', request['user'], 'job' + job_id)
+        _dir1 = get_results_dir (app.config.get('UPLOAD_FOLDER'), job_id)
+        if (_dir != _dir1):
+            print_debug("_dir: " + _dir + "\n_dir1: "+ _dir1)
+        else:
+            print_debug ("dirs ok")
 
         # Build job metadata
         job_data = {
@@ -274,9 +273,8 @@ class Users(Resource):
         if user_id:
             # Get current user's specific job
             if job_id:
-                _dir = os.path.join(app.config.get('UPLOAD_FOLDER'),
-                                    'fit_problems', user_id,
-                                    'job{}'.format(job_id), 'results')
+                _dir = get_results_dir (app.config.get('UPLOAD_FOLDER'), job_id, True)
+#                _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', user_id, 'job{}'.format(job_id), 'results')
                 if not os.path.exists(_dir):
                     return abort(404)
 
@@ -306,7 +304,6 @@ class Users(Resource):
 #------------------------------------------------------------------------------
 #from celery import Celery
 #------------------------------------------------------------------------------
-from .misc import get_celery_queue_names, print_debug
 from flask_jwt_extended import set_access_cookies, set_refresh_cookies
 @app.route('/api/celery', methods=['GET', 'POST'])
 def check_celery():
@@ -361,7 +358,7 @@ def check_celery():
 #------------------------------------------------------------------------------
 from celery_bumps import tasks
 #from celery_bumps import tasks
-import run_cel
+#import run_cel
 #import os
 #------------------------------------------------------------------------------
 @app.route('/api/celery_test_add', methods=['GET', 'POST'])

@@ -5,11 +5,12 @@ import zipfile
 import tempfile
 import datetime
 from werkzeug.utils import secure_filename
+from flask_jwt_extended import (get_jwt_identity)
 
 from . import app, rdb
 from .run_job import execute_python_script, execute_slurm_script
-
-
+from .misc import get_celery_queue_names, print_debug, get_results_dir
+#------------------------------------------------------------------------------
 def setup_files(payload, _input, _file, queue='slurm'):
 
     # Add the store location to the bumps args
@@ -32,6 +33,10 @@ def setup_files(payload, _input, _file, queue='slurm'):
 
     # Add the filename to the payload
     payload['filebase'] = filename.split('.')[0]
+
+    print_debug ("file_handler.py, setup_files, file_path: " + file_path)
+    print_debug ("file_handler.py, setup_files, cli_opts: " + str(cli_opts))
+    print_debug ('\nbumps {} {}\n'.format(file_path, cli_opts))
 
     # Build the slurm batch script for running the job
     if queue == 'slurm':
@@ -62,9 +67,8 @@ def zip_files(_dir, file_list):
 
 
 def clean_job_files(user, job_id):
-    _dir = os.path.join(
-        app.config.get('UPLOAD_FOLDER'), 'fit_problems',
-                        user, 'job{}'.format(job_id))
+    _dir = get_results_dir (app.config.get('UPLOAD_FOLDER'), job_id)
+#    _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', user, 'job{}'.format(job_id))
     shutil.rmtree(_dir)
 
 
@@ -123,6 +127,8 @@ def cli_commands(cli_dict):
     return output_s.lstrip()
 
 
+from .misc import get_celery_queue_names, print_debug
+#------------------------------------------------------------------------------
 def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
     '''
     Parse given slurm_dict and cli_dict into a slurm script _file
@@ -143,8 +149,7 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
                          job_file, job_path)
 
     return
-
-
+#------------------------------------------------------------------------------
 def search_results(path):
     from glob import glob
     possible_ext = ('dat', 'err', 'mon', 'par',

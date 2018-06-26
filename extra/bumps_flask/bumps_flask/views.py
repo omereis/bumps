@@ -21,8 +21,8 @@ from .api import (
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
 from .file_handler import setup_files, update_job_info, search_results, zip_files
 
-from .misc import print_debug, print_stack
-#################################################################################
+from .misc import get_celery_queue_names, print_debug, get_results_dir
+#------------------------------------------------------------------------------
 @app.route('/oe_index', methods=['GET', 'POST'])
 @jwt_optional
 def oe_index():
@@ -239,7 +239,6 @@ def tokenizer():
     set_access_cookies(response, jwt_token)
     set_refresh_cookies(response, refresh_token)
     return response
-
 #------------------------------------------------------------------------------
 from .misc import get_celery_queue_names, print_debug
 #------------------------------------------------------------------------------
@@ -269,9 +268,8 @@ def fit_job(results=False):
         job_id = str(rdb.hlen(get_jwt_identity()) + 1)
 
         # Build job directory
-        _dir = os.path.join(app.config.get('UPLOAD_FOLDER'),
-                            'fit_problems', get_jwt_identity(), 'job' + job_id)
-
+#        _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', get_jwt_identity(), 'job' + job_id)
+        _dir = get_results_dir (app.config.get('UPLOAD_FOLDER'), job_id)
         # TODO: Get queue here
         # queue = 'rq'
 
@@ -291,6 +289,8 @@ def fit_job(results=False):
 
         add_job(bumps_payload)
         flash('Job submitted successfully.')
+        print_debug("api.py, fit_job,\nbumps_payload is of type + " + str(type(bumps_payload)))
+        print_debug("bumps_payload: " + str(bumps_payload))
         return redirect(url_for('dashboard'))
 
     # Retrieve the UID
