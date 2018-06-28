@@ -11,16 +11,12 @@ FIELD_JOB_ID = 'job_id'
 #------------------------------------------------------------------------------
 class bumps_sql(object):
     init_done = False
-    host = 'p858547'
+    host     = 'ncnr-r9nano'#p858547'
     database = 'bumps_db'
-    user = 'bumps'
+    user     = 'bumps'
     password = 'bumps_dba'
-    conn = None#mysql.connector.connect(host='p858547', database='bumps_db', user='bumps',password='bumps_dba')
+    conn     = None#mysql.connector.connect(host='p858547', database='bumps_db', user='bumps',password='bumps_dba')
     cursor   = None#conn.cursor()
-    #------------------------------------------------------------------------------
-#    def __init__ (self, host='p858547', database='bumps_db', user='bumps',password='bumps_dba'):
-#    def __init__ (self):
-#        print_debug ("sql_db.py, __init__, init called")
 #------------------------------------------------------------------------------
     def __del__ (self):
         try:
@@ -35,28 +31,20 @@ class bumps_sql(object):
 #------------------------------------------------------------------------------
     def insert_new_key(self, token, job_id):
         try:
-            print_debug ("sql_db.py, insert_new_key, token: " + str(token) + "\njob_id: " + str(job_id))
-#            print_debug("token: " + str(token) + "\njob_id: " + str(job_id))
-#            print_debug ("TABLE_PARAMS=" + TABLE_PARAMS+"\nFIELD_TOKEN=" + FIELD_TOKEN + \
-#                        "\ntoken=" + token + "\nFIELD_JOB_ID=" + FIELD_JOB_ID + "\njob_id" + job_id)
             strSql = "select count(*) as count from %s where (%s='%s' and %s='%s');" % (TABLE_PARAMS, FIELD_TOKEN, \
                         token, FIELD_JOB_ID, job_id)
-            print_debug (strSql)
             self.connect_to_db()
             self.cursor.execute(strSql)
             records_count = 0
             for count in self.cursor:
                 records_count = int (count[0])
-            print_debug ("records_count: " + str(records_count))
             if (records_count == 0):
                 strSql = "insert into %s (%s,%s) values ('%s',%s);" % (TABLE_PARAMS, FIELD_TOKEN, FIELD_JOB_ID, \
                         token, job_id)
-                print_debug ("insert strSql: " + strSql)
                 self.cursor.execute(strSql)
                 self.conn.commit()
                 self.cursor.close()
             fInsert = True
-            print_debug ("insert_new_key connected")
         except Exception as e:
             print_debug ("insert_new_key NOT connected" + str(e))
             fInsert = False
@@ -65,7 +53,8 @@ class bumps_sql(object):
     def connect_to_db(self):
         fConnect = None
         try:
-            self.conn = mysql.connector.connect(host='ncnr-r9nano', database='bumps_db', user='bumps',password='bumps_dba')
+            self.conn = mysql.connector.connect(host = self.host, database = self.database, user = self.user, password = self.password)
+#            self.conn = mysql.connector.connect(host='ncnr-r9nano', database='bumps_db', user='bumps',password='bumps_dba')
 #            self.conn = mysql.connector.connect(host='p858547', database='bumps_db', user='bumps',password='bumps_dba')
             self.cursor = self.conn.cursor()
             fConnect = True

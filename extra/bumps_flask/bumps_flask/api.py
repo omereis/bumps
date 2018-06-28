@@ -89,6 +89,9 @@ def register_token(user_token):
 def add_job(bumps_job):
     # Add job to the DB
     rdb.hset(bumps_job['user'], bumps_job['_id'], bumps_job)
+    print_debug("api.py, addd_job\nbumps_job['user']: " + str(bumps_job['user']) +\
+                "\nbumps_job['_id']: " + str(bumps_job['_id']) + \
+                "\nbumps_job: " + str(bumps_job))
 
 from .forms import CeleryQueueForm
 

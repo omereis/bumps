@@ -19,7 +19,7 @@ from .api import (
     process_request_form, add_job, create_auth_token)
 
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
-from .file_handler import setup_files, get_in_file, update_job_info, search_results, zip_files
+from .file_handler import setup_files, get_in_file, update_job_info, search_results, zip_files, cli_commands
 
 from .misc import get_celery_queue_names, print_debug, get_results_dir
 #------------------------------------------------------------------------------
@@ -41,13 +41,6 @@ def oe_index():
 
     # Get the WTForm and validate the user token, move them along
     form = TokenForm()
-#    try:
-#        f = open('debug.txt', 'a')
-#        f.write("form: " + str(form))
-#        f.write("form.token: " + str(form.token))
-#    finally:
-#        f.close()
-
     if form.validate_on_submit():
         user_token = form.data['token']
         # Get the auth and refresh tokens from the api
@@ -245,22 +238,27 @@ from bumps import cli
 from .sql_db import bumps_sql
 #------------------------------------------------------------------------------
 def send_celery_job(bumps_payload, form_data, _file, job_id):
+    fSent = False
     try:
         db = bumps_sql()
-        print_debug ("views.py, send_celery_job, db created")
-        try:
-            db.connect_to_db()
-            db.insert_new_key(get_jwt_identity(), job_id)
-        except Exception as e:
-            print_debug("views.py, send_celery_job, exception: " + str(e))
+        folder = bumps_payload['directory']
+        cli_opts = cli_commands(form_data['cli'])
+        file_path = os.path.join(folder, secure_filename(_file.filename))
+        job_params = "bumps {} {}\n".format(file_path, cli_opts)
+        job_params_list = job_params.split()
+        print_debug("\nviews.py, send_celery_job\ncli_opts: " + str(cli_opts) + "\nfile_path: " + str(file_path) + \
+                        "\njob_params: " + str(job_params) + \
+                        "\ntype(job_params): " + str(type(job_params)) + \
+                        "\ntype(cli_opts): " + str(type(cli_opts)) + \
+                        "\ntype(file_path): " + str(type(file_path)) + \
+                        "\ntype(job_params_list): " + str(type(job_params_list)))
+        db.connect_to_db()
+        db.insert_new_key(get_jwt_identity(), job_id)
+        cli.main(job_params_list)
+        fSent = False#True
     except Exception as e:
         print_debug ("send_celery_job error: " + str(e))
-#    in_file = get_in_file(_file)
-#    f = open("in_file_oe.txt", "w+")
-#    f.write(in_file)
-#    f.close()
-#    print_debug("views.py, fit_job()\nin_file: " + str(in_file))
-#    print_debug("views.py, send_celery_job\nbumps_payload: " + str(bumps_payload) + "\n\nform_data:\n" + str(form_data))
+    return (fSent)
 #------------------------------------------------------------------------------
 def print_dict (dict_data):
     k, v = dict_data.keys(), dict_data.values()
@@ -320,8 +318,10 @@ def fit_job(results=False):
         bumps_payload = setup_files(bumps_payload, form_data, form.upload.data['script'])
 
         if (use_celery):
-            send_celery_job(bumps_payload, form_data, form.upload.data['script'], job_id)
-            add_job(bumps_payload)
+#            folder, file_path, cli_opts = get_job_params(bumps_payload, form_data, form.upload.data['script'])
+#            print_debug("views.py, fit_job()\nfile_path: '" + str(file_path) + "'\ncli_opts: '" + cli_opts + "'")
+            if (send_celery_job(bumps_payload, form_data, form.upload.data['script'], job_id) == False):
+                add_job(bumps_payload)
         else:
             add_job(bumps_payload)
         flash('Job submitted successfully.')
