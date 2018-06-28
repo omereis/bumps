@@ -255,7 +255,9 @@ def send_celery_job(bumps_payload, form_data, _file, job_id):
         db.connect_to_db()
         db.insert_new_key(get_jwt_identity(), job_id)
         cli.main(job_params_list)
-        fSent = False#True
+        add_job(bumps_payload)
+        fSent = True
+#        fSent = False
     except Exception as e:
         print_debug ("send_celery_job error: " + str(e))
     return (fSent)
