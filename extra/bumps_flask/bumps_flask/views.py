@@ -19,7 +19,7 @@ from .api import (
     process_request_form, add_job, create_auth_token)
 
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
-from .file_handler import setup_files, update_job_info, search_results, zip_files
+from .file_handler import setup_files, get_in_file, update_job_info, search_results, zip_files
 
 from .misc import get_celery_queue_names, print_debug, get_results_dir
 #------------------------------------------------------------------------------
@@ -241,6 +241,35 @@ def tokenizer():
     return response
 #------------------------------------------------------------------------------
 from .misc import get_celery_queue_names, print_debug
+from bumps import cli
+from .sql_db import bumps_sql
+#------------------------------------------------------------------------------
+def send_celery_job(bumps_payload, form_data, _file, job_id):
+    try:
+        db = bumps_sql()
+        print_debug ("views.py, send_celery_job, db created")
+        try:
+            db.connect_to_db()
+            db.insert_new_key(get_jwt_identity(), job_id)
+        except Exception as e:
+            print_debug("views.py, send_celery_job, exception: " + str(e))
+    except Exception as e:
+        print_debug ("send_celery_job error: " + str(e))
+#    in_file = get_in_file(_file)
+#    f = open("in_file_oe.txt", "w+")
+#    f.write(in_file)
+#    f.close()
+#    print_debug("views.py, fit_job()\nin_file: " + str(in_file))
+#    print_debug("views.py, send_celery_job\nbumps_payload: " + str(bumps_payload) + "\n\nform_data:\n" + str(form_data))
+#------------------------------------------------------------------------------
+def print_dict (dict_data):
+    k, v = dict_data.keys(), dict_data.values()
+    strDebug = ""
+    for n in range(len(k)):
+        strDebug += str(k[n]) + ": " + str(v[n]) + "\n"
+    print_debug (strDebug)
+#------------------------------------------------------------------------------
+from werkzeug.utils import secure_filename
 #------------------------------------------------------------------------------
 @app.route('/api/fit', methods=['GET', 'POST'])
 @jwt_required
@@ -259,10 +288,13 @@ def fit_job(results=False):
 #            form.celery.update_chices()
 #        except Exception as e:
 #            print_debug ("error: " + str(e))
-
         # Parse through the form data
         form_data = (process_request_form(form.data))
 
+        try:
+            use_celery = form_data['celery']['use_celery']
+        except:
+            use_celery = False
         # Assuming the UIDs are unique enough, a job_id
         # can be an incremental integer associated with a UID.
         job_id = str(rdb.hlen(get_jwt_identity()) + 1)
@@ -287,10 +319,12 @@ def fit_job(results=False):
         # and build a BumpsJob (json serialized dict)
         bumps_payload = setup_files(bumps_payload, form_data, form.upload.data['script'])
 
-        add_job(bumps_payload)
+        if (use_celery):
+            send_celery_job(bumps_payload, form_data, form.upload.data['script'], job_id)
+            add_job(bumps_payload)
+        else:
+            add_job(bumps_payload)
         flash('Job submitted successfully.')
-        print_debug("api.py, fit_job,\nbumps_payload is of type + " + str(type(bumps_payload)))
-        print_debug("bumps_payload: " + str(bumps_payload))
         return redirect(url_for('dashboard'))
 
     # Retrieve the UID
@@ -382,6 +416,5 @@ def revoked_token_callback():
     '''
 
 #    print_stack()
-#    print_debug ("revoked_token_callback")
     return render_template(
         'error.html', reason='You are not logged in!'), 401

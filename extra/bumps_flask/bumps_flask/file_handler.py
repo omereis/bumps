@@ -11,6 +11,10 @@ from . import app, rdb
 from .run_job import execute_python_script, execute_slurm_script
 from .misc import get_celery_queue_names, print_debug, get_results_dir
 #------------------------------------------------------------------------------
+def get_in_file(_file):
+    file_content = str(_file.stream.getvalue().decode("utf-8"))
+    return (file_content)
+#------------------------------------------------------------------------------
 def setup_files(payload, _input, _file, queue='slurm'):
 
     # Add the store location to the bumps args
@@ -20,7 +24,8 @@ def setup_files(payload, _input, _file, queue='slurm'):
     # Make sure the upload and results
     # folders exist beforehand
     if not os.path.exists(folder):
-        os.makedirs(_input['cli']['store'])
+        os.makedirs(folder)
+#        os.makedirs(_input['cli']['store'])
 
     # Sanitize the filename
     filename = secure_filename(_file.filename)
@@ -36,7 +41,7 @@ def setup_files(payload, _input, _file, queue='slurm'):
 
     print_debug ("file_handler.py, setup_files, file_path: " + file_path)
     print_debug ("file_handler.py, setup_files, cli_opts: " + str(cli_opts))
-    print_debug ('\nbumps {} {}\n'.format(file_path, cli_opts))
+    print_debug ('file_handler.py, setup_files()\nbumps {} {}\n'.format(file_path, cli_opts))
 
     # Build the slurm batch script for running the job
     if queue == 'slurm':
@@ -127,7 +132,6 @@ def cli_commands(cli_dict):
     return output_s.lstrip()
 
 
-from .misc import get_celery_queue_names, print_debug
 #------------------------------------------------------------------------------
 def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
     '''

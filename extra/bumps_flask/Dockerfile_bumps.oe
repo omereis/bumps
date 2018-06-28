@@ -1,3 +1,11 @@
+# system changes
+# the mysql database server runs on ncnr-r9nano (or r9 for short).
+# in order to allow remote access, I've put a cooment on the line
+# bins-address=127.0.0.1
+# in file "/etc/mysql/mysql.conf.d/mysqld.cnf".
+# after that change, I've restarted mysql with:
+# "sudo /etc/init.d/mysql start"
+
 # Using the latest long-term-support Ubuntu OS
 FROM ubuntu:16.04
 
@@ -20,12 +28,14 @@ RUN apt-get update && apt-get install -y \
 
 # Create the home directory for the new app user.
 RUN apt-get install -y sudo
+RUN apt-get install -y mysql-client
 RUN apt-get install -y tzdata
 ##RUN apt-get install -y libmysqlclient-dev
 #RUN apt-get install -y mysql
 #RUN pip install mysqlclient
 RUN pip install --upgrade pip
 RUN pip install mysql-connector-python
+#RUN pip install MySQLdb
 
 RUN cp /usr/share/zoneinfo/EST /etc/localtime
 

@@ -3,8 +3,6 @@ import sys
 from json import dumps, loads
 from requests import post, get
 from requests.cookies import RequestsCookieJar
-# import .api
-# from bumps import FitDriver
 
 if len(sys.argv) > 1:
     HOST = sys.argv[1]
@@ -98,7 +96,6 @@ class Connection(object):
         directory to the server and return the
         server's response
         '''
-
         r = post(self.endpoint + 'jobs',
                  files={'file': open(job_file, 'rb')},
                  data={

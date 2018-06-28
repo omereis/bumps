@@ -99,7 +99,7 @@ def process_request_form(request):
     commands and another for bumps CLI commands
     '''
 
-    response = {'missing_keys': [], 'slurm': {}, 'cli': {}}
+    response = {'missing_keys': [], 'slurm': {}, 'cli': {}, 'celery' : {}}
 
     # Catch the CLI related options here
     for form in request:
@@ -117,6 +117,12 @@ def process_request_form(request):
 
         elif 'email' == form and request[form]['email']:
             response['slurm']['--mail-user'] = request[form]['email']
+
+        elif 'use_celery' == form:
+            try:
+                response['celery']['use_celery'] = request[form]['use_celery']
+            except Exception as e:
+                response['celery']['use_celery'] = False
 
         # Catch the slurm related variables here
         elif 'slurm' == form:
@@ -221,7 +227,6 @@ class Jobs(Resource):
 
         # Get the POSTed data
         request = flask_request.form
-
         # Get the bumps CLI dict and the slurm command dict
         bumps_cmds = json.loads(request.get('bumps_commands'))
         slurm_cmds = json.loads(request.get('slurm_commands'))
@@ -236,12 +241,8 @@ class Jobs(Resource):
         job_id = str(rdb.hlen(request['user']) + 1)
 
         # Build job directory
-        _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', request['user'], 'job' + job_id)
-        _dir1 = get_results_dir (app.config.get('UPLOAD_FOLDER'), job_id)
-        if (_dir != _dir1):
-            print_debug("_dir: " + _dir + "\n_dir1: "+ _dir1)
-        else:
-            print_debug ("dirs ok")
+#        _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', request['user'], 'job' + job_id)
+        _dir = get_results_dir (app.config.get('UPLOAD_FOLDER'), job_id)
 
         # Build job metadata
         job_data = {

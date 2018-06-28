@@ -116,8 +116,11 @@ class CeleryQueueForm(FlaskForm):
             t=(queues[n],queues[n])
             celery_choices.append(t)
     celery_queue = SelectField('Celery Queue', choices=sorted(celery_choices))
-#    celery_queue = SelectField('Celery Queue', choices=celery_choices)
-#--------------------------------------
+#------------------------------------------------------------------------------
+class UseCeleryForm(FlaskForm):
+    '''Indicates if the user wants to use Celery queue'''
+    use_celery = BooleanField(label='Use Celery?')
+#------------------------------------------------------------------------------ 
     def update_chices(self):
         print_debug("dir(celery_queue): " +  str(self.queues))
 #------------------------------------------------------------------------------
@@ -298,7 +301,8 @@ class FitForm(FlaskForm):
     '''
     slurm = FormField(SlurmForm)
     steps = FormField(StepForm)
-    celery = FormField (CeleryQueueForm)
+#    celery = FormField (CeleryQueueForm)
+    use_celery = FormField (UseCeleryForm)
     
     burn = FormField(BurnForm)
     optimizer = FormField(OptimizerForm)
