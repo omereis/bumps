@@ -8,6 +8,8 @@ from .misc import print_debug
 TABLE_PARAMS = "t_bumps_jobs"
 FIELD_TOKEN = 'token'
 FIELD_JOB_ID = 'job_id'
+FIELD_PARAMS = 'params'
+FIELD_CONTENT = 'in_file_content'
 #------------------------------------------------------------------------------
 class bumps_sql(object):
     init_done = False
@@ -29,18 +31,28 @@ class bumps_sql(object):
         except Exception as e:
             print_debug(str(e))
 #------------------------------------------------------------------------------
-    def insert_new_key(self, token, job_id):
+    def insert_key(self, token, job_id):
+        records_count = 0
         try:
             strSql = "select count(*) as count from %s where (%s='%s' and %s='%s');" % (TABLE_PARAMS, FIELD_TOKEN, \
                         token, FIELD_JOB_ID, job_id)
-            self.connect_to_db()
             self.cursor.execute(strSql)
-            records_count = 0
             for count in self.cursor:
                 records_count = int (count[0])
+#            fInsert = True
+        except Exception as e:
+            print_debug ("insert_new_key NOT connected" + str(e))
+            records_count = 0
+        return (records_count)
+#------------------------------------------------------------------------------
+    def insert_new_key(self, token, job_id, job_params):
+        try:
+            self.connect_to_db()
+            records_count = self.insert_key(token, job_id)
             if (records_count == 0):
-                strSql = "insert into %s (%s,%s) values ('%s',%s);" % (TABLE_PARAMS, FIELD_TOKEN, FIELD_JOB_ID, \
-                        token, job_id)
+                strSql = "insert into %s (%s,%s,%s) values ('%s',%s,'%s');" % (TABLE_PARAMS, \
+                        FIELD_TOKEN, FIELD_JOB_ID, FIELD_PARAMS, \
+                        token, job_id, job_params)
                 self.cursor.execute(strSql)
                 self.conn.commit()
                 self.cursor.close()

@@ -247,13 +247,14 @@ def send_celery_job(bumps_payload, form_data, _file, job_id):
         job_params = "bumps {} {}\n".format(file_path, cli_opts)
         job_params_list = job_params.split()
         print_debug("\nviews.py, send_celery_job\ncli_opts: " + str(cli_opts) + "\nfile_path: " + str(file_path) + \
+                        "\njob_params_list: " + str(job_params_list) + \
                         "\njob_params: " + str(job_params) + \
                         "\ntype(job_params): " + str(type(job_params)) + \
                         "\ntype(cli_opts): " + str(type(cli_opts)) + \
                         "\ntype(file_path): " + str(type(file_path)) + \
                         "\ntype(job_params_list): " + str(type(job_params_list)))
         db.connect_to_db()
-        db.insert_new_key(get_jwt_identity(), job_id)
+        db.insert_new_key(get_jwt_identity(), job_id, job_params)
         cli.main(job_params_list)
         add_job(bumps_payload)
         fSent = True
