@@ -255,7 +255,7 @@ def send_celery_job(bumps_payload, form_data, _file, job_id):
                         "\ntype(job_params_list): " + str(type(job_params_list)))
         db.connect_to_db()
         db.insert_new_key(get_jwt_identity(), job_id, job_params)
-        cli.main(job_params_list)
+        cli.main.delay(job_params_list)
         add_job(bumps_payload)
         fSent = True
 #        fSent = False

@@ -5,10 +5,11 @@ import os
 #from python_mysql_dbconfig import 
 #------------------------------------------------------------------------------
 from .misc import print_debug
-TABLE_PARAMS = "t_bumps_jobs"
-FIELD_TOKEN = 'token'
-FIELD_JOB_ID = 'job_id'
-FIELD_PARAMS = 'params'
+TABLE_PARAMS  = "t_bumps_jobs"
+
+FIELD_TOKEN   = 'token'
+FIELD_JOB_ID  = 'job_id'
+FIELD_PARAMS  = 'params'
 FIELD_CONTENT = 'in_file_content'
 #------------------------------------------------------------------------------
 class bumps_sql(object):
@@ -52,9 +53,12 @@ class bumps_sql(object):
 #            if (records_count == 0):
             job_id = self.insert_key(token, job_id)
             if (job_id > 0):
-                strSql = "insert into %s (%s,%s,%s) values ('%s',%s,'%s');" % (TABLE_PARAMS, \
-                        FIELD_TOKEN, FIELD_JOB_ID, FIELD_PARAMS, \
-                        token, job_id, job_params)
+#                print_debug("sql_db.py, insert_new_key\njob_params.split()[1]: " + job_params.split()[1])
+                in_file = read_file(job_params.split()[1])
+                strSql = "insert into %s (%s,%s,%s,%s) values \
+                                         ('%s',%s,'%s','%s');" % (TABLE_PARAMS, \
+                        FIELD_TOKEN, FIELD_JOB_ID, FIELD_PARAMS, FIELD_CONTENT, \
+                        token, job_id, job_params, in_file)
                 self.cursor.execute(strSql)
                 self.conn.commit()
                 self.cursor.close()
