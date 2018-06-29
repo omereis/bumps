@@ -37,19 +37,21 @@ class bumps_sql(object):
             strSql = "select count(*) as count from %s where (%s='%s' and %s='%s');" % (TABLE_PARAMS, FIELD_TOKEN, \
                         token, FIELD_JOB_ID, job_id)
             self.cursor.execute(strSql)
-            for count in self.cursor:
-                records_count = int (count[0])
-#            fInsert = True
+            result = self.cursor.fetchone()[0]
+            if (result > 0):
+                return(self.insert_key(token, job_id + 1))
         except Exception as e:
-            print_debug ("insert_new_key NOT connected" + str(e))
-            records_count = 0
-        return (records_count)
+            print_debug ("insert_key NOT connected" + str(e))
+            job_id = -1
+        return (job_id)
 #------------------------------------------------------------------------------
     def insert_new_key(self, token, job_id, job_params):
         try:
             self.connect_to_db()
-            records_count = self.insert_key(token, job_id)
-            if (records_count == 0):
+#            records_count = self.insert_key(token, job_id)
+#            if (records_count == 0):
+            job_id = self.insert_key(token, job_id)
+            if (job_id > 0):
                 strSql = "insert into %s (%s,%s,%s) values ('%s',%s,'%s');" % (TABLE_PARAMS, \
                         FIELD_TOKEN, FIELD_JOB_ID, FIELD_PARAMS, \
                         token, job_id, job_params)
