@@ -258,7 +258,9 @@ class Jobs(Resource):
         }
 
         # Setup the job files
+        print_debug ("apy.py, calling setup_files(job_data, cmds, _file, queue)")
         setup_files(job_data, cmds, _file, queue)
+
 
         # Add job to redis
         add_job(job_data)

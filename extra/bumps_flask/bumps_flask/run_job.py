@@ -3,6 +3,8 @@ import multiprocessing
 import os
 import sys
 
+from .misc import print_debug
+
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
 else:
@@ -47,14 +49,7 @@ def execute_slurm_script(cmd, args, job_file, job_path):
     """
     TEST
     """
-    try:
-        f = open('debug.txt', 'a+')
-        f.write('execute_slurm_script\n')
-        f.write('cmd=' + str(cmd) + '\n')
-        f.write('job_path=' + str(job_path) + '\n')
-        f.close()
-    except:
-        print('error opening file')
+    print_debug ("execute_slurm_script")
     subprocess.Popen([cmd] + [job_file] + list(args),
                      cwd=job_path,
                      stdout=subprocess.PIPE,

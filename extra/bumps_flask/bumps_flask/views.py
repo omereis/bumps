@@ -322,7 +322,7 @@ def fit_job(results=False):
 
         # Use the parsed data to set up the job related files
         # and build a BumpsJob (json serialized dict)
-        bumps_payload = setup_files(bumps_payload, form_data, form.upload.data['script'])
+        bumps_payload = setup_files(bumps_payload, form_data, form.upload.data['script'], run_script=not use_celery)
 
         if (use_celery):
 #            folder, file_path, cli_opts = get_job_params(bumps_payload, form_data, form.upload.data['script'])

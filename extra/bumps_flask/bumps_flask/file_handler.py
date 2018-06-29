@@ -45,7 +45,7 @@ def get_job_params(payload, _input, _file):
     print_debug ('file_handler.py, get_job_params()\nbumps {} {}\n'.format(file_path, cli_opts))
     return file_path, cli_opts
 #------------------------------------------------------------------------------
-def setup_files(payload, _input, _file, queue='slurm'):
+def setup_files(payload, _input, _file, queue='slurm', run_script=True):
     
 #    get_job_params(payload, _input, _file)
     # Add the store location to the bumps args
@@ -70,9 +70,6 @@ def setup_files(payload, _input, _file, queue='slurm'):
     # Add the filename to the payload
     payload['filebase'] = filename.split('.')[0]
 
-#    print_debug ("file_handler.py, setup_files, file_path: " + file_path)
-#    print_debug ("file_handler.py, setup_files, cli_opts: " + str(cli_opts))
-#    print_debug ("file_handler.py, setup_files, folder: " + str(folder))
     print_debug ('file_handler.py, setup_files()\nbumps {} {}\n'.format(file_path, cli_opts))
 
     # Build the slurm batch script for running the job
@@ -80,7 +77,7 @@ def setup_files(payload, _input, _file, queue='slurm'):
         # Open a non-volatile named tempfile for for output
         slurm_file = tempfile.NamedTemporaryFile(dir=folder, delete=False)
 
-        build_slurm_script(slurm_file, _input['slurm'], cli_opts, file_path)
+        build_slurm_script(slurm_file, _input['slurm'], cli_opts, file_path, run_script)
 
         slurm_file.close()
     # Currently only support for slurm is available
@@ -165,7 +162,7 @@ def cli_commands(cli_dict):
 
 
 #------------------------------------------------------------------------------
-def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
+def build_slurm_script(_file, slurm_dict, cli_opts, file_path, run_script=True):
     '''
     Parse given slurm_dict and cli_dict into a slurm script _file
     '''
@@ -181,9 +178,10 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
     # Write the CLI options
     _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
 
-    execute_slurm_script('bumps', cli_opts.split(),
-                         job_file, job_path)
-
+    if (run_script):
+        execute_slurm_script('bumps', cli_opts.split(), job_file, job_path)
+    else:
+        print_debug("file_handler.py, build_slurm_script, not running script")
     return
 #------------------------------------------------------------------------------
 def search_results(path):

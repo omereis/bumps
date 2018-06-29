@@ -1,6 +1,8 @@
 import mysql
 from mysql.connector import MySQLConnection, Error
 import os
+import time
+import datetime
 #import MySQLdb
 #from python_mysql_dbconfig import 
 #------------------------------------------------------------------------------
@@ -9,10 +11,11 @@ from .oe_debug import print_debug
 
 TABLE_PARAMS  = "t_bumps_jobs"
 
-FIELD_TOKEN   = 'token'
-FIELD_JOB_ID  = 'job_id'
-FIELD_PARAMS  = 'params'
-FIELD_CONTENT = 'in_file_content'
+FIELD_TOKEN      = 'token'
+FIELD_JOB_ID     = 'job_id'
+FIELD_TIME_START = 'time_started'
+FIELD_PARAMS     = 'params'
+FIELD_CONTENT    = 'in_file_content'
 #------------------------------------------------------------------------------
 class bumps_sql(object):
     init_done = False
@@ -51,16 +54,14 @@ class bumps_sql(object):
     def insert_new_key(self, token, job_id, job_params):
         try:
             self.connect_to_db()
-#            records_count = self.insert_key(token, job_id)
-#            if (records_count == 0):
             job_id = self.insert_key(token, job_id)
             if (job_id > 0):
-#                print_debug("sql_db.py, insert_new_key\njob_params.split()[1]: " + job_params.split()[1])
                 in_file = read_file(job_params.split()[1])
-                strSql = "insert into %s (%s,%s,%s,%s) values \
-                                         ('%s',%s,'%s','%s');" % (TABLE_PARAMS, \
-                        FIELD_TOKEN, FIELD_JOB_ID, FIELD_PARAMS, FIELD_CONTENT, \
-                        token, job_id, job_params, in_file)
+                ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                strSql = "insert into %s ( %s, %s, %s,  %s, %s) values \
+                                         ('%s',%s,'%s','%s','%s');" % (TABLE_PARAMS, \
+                        FIELD_TOKEN, FIELD_JOB_ID, FIELD_TIME_START, FIELD_PARAMS, FIELD_CONTENT, \
+                        token, job_id, ts, job_params, in_file)
                 self.cursor.execute(strSql)
                 self.conn.commit()
                 self.cursor.close()
@@ -96,10 +97,16 @@ class bumps_sql(object):
                     FIELD_TOKEN, token, \
                     FIELD_JOB_ID, str(job_id))
             self.cursor.execute(strSql)
+            print_debug("sql_db.py, extract_file_and_path\nstatement executed")
             results = self.cursor.fetchone()
+            print_debug("sql_db.py, extract_file_and_path\nresults: " + str(results))
             file_path = results[0].split()[1]
+            print_debug("sql_db.py, extract_file_and_path\nfile_path: " + str(file_path))
             file_data = results[1]
-            print_debug("sql_db.py, extract_file_and_path\nstrSql: " + strSql)
+            if file_data:
+                print_debug("sql_db.py, extract_file_and_path\nfile_data: " + str(file_data))
+            else:
+                print_debug("sql_db.py, extract_file_and_path\nfile_data: is null")
         except Exception as e:
             print_debug("sql_db.py, extract_file_and_path\nException: " + str(e))
             file_path = file_data = None

@@ -3,7 +3,8 @@ from .celery import app
 from bumps import cli
 import datetime
 from .sql_db import bumps_sql
-
+from .oe_debug import print_debug
+import os
 @app.task
 def add(x, y):
     return x + y
@@ -26,29 +27,66 @@ def save_definition_file(job_id, token):
     try:
         db.connect_to_db()
         file_path, file_data = db.extract_file_and_path(job_id, token)
-        file = open(file_path, "w+")
-        file.write(file_data)
-        file.close()
-        print_debug("tasks.py, save_definition_file\ndatabase connected, file saved")
+        if (file_path):
+            file_dir = os.path.dirname(file_path)
+            if not os.path.exists(file_dir):
+                os.makedirs(file_dir)
+            file = open(file_path, "w+")
+            file.write(file_data)
+            file.close()
         f = True
     except Exception as e:
-        print_debug("tasks.py, save_definition_file\nException: " + str(e))
         f = True
     return (f)
+#------------------------------------------------------------------------------
+def get_result_dir_name (params):
+    dest = None
+    dir_name = None
+    for n in range(len(params)):
+        if ("--store" in params[n]):
+            dest = params[n]
+    if (dest):
+        try:
+            dir_name = dest.split("=")[1]
+        except Exception as e:
+            print_debug("get_result_dir_name\nException: " + str(e))
+    return dir_name
+#------------------------------------------------------------------------------
+def create_result_dir (params):
+    print_debug ("tasks.py, create_result_dir\nparams: " + str(params) + "\ntype(params): " + str(type(params)))
+    dir_name = get_result_dir_name (params)
+    if (dir_name not None):
+        if not os.path.exists(file_dir):
+            os.makedirs(file_dir)
+            print_debug ("tasks.py, create_result_dir\ndir_name: " + str(dir_name) + " created")
 #------------------------------------------------------------------------------
 @app.task
 def run_bumps(params, job_id, token):
 #    print_debug("tasks.py, run_bumps\nparams: " + str(params))
     result = None
     try:
+        print_debug("run_bumps\nparams: " + str(params))
         if (save_definition_file(job_id, token)):
+            print_debug("tasks.py, run_bumps\ndefinition saved")
+            create_result_dir (params)
             result = cli.main(params)
+            print_debug("tasks.py, run_bumps\nresult: " + str(result))
+            if (result):
+                save_results(params, job_id, token, result)
     except Exception as e:
         print_debug("tasks.py, run_bumps\nExxception: " + str(e))
     return(result)
 #    return(cli.main(params))
 #------------------------------------------------------------------------------
-def print_debug(strMessage):
+def save_results(params, job_id, token, result):
+    db = bumps_sql()
+#    try:
+    db.connect_to_db()
+    print_debug ("tasks.py, save_results\nresult: " + str(result))
+#        db.update_results(job_id, token, result)
+#    return (True)    
+#------------------------------------------------------------------------------
+def print_debug1(strMessage):
     try:
         f = open ("oe_debug.txt", "a+")
         f.write("\n--------------------------------------------------\n")

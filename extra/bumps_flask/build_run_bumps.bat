@@ -16,3 +16,6 @@ rem docker run -d --name bumps_gui --link redis-server -p 5000:5000 bumps
 rem bumps cf1.py --batch --stepmon --burn=100 --steps=100 --store=/home/root/celery/bumps/results --fit=newton
 rem bumps cf1.py --batch --stepmon --burn=100 --steps=100 --store=/tmp/test/result --fit=newton
 
+['/usr/local/lib/python2.7/dist-packages/bumps/cli.py', params, '--batch', '--stepmon', '--burn=100', '--steps=100',  '--store=/home/bumps_user/bumps_flask/results', '--fit=newton']
+
+prm = ['cli', '/tmp/bumps_flask/fit_problems/53f2cc/job1/cf1.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/bumps_user/bumps_flask/results', '--fit=newton']
