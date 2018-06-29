@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 from .celery import app
 from bumps import cli
 import datetime
+from .sql_db import bumps_sql
 
 @app.task
 def add(x, y):
@@ -18,10 +19,35 @@ def xsum(numbers):
     return sum(numbers)
 '''
 
+#------------------------------------------------------------------------------
+def save_definition_file(job_id, token):
+    db = bumps_sql()
+    f = False
+    try:
+        db.connect_to_db()
+        file_path, file_data = db.extract_file_and_path(job_id, token)
+        file = open(file_path, "w+")
+        file.write(file_data)
+        file.close()
+        print_debug("tasks.py, save_definition_file\ndatabase connected, file saved")
+        f = True
+    except Exception as e:
+        print_debug("tasks.py, save_definition_file\nException: " + str(e))
+        f = True
+    return (f)
+#------------------------------------------------------------------------------
 @app.task
-def run_bumps(params):
-    return(cli.main(params))
-########################################################################################
+def run_bumps(params, job_id, token):
+#    print_debug("tasks.py, run_bumps\nparams: " + str(params))
+    result = None
+    try:
+        if (save_definition_file(job_id, token)):
+            result = cli.main(params)
+    except Exception as e:
+        print_debug("tasks.py, run_bumps\nExxception: " + str(e))
+    return(result)
+#    return(cli.main(params))
+#------------------------------------------------------------------------------
 def print_debug(strMessage):
     try:
         f = open ("oe_debug.txt", "a+")
@@ -32,7 +58,7 @@ def print_debug(strMessage):
         f.close()
     finally:
         f.close()
-########################################################################################
+#------------------------------------------------------------------------------
 @app.task
 def run_bumps1(params):
     print_debug("length(params): " + str(len(params)) + "\n")
@@ -48,11 +74,11 @@ def run_bumps1(params):
    
 #    ['/usr/local/lib/python2.7/dist-packages/bumps/cli.py','/home/bumps_user/bumps_flask/test/cf2.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/bumps_user/bumps_flask/results', '--fit=newton']
     return(cli.main(bumps_params))
-########################################################################################
+#------------------------------------------------------------------------------
 @app.task
 def run_bumps2():
     return(cli.main(['/usr/local/lib/python2.7/dist-packages/bumps/cli.py','/home/bumps_user/bumps_flask/test/cf2.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/bumps_user/bumps_flask/results', '--fit=newton']))
-########################################################################################
+#------------------------------------------------------------------------------
 @app.task
 def run_bumps3(src, dest):
     bumps_params= ['/usr/local/lib/python2.7/dist-packages/bumps/cli.py',\

@@ -3,6 +3,8 @@
 # docker run -d -it --link redis-server --link rabbit-server -h oe_bumps_worker2 --name oe_bumps_worker2 oe_bumps_worker
 # Update the apt-get index and then install project dependencies
 
+# celery -A bumps_flask.celery_bumps worker -E -l info
+
 # Using the latest long-term-support Ubuntu OS
 FROM ubuntu:16.04
 

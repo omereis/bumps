@@ -4,7 +4,9 @@ import os
 #import MySQLdb
 #from python_mysql_dbconfig import 
 #------------------------------------------------------------------------------
-from .misc import print_debug
+#from .misc import print_debug
+from .oe_debug import print_debug
+
 TABLE_PARAMS  = "t_bumps_jobs"
 
 FIELD_TOKEN   = 'token'
@@ -84,6 +86,25 @@ class bumps_sql(object):
     def find_key(self, token, job_id):
         self.connect_to_db()
         print_debug("token: " + str(token) + "\njob_id: " + str(job_id))
+#------------------------------------------------------------------------------
+    def extract_file_and_path(self, job_id, token):
+        print_debug("sql_db.py, extract_file_and_path\job_id: " + str(job_id))
+        try:
+            strSql = "select %s,%s from %s where (%s='%s' and %s=%s);" % \
+                    (FIELD_PARAMS, FIELD_CONTENT, \
+                    TABLE_PARAMS, \
+                    FIELD_TOKEN, token, \
+                    FIELD_JOB_ID, str(job_id))
+            self.cursor.execute(strSql)
+            results = self.cursor.fetchone()
+            file_path = results[0].split()[1]
+            file_data = results[1]
+            print_debug("sql_db.py, extract_file_and_path\nstrSql: " + strSql)
+        except Exception as e:
+            print_debug("sql_db.py, extract_file_and_path\nException: " + str(e))
+            file_path = file_data = None
+        file_path = file_data = None
+        return file_path, file_data
 #------------------------------------------------------------------------------
 def read_file(filename):
     with open(filename, 'rb') as f:

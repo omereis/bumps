@@ -110,3 +110,4 @@ WORKDIR /home/bumps_user/bumps_flask
 
 # Launch the app
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+# gunicorn --bind 0.0.0.0:5000 bumps_flask:app

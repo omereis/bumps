@@ -1,4 +1,4 @@
-from tasks import app
+#from tasks import app
 #from celery import app
 
 """
@@ -6,7 +6,8 @@ Celery fails to find the file when you pass "celeryconfig" as a string.
 To get around this we manually import it because python doesn't have a
 a problem with the relative path. Then pass it in as an object.
 """
-import celeryconfig
+from . import celeryconfig
+from .celery import app
 
 """
 Leaving tasks unconfigured is a pattern that allow it to be extended

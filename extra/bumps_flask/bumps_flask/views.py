@@ -22,6 +22,7 @@ from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
 from .file_handler import setup_files, get_in_file, update_job_info, search_results, zip_files, cli_commands
 
 from .misc import get_celery_queue_names, print_debug, get_results_dir
+from celery_bumps import tasks
 #------------------------------------------------------------------------------
 @app.route('/oe_index', methods=['GET', 'POST'])
 @jwt_optional
@@ -235,7 +236,7 @@ def tokenizer():
 #------------------------------------------------------------------------------
 from .misc import get_celery_queue_names, print_debug
 from bumps import cli
-from .sql_db import bumps_sql
+from celery_bumps.sql_db import bumps_sql
 #------------------------------------------------------------------------------
 def send_celery_job(bumps_payload, form_data, _file, job_id):
     fSent = False
@@ -255,7 +256,10 @@ def send_celery_job(bumps_payload, form_data, _file, job_id):
                         "\ntype(job_params_list): " + str(type(job_params_list)))
         db.connect_to_db()
         db.insert_new_key(get_jwt_identity(), job_id, job_params)
-        cli.main.delay(job_params_list)
+#        tasks.run_bumps.delay (job_params_list)
+        tasks.run_bumps.delay (job_params_list, job_id, get_jwt_identity())
+        print_debug("\nviews.py, send_celery_job\nbumps_run")
+#        cli.main.delay(job_params_list)
         add_job(bumps_payload)
         fSent = True
 #        fSent = False
