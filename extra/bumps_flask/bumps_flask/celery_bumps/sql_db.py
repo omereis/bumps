@@ -9,13 +9,15 @@ import datetime
 #from .misc import print_debug
 from .oe_debug import print_debug
 
-TABLE_PARAMS  = "t_bumps_jobs"
+TABLE_PARAMS      = "t_bumps_jobs"
 
-FIELD_TOKEN      = 'token'
-FIELD_JOB_ID     = 'job_id'
-FIELD_TIME_START = 'time_started'
-FIELD_PARAMS     = 'params'
-FIELD_CONTENT    = 'in_file_content'
+FIELD_TOKEN       = 'token'
+FIELD_JOB_ID      = 'job_id'
+FIELD_TIME_START  = 'time_started'
+FIELD_PARAMS      = 'params'
+FIELD_CONTENT     = 'in_file_content'
+FIELD_RES_DIR     = 'result_dir'
+FIELD_RES_CONTENT = 'result_zip'
 #------------------------------------------------------------------------------
 class bumps_sql(object):
     init_done = False
@@ -57,7 +59,7 @@ class bumps_sql(object):
             job_id = self.insert_key(token, job_id)
             if (job_id > 0):
                 in_file = read_file(job_params.split()[1])
-                ts = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                ts = get_current_time_string()
                 strSql = "insert into %s ( %s, %s, %s,  %s, %s) values \
                                          ('%s',%s,'%s','%s','%s');" % (TABLE_PARAMS, \
                         FIELD_TOKEN, FIELD_JOB_ID, FIELD_TIME_START, FIELD_PARAMS, FIELD_CONTENT, \
@@ -89,7 +91,6 @@ class bumps_sql(object):
         print_debug("token: " + str(token) + "\njob_id: " + str(job_id))
 #------------------------------------------------------------------------------
     def extract_file_and_path(self, job_id, token):
-        print_debug("sql_db.py, extract_file_and_path\job_id: " + str(job_id))
         try:
             strSql = "select %s,%s from %s where (%s='%s' and %s=%s);" % \
                     (FIELD_PARAMS, FIELD_CONTENT, \
@@ -97,21 +98,38 @@ class bumps_sql(object):
                     FIELD_TOKEN, token, \
                     FIELD_JOB_ID, str(job_id))
             self.cursor.execute(strSql)
-            print_debug("sql_db.py, extract_file_and_path\nstatement executed")
             results = self.cursor.fetchone()
-            print_debug("sql_db.py, extract_file_and_path\nresults: " + str(results))
             file_path = results[0].split()[1]
-            print_debug("sql_db.py, extract_file_and_path\nfile_path: " + str(file_path))
             file_data = results[1]
-            if file_data:
-                print_debug("sql_db.py, extract_file_and_path\nfile_data: " + str(file_data))
-            else:
-                print_debug("sql_db.py, extract_file_and_path\nfile_data: is null")
         except Exception as e:
             print_debug("sql_db.py, extract_file_and_path\nException: " + str(e))
             file_path = file_data = None
-        file_path = file_data = None
         return file_path, file_data
+#------------------------------------------------------------------------------
+    def save_results (self, job_id, token, str_end_time, zip_name):
+        try :
+            zip_data = read_file (zip_name)
+#            strSql = "update %s set %s='%s', %s=%s " \
+#                    " where (%s='%s' and %s=%s);" % \
+#                    (TABLE_PARAMS, \
+#				    FIELD_RES_DIR, str_end_time, FIELD_RES_CONTENT, zip_data, \
+#				    FIELD_TOKEN, token, FIELD_JOB_ID, job_id)
+            print_debug ("save_results, file read: " + zip_name)
+            strToken = str(token)
+            print_debug ("save_results, token: " + strToken)
+            strSql= "update %s set %s='%s', %s='%s' where (%s='%s' and %s=%s);" % (TABLE_PARAMS, FIELD_RES_CONTENT, zip_data, \
+                            FIELD_RES_DIR, str_end_time, FIELD_TOKEN, strToken, FIELD_JOB_ID, str(job_id))
+#            strSql= "update %s set %s='%s', %s='%s' where (%s='%s' and %s=%s);" % (TABLE_PARAMS, FIELD_RES_CONTENT, zip_data, \
+#                            FIELD_RES_DIR, str_end_time, FIELD_TOKEN, strToken, FIELD_JOB_ID, job_id)
+            print_debug ("save_results, zip data formated")
+            print_debug ("save_results\nstrSql: " + str(strSql))
+#            strSql = "update %s set %s=%s where (%s='%s' and %s=%s);" % \
+#                    (TABLE_PARAMS, \
+#				    FIELD_RES_CONTENT, zip_data, \
+#				    FIELD_TOKEN, token, FIELD_JOB_ID, job_id)
+            print_debug ("save_results\nstrSql: " + str(strSql))
+        except Exception as e:
+            print_debug("sql_db.py, save_results\nException: " + str(e))
 #------------------------------------------------------------------------------
 def read_file(filename):
     with open(filename, 'rb') as f:
@@ -142,6 +160,10 @@ def update_blob(id, filename):
     finally:
         cursor.close()
         conn.close()
+#------------------------------------------------------------------------------
+def get_current_time_string():
+    strTime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return (strTime)
 #------------------------------------------------------------------------------
 def ConnectBumpsDB():
     conn = None

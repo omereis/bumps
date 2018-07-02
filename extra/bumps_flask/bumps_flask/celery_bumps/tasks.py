@@ -2,10 +2,10 @@ from __future__ import absolute_import, unicode_literals
 from .celery import app
 from bumps import cli
 import datetime
-from .sql_db import bumps_sql
+from .sql_db import bumps_sql, get_current_time_string
 from .oe_debug import print_debug
 import os
-import zipfile
+import shutil
 @app.task
 def add(x, y):
     return x + y
@@ -68,39 +68,41 @@ def create_result_dir (params):
 @app.task
 def run_bumps(params, job_id, token):
 #    print_debug("tasks.py, run_bumps\nparams: " + str(params))
-    result = None
+    bumps_result = None
     try:
         print_debug("run_bumps\nparams: " + str(params))
         if (save_definition_file(job_id, token)):
 #            print_debug("tasks.py, run_bumps\ndefinition saved")
             create_result_dir (params)
-            result = cli.main(params)
+            bumps_result = cli.main(params)
 #            print_debug("tasks.py, run_bumps\nresult: " + str(result))
-#            if (result):
-#                save_results(params, job_id, token, result)
+            if (bumps_result):
+                save_results(params, job_id, token)
     except Exception as e:
         print_debug("tasks.py, run_bumps\nExxception: " + str(e))
-    return(result)
+    return(bumps_result)
 #    return(cli.main(params))
 #------------------------------------------------------------------------------
 def zip_results(job_id, token, result_dir):
-    results_zip = "/tmp/%s_%d.zip" % (token, job_id)
-    if (os.path.isfile(results_zip)): # file exists
-        os.remove (results_zip)
-    zip_file = zipfile.ZipFile(results_zip, 'w')
-    for root, dirs, files in os.walk(result_dir):
-        for file in files:
-            zip_file.write(os.path.join(root, file))
-    zip_file.close()
-    print_debug ("result zip: " + str(results_zip))
-    return (results_zip)
+    try:
+        zip_name = "/tmp/%s_%s" % (token, job_id)
+#        print_debug ("results_zip zip_name: " + str(zip_name))
+        result_zip_name = shutil.make_archive(zip_name, 'zip', result_dir)
+        print_debug ("result zip: " + str(zip_name))
+    except Exception as e:
+        print_debug ("zip_results exception: " + str(e))
+    return (result_zip_name)
 #------------------------------------------------------------------------------
-def save_results(params, job_id, token, result):
+def save_results(params, job_id, token):
+    str_end_time = get_current_time_string()
+    result_dir = get_result_dir_name (params)
     db = bumps_sql()
 #    try:
     db.connect_to_db()
-    print_debug ("tasks.py, save_results\nresult: " + str(result))
-    zip_results(job_id, token, result_dir)
+    print_debug ("tasks.py, save_results\nresult: " + str(result_dir))
+    zip_name = zip_results(job_id, token, result_dir)
+    db.save_results (job_id, token, str_end_time, zip_name)
+
 #        db.update_results(job_id, token, result)
 #    return (True)    
 #------------------------------------------------------------------------------
