@@ -5,6 +5,7 @@ import datetime
 from .sql_db import bumps_sql
 from .oe_debug import print_debug
 import os
+import zipfile
 @app.task
 def add(x, y):
     return x + y
@@ -27,6 +28,7 @@ def save_definition_file(job_id, token):
     try:
         db.connect_to_db()
         file_path, file_data = db.extract_file_and_path(job_id, token)
+        print_debug ("save_definition_file, file_path: " + str(file_path))
         if (file_path):
             file_dir = os.path.dirname(file_path)
             if not os.path.exists(file_dir):
@@ -34,9 +36,12 @@ def save_definition_file(job_id, token):
             file = open(file_path, "w+")
             file.write(file_data)
             file.close()
-        f = True
+            print_debug ("save_definition_file, file_path: " + str(file_path))
+            print_debug ("save_definition_file, file_dir: " + str(file_dir))
+            f = True
     except Exception as e:
-        f = True
+        print_debug ("Exception in save_definition_file: " + str(e))
+        f = False
     return (f)
 #------------------------------------------------------------------------------
 def get_result_dir_name (params):
@@ -55,10 +60,10 @@ def get_result_dir_name (params):
 def create_result_dir (params):
     print_debug ("tasks.py, create_result_dir\nparams: " + str(params) + "\ntype(params): " + str(type(params)))
     dir_name = get_result_dir_name (params)
-    if (dir_name not None):
-        if not os.path.exists(file_dir):
-            os.makedirs(file_dir)
-            print_debug ("tasks.py, create_result_dir\ndir_name: " + str(dir_name) + " created")
+    if (dir_name):
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+#            print_debug ("tasks.py, create_result_dir\ndir_name: " + str(dir_name) + " created")
 #------------------------------------------------------------------------------
 @app.task
 def run_bumps(params, job_id, token):
@@ -67,22 +72,35 @@ def run_bumps(params, job_id, token):
     try:
         print_debug("run_bumps\nparams: " + str(params))
         if (save_definition_file(job_id, token)):
-            print_debug("tasks.py, run_bumps\ndefinition saved")
+#            print_debug("tasks.py, run_bumps\ndefinition saved")
             create_result_dir (params)
             result = cli.main(params)
-            print_debug("tasks.py, run_bumps\nresult: " + str(result))
-            if (result):
-                save_results(params, job_id, token, result)
+#            print_debug("tasks.py, run_bumps\nresult: " + str(result))
+#            if (result):
+#                save_results(params, job_id, token, result)
     except Exception as e:
         print_debug("tasks.py, run_bumps\nExxception: " + str(e))
     return(result)
 #    return(cli.main(params))
+#------------------------------------------------------------------------------
+def zip_results(job_id, token, result_dir):
+    results_zip = "/tmp/%s_%d.zip" % (token, job_id)
+    if (os.path.isfile(results_zip)): # file exists
+        os.remove (results_zip)
+    zip_file = zipfile.ZipFile(results_zip, 'w')
+    for root, dirs, files in os.walk(result_dir):
+        for file in files:
+            zip_file.write(os.path.join(root, file))
+    zip_file.close()
+    print_debug ("result zip: " + str(results_zip))
+    return (results_zip)
 #------------------------------------------------------------------------------
 def save_results(params, job_id, token, result):
     db = bumps_sql()
 #    try:
     db.connect_to_db()
     print_debug ("tasks.py, save_results\nresult: " + str(result))
+    zip_results(job_id, token, result_dir)
 #        db.update_results(job_id, token, result)
 #    return (True)    
 #------------------------------------------------------------------------------
