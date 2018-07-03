@@ -158,7 +158,15 @@ def index_logout():
     else:
         form = TokenForm()
         response = make_response(redirect(url_for('index')))
-#################################################################################
+#------------------------------------------------------------------------------
+def retrieve_celery_results (user_token):
+    db = bumps_sql.bumps_sql()
+    db.connect_tb_db()
+    completed_results = db.get_completed_results(user_token)
+
+    print_debug ("retrieve_celery_results, user_token: " + str(user_token))
+    print_debug ("retrieve_celery_results, type(user_token): " + str(type(user_token)))
+#------------------------------------------------------------------------------
 @app.route('/api/dashboard', methods=['GET', 'POST'])
 @jwt_optional
 def dashboard():
@@ -172,6 +180,7 @@ def dashboard():
     # Retrieve the UID
     user_token = get_jwt_identity()
 
+    retrieve_celery_results (user_token)
     update_job_info(user_token)  # DEBUG (Polling job status here)  # POST/GET
 
     # Get the database info for the current user
@@ -247,18 +256,10 @@ def send_celery_job(bumps_payload, form_data, _file, job_id):
         file_path = os.path.join(folder, secure_filename(_file.filename))
         job_params = "bumps {} {}\n".format(file_path, cli_opts)
         job_params_list = job_params.split()
-        print_debug("\nviews.py, send_celery_job\ncli_opts: " + str(cli_opts) + "\nfile_path: " + str(file_path) + \
-                        "\njob_params_list: " + str(job_params_list) + \
-                        "\njob_params: " + str(job_params) + \
-                        "\ntype(job_params): " + str(type(job_params)) + \
-                        "\ntype(cli_opts): " + str(type(cli_opts)) + \
-                        "\ntype(file_path): " + str(type(file_path)) + \
-                        "\ntype(job_params_list): " + str(type(job_params_list)))
         db.connect_to_db()
         db.insert_new_key(get_jwt_identity(), job_id, job_params)
 #        tasks.run_bumps.delay (job_params_list)
         tasks.run_bumps.delay (job_params_list, job_id, get_jwt_identity())
-        print_debug("\nviews.py, send_celery_job\nbumps_run")
 #        cli.main.delay(job_params_list)
         add_job(bumps_payload)
         fSent = True

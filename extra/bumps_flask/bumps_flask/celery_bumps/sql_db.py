@@ -3,6 +3,7 @@ from mysql.connector import MySQLConnection, Error
 import os
 import time
 import datetime
+from .oe_debug import print_debug
 #import MySQLdb
 #from python_mysql_dbconfig import 
 #------------------------------------------------------------------------------
@@ -113,11 +114,10 @@ class bumps_sql(object):
             strWhere =  " where (%s='%s' and %s=%s);" % (FIELD_TOKEN, str(token), FIELD_JOB_ID, str(job_id))
             self.cursor.execute("update %s set %s='%s' %s" %  (TABLE_PARAMS, FIELD_TIME_ENDED, str_end_time, strWhere))
             self.conn.commit()
-            query= "update %s set %s=%%s %%s;" %  (TABLE_PARAMS, FIELD_RES_CONTENT)
-            args = (zip_data, strWhere)
-            self.cursor.execute(query, args)
+
+            query= "update %s set %s=%%s %s;" %  (TABLE_PARAMS, FIELD_RES_CONTENT, strWhere)
+            self.cursor.execute(query, (zip_data, ))
             self.conn.commit()
-            print_debug("sql_db.py, save_results: blob updated")
         except Error as e:
             print_debug("sql_db.py, save_results\nMySQL Error: " + str(e))
         except Exception as e:
@@ -125,6 +125,20 @@ class bumps_sql(object):
         finally:
             self.cursor.close()
             self.conn.close()
+#------------------------------------------------------------------------------
+    def get_completed_results(user_token):
+        try :
+            if (not self.conn.is_connected()):
+                self.connect_to_db()
+            strSql = "select "
+        except Error as e:
+            print_debug("sql_db.py, save_results\nMySQL Error: " + str(e))
+        except Exception as e:
+            print_debug("sql_db.py, save_results\nException: " + str(e))
+        finally:
+            self.cursor.close()
+            self.conn.close()
+#------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 def read_file(filename):
     with open(filename, 'rb') as f:
@@ -134,21 +148,13 @@ def read_file(filename):
 def update_blob(id, filename):
     # prepare update query and data
     query = "UPDATE tblBumpsInParams SET in_file_blob = '%s' WHERE id  = %d;"
- 
-#    db_config = read_db_config()
- 
     try:
         data = read_file(filename)
         sql = "INSERT INTO tblBumpsInParams (in_file_blob) VALUES ('%s');"
         q = (sql, (data,))
         conn = ConnectBumpsDB()
         cursor = conn.cursor()
-        # read file
-#        args = (data, id)
-#        conn = MySQLConnection(**db_config)
-#        cursor = conn.cursor()
         cursor.execute(q)
-#        cursor.execute(query, args)
         conn.commit()
     except Error as e:
         print(e)
