@@ -126,18 +126,23 @@ class bumps_sql(object):
             self.cursor.close()
             self.conn.close()
 #------------------------------------------------------------------------------
-    def get_completed_results(user_token):
+    def get_completed_results(self, user_token):
         try :
             if (not self.conn.is_connected()):
                 self.connect_to_db()
-            strSql = "select "
-        except Error as e:
-            print_debug("sql_db.py, save_results\nMySQL Error: " + str(e))
+            strSql = "select %s,%s,%s from %s where (%s='%s') and (%s is not null);" % (FIELD_PARAMS, FIELD_RES_CONTENT, FIELD_JOB_ID, \
+                                                            TABLE_PARAMS, FIELD_TOKEN, str(user_token), \
+                                                            FIELD_TIME_ENDED)
+            print_debug ("sql_dbpy, get_completed_results, strSql: " + strSql)
+            self.cursor.execute(strSql)
+            results_recoreds = self.cursor.fetchall()
         except Exception as e:
             print_debug("sql_db.py, save_results\nException: " + str(e))
+            results_recoreds = None
         finally:
             self.cursor.close()
             self.conn.close()
+        return (results_recoreds)
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 def read_file(filename):

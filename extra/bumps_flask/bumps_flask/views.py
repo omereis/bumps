@@ -160,12 +160,28 @@ def index_logout():
         response = make_response(redirect(url_for('index')))
 #------------------------------------------------------------------------------
 def retrieve_celery_results (user_token):
-    db = bumps_sql.bumps_sql()
-    db.connect_tb_db()
-    completed_results = db.get_completed_results(user_token)
-
-    print_debug ("retrieve_celery_results, user_token: " + str(user_token))
-    print_debug ("retrieve_celery_results, type(user_token): " + str(type(user_token)))
+    try:
+        db = bumps_sql()
+        db.connect_to_db()
+        completed_results = db.get_completed_results(user_token)
+        for n in range(len(completed_results)):
+            params = completed_results[n][0]
+            res_dir = tasks.get_result_dir_name (params.split())
+            if (not os.path.exists(res_dir)):
+                os.makedirs(res_dir)
+                zip_data = completed_results[n][1]
+                zip_name = "%s/%s_%s.zip" % (res_dir, str(user_token), str(completed_results[n][2]))
+                f = open (zip_name, "wb+")
+                f.write (zip_data)
+                f.close()
+                print_debug("views.py, retrieve_celery_results\nparams: zip written")
+#                unpack_archive (zip_name, res_dir, "zip")
+import zipfile
+zip_ref = zipfile.ZipFile(path_to_zip_file, 'r')
+zip_ref.extractall(directory_to_extract_to)
+zip_ref.close()                print_debug("views.py, retrieve_celery_results\nparams: unzipped")
+    except Exception as e:
+        print_debug ("Exception in retrieve_celery_results: " + str(e))
 #------------------------------------------------------------------------------
 @app.route('/api/dashboard', methods=['GET', 'POST'])
 @jwt_optional
