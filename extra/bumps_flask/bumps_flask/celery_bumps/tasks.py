@@ -77,6 +77,7 @@ def run_bumps(params, job_id, token):
             bumps_result = cli.main(params)
 #            print_debug("tasks.py, run_bumps\nresult: " + str(result))
             if (bumps_result):
+                print_debug("run_bumps\njob_id=: " + str(job_id))
                 save_results(params, job_id, token)
     except Exception as e:
         print_debug("tasks.py, run_bumps\nExxception: " + str(e))
@@ -101,6 +102,7 @@ def save_results(params, job_id, token):
     db.connect_to_db()
     print_debug ("tasks.py, save_results\nresult: " + str(result_dir))
     zip_name = zip_results(job_id, token, result_dir)
+    print_debug("tasks.py, save_results\njob_id=: " + str(job_id))
     db.save_results (job_id, token, str_end_time, zip_name)
 
 #        db.update_results(job_id, token, result)

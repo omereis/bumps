@@ -7,8 +7,6 @@ import datetime
 #from python_mysql_dbconfig import 
 #------------------------------------------------------------------------------
 #from .misc import print_debug
-from .oe_debug import print_debug
-
 TABLE_PARAMS      = "t_bumps_jobs"
 
 FIELD_TOKEN       = 'token'
@@ -16,6 +14,7 @@ FIELD_JOB_ID      = 'job_id'
 FIELD_TIME_START  = 'time_started'
 FIELD_PARAMS      = 'params'
 FIELD_CONTENT     = 'in_file_content'
+FIELD_TIME_ENDED  = 'time_ended'
 FIELD_RES_DIR     = 'result_dir'
 FIELD_RES_CONTENT = 'result_zip'
 #------------------------------------------------------------------------------
@@ -109,27 +108,23 @@ class bumps_sql(object):
     def save_results (self, job_id, token, str_end_time, zip_name):
         try :
             zip_data = read_file (zip_name)
-#            strSql = "update %s set %s='%s', %s=%s " \
-#                    " where (%s='%s' and %s=%s);" % \
-#                    (TABLE_PARAMS, \
-#				    FIELD_RES_DIR, str_end_time, FIELD_RES_CONTENT, zip_data, \
-#				    FIELD_TOKEN, token, FIELD_JOB_ID, job_id)
-            print_debug ("save_results, file read: " + zip_name)
-            strToken = str(token)
-            print_debug ("save_results, token: " + strToken)
-            strSql= "update %s set %s='%s', %s='%s' where (%s='%s' and %s=%s);" % (TABLE_PARAMS, FIELD_RES_CONTENT, zip_data, \
-                            FIELD_RES_DIR, str_end_time, FIELD_TOKEN, strToken, FIELD_JOB_ID, str(job_id))
-#            strSql= "update %s set %s='%s', %s='%s' where (%s='%s' and %s=%s);" % (TABLE_PARAMS, FIELD_RES_CONTENT, zip_data, \
-#                            FIELD_RES_DIR, str_end_time, FIELD_TOKEN, strToken, FIELD_JOB_ID, job_id)
-            print_debug ("save_results, zip data formated")
-            print_debug ("save_results\nstrSql: " + str(strSql))
-#            strSql = "update %s set %s=%s where (%s='%s' and %s=%s);" % \
-#                    (TABLE_PARAMS, \
-#				    FIELD_RES_CONTENT, zip_data, \
-#				    FIELD_TOKEN, token, FIELD_JOB_ID, job_id)
-            print_debug ("save_results\nstrSql: " + str(strSql))
+            if (not self.conn.is_connected()):
+                self.connect_to_db()
+            strWhere =  " where (%s='%s' and %s=%s);" % (FIELD_TOKEN, str(token), FIELD_JOB_ID, str(job_id))
+            self.cursor.execute("update %s set %s='%s' %s" %  (TABLE_PARAMS, FIELD_TIME_ENDED, str_end_time, strWhere))
+            self.conn.commit()
+            query= "update %s set %s=%%s %%s;" %  (TABLE_PARAMS, FIELD_RES_CONTENT)
+            args = (zip_data, strWhere)
+            self.cursor.execute(query, args)
+            self.conn.commit()
+            print_debug("sql_db.py, save_results: blob updated")
+        except Error as e:
+            print_debug("sql_db.py, save_results\nMySQL Error: " + str(e))
         except Exception as e:
             print_debug("sql_db.py, save_results\nException: " + str(e))
+        finally:
+            self.cursor.close()
+            self.conn.close()
 #------------------------------------------------------------------------------
 def read_file(filename):
     with open(filename, 'rb') as f:
