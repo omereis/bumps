@@ -4,10 +4,7 @@ import os
 import time
 import datetime
 from .oe_debug import print_debug
-#import MySQLdb
-#from python_mysql_dbconfig import 
 #------------------------------------------------------------------------------
-#from .misc import print_debug
 TABLE_PARAMS      = "t_bumps_jobs"
 
 FIELD_TOKEN       = 'token'
@@ -133,7 +130,6 @@ class bumps_sql(object):
             strSql = "select %s,%s,%s from %s where (%s='%s') and (%s is not null);" % (FIELD_PARAMS, FIELD_RES_CONTENT, FIELD_JOB_ID, \
                                                             TABLE_PARAMS, FIELD_TOKEN, str(user_token), \
                                                             FIELD_TIME_ENDED)
-            print_debug ("sql_dbpy, get_completed_results, strSql: " + strSql)
             self.cursor.execute(strSql)
             results_recoreds = self.cursor.fetchall()
         except Exception as e:
@@ -143,7 +139,7 @@ class bumps_sql(object):
             self.cursor.close()
             self.conn.close()
         return (results_recoreds)
-#------------------------------------------------------------------------------
+#---------------- class and ---------------------------------------------------
 #------------------------------------------------------------------------------
 def read_file(filename):
     with open(filename, 'rb') as f:

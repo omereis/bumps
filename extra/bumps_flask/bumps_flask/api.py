@@ -24,8 +24,7 @@ def create_user_token():
     Works basically like a username
     '''
     return str(uuid.uuid4())[:6]
-
-
+#------------------------------------------------------------------------------
 @jwt_required
 def disconnect():
     '''
@@ -40,9 +39,7 @@ def disconnect():
     unset_jwt_cookies(resp)
 
     return resp
-
-from .misc import print_debug
-
+#------------------------------------------------------------------------------
 def create_auth_token(user_token):
     '''
     Creates a JWT token given a UID
@@ -89,12 +86,8 @@ def register_token(user_token):
 def add_job(bumps_job):
     # Add job to the DB
     rdb.hset(bumps_job['user'], bumps_job['_id'], bumps_job)
-    print_debug("api.py, addd_job\nbumps_job['user']: " + str(bumps_job['user']) +\
-                "\nbumps_job['_id']: " + str(bumps_job['_id']) + \
-                "\nbumps_job: " + str(bumps_job))
 
-from .forms import CeleryQueueForm
-
+#------------------------------------------------------------------------------
 def process_request_form(request):
     '''
     Parser function for posted web forms coming
@@ -258,7 +251,6 @@ class Jobs(Resource):
         }
 
         # Setup the job files
-        print_debug ("apy.py, calling setup_files(job_data, cmds, _file, queue)")
         setup_files(job_data, cmds, _file, queue)
 
 
@@ -363,20 +355,11 @@ def check_celery():
     return response
 #------------------------------------------------------------------------------
 from celery_bumps import tasks
-#from celery_bumps import tasks
-#import run_cel
-#import os
 #------------------------------------------------------------------------------
 @app.route('/api/celery_test_add', methods=['GET', 'POST'])
 def api_celery_add():
     try:
-#        if (appCeleryBumps == None):
-#            appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', backend='redis://redis-server')
-#        res = tasks.add.delay(4,5)
-        print_debug ("Current directory is: " + os.getcwd())
         res = tasks.add(4,5)
-        print_debug("add(4,5):" + str(res))
-#        run_cel.run_celery_bumps()
         tEnd = tStart = time.time()
         tDelta = tEnd - tStart
         resCelery = tasks.run_bumps1.delay('/home/bumps_user/bumps_flask/test/cf1.py')
@@ -388,7 +371,6 @@ def api_celery_add():
             output = str(resCelery.get()) + ", Performance time: " + str(tDelta)
         else:
             output = "Timeout :-("
-        print_debug("add.delay(4,5): " + str(resCelery.get()))
     except Exception as e:
         print_debug("Error:\n" + str(e))
     flash ("Results: " + output)
@@ -414,11 +396,8 @@ def get_celery_worker_status():
     except ImportError as e:
         d = { ERROR_KEY: str(e)}
     return d
-    
 #------------------------------------------------------------------------------
-
-
-
+#------------------------------------------------------------------------------
 api.add_resource(
     Jobs,
     '/api/jobs',
@@ -426,8 +405,7 @@ api.add_resource(
     '/api/jobs/<string:user_id>/job<int:job_id><string:_format>',
     '/api/jobs/<string:user_id>/job<int:job_id>/<string:action>.<string:_format>',
     '/api/jobs<string:_format>')
-
-
+#------------------------------------------------------------------------------
 api.add_resource(
     Users,
     '/api/users',
@@ -436,3 +414,4 @@ api.add_resource(
     '/api/users/<string:user_id>/job<int:job_id><string:_format>',
     '/api/users/<string:user_id>/job<int:job_id>/<string:_file>',
     '/api/users/<string:user_id>/job<int:job_id>/<string:_file>/<string:interactive>')
+#------------------------------------------------------------------------------

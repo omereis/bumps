@@ -2,6 +2,12 @@ import os
 import json
 import datetime
 import zipfile
+#------------------------------------------------------------------------------
+from .misc import get_celery_queue_names, print_debug, get_results_dir
+from bumps import cli
+from celery_bumps.sql_db import bumps_sql
+#------------------------------------------------------------------------------
+from werkzeug.utils import secure_filename
 
 from flask import (
     url_for, render_template, redirect,
@@ -22,7 +28,6 @@ from .api import (
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
 from .file_handler import setup_files, get_in_file, update_job_info, search_results, zip_files, cli_commands
 
-from .misc import get_celery_queue_names, print_debug, get_results_dir
 from celery_bumps import tasks
 #------------------------------------------------------------------------------
 @app.route('/oe_index', methods=['GET', 'POST'])
@@ -66,8 +71,7 @@ def oe_index():
             flash('Error: {}'.format(''.join(form.errors['token'])))
 
         return render_template('index.html', form=form)
-
-#################################################################################
+#------------------------------------------------------------------------------
 @app.route('/', methods=['GET', 'POST'])
 @jwt_optional
 def index():
@@ -118,7 +122,7 @@ def index():
 #        if form.errors:
 #            flash('Error: {}'.format(''.join(form.errors['token'])))
         return render_template('index.html', form=form, stam_patam='stam')
-#################################################################################
+#------------------------------------------------------------------------------
 def perform_logout():
     try:
         jti = get_raw_jwt()['jti']
@@ -128,7 +132,7 @@ def perform_logout():
     response = make_response(redirect(url_for('index')))
     unset_jwt_cookies(response)
     return (response)
-#################################################################################
+#------------------------------------------------------------------------------
 @app.route('/index/continue', methods=['GET', 'POST'])
 @jwt_optional
 def index_continue_current_token():
@@ -139,10 +143,8 @@ def index_continue_current_token():
     else:
 #        form = TokenForm()
         response = make_response(redirect(url_for('index')))
-#        return render_template('index.html', form=form)
-#        unset_jwt_cookies(response)
         return response
-#################################################################################
+#------------------------------------------------------------------------------
 @app.route('/api/request', methods=['GET', 'POST'])
 @jwt_optional
 def index_logout():
@@ -160,6 +162,28 @@ def index_logout():
         form = TokenForm()
         response = make_response(redirect(url_for('index')))
 #------------------------------------------------------------------------------
+def save_celery_results_zip (completed_results, params, res_dir):
+    zip_name = None
+    try:
+        if (not os.path.exists(res_dir)):
+            os.makedirs(res_dir)
+            zip_data = completed_results[n][1]
+            zip_name = "%s/%s_%s.zip" % (res_dir, str(user_token), str(completed_results[n][2]))
+            f = open (zip_name, "wb+")
+            f.write (zip_data)
+            f.close()
+    except Exception as e:
+        print_debug ("Exception in retrieve_celery_results: " + str(e))
+    return zip_name
+#------------------------------------------------------------------------------
+def extract_celery_zip (zip_name):
+    try:
+        zip_ref = zipfile.ZipFile(zip_name, 'r')
+        zip_ref.extractall(res_dir)
+        zip_ref.close()
+    except Exception as e:
+        print_debug ("Exception in retrieve_celery_results: " + str(e))
+#------------------------------------------------------------------------------
 def retrieve_celery_results (user_token):
     try:
         db = bumps_sql()
@@ -168,19 +192,9 @@ def retrieve_celery_results (user_token):
         for n in range(len(completed_results)):
             params = completed_results[n][0]
             res_dir = tasks.get_result_dir_name (params.split())
-            if (not os.path.exists(res_dir)):
-                os.makedirs(res_dir)
-                zip_data = completed_results[n][1]
-                zip_name = "%s/%s_%s.zip" % (res_dir, str(user_token), str(completed_results[n][2]))
-                f = open (zip_name, "wb+")
-                f.write (zip_data)
-                f.close()
-                print_debug("views.py, retrieve_celery_results\nparams: zip written: " + zip_name)
-#                unpack_archive (zip_name, res_dir, "zip")
-                zip_ref = zipfile.ZipFile(zip_name, 'r')
-                zip_ref.extractall(res_dir)
-                zip_ref.close()
-                print_debug("views.py, retrieve_celery_results\nparams: unzipped")
+            zip_name = save_celery_results_zip (completed_results, params, res_dir)
+            if zip_name:
+                extract_celery_zip (zip_name)
     except Exception as e:
         print_debug ("Exception in retrieve_celery_results: " + str(e))
 #------------------------------------------------------------------------------
@@ -214,7 +228,7 @@ def dashboard():
         id=user_token,
         jobs=user_jobs,
         files=files)
-########################################################################################
+#------------------------------------------------------------------------------
 @app.route('/api/register', methods=['GET', 'POST'])
 def tokenizer():
     '''
@@ -260,10 +274,6 @@ def tokenizer():
     set_refresh_cookies(response, refresh_token)
     return response
 #------------------------------------------------------------------------------
-from .misc import get_celery_queue_names, print_debug
-from bumps import cli
-from celery_bumps.sql_db import bumps_sql
-#------------------------------------------------------------------------------
 def send_celery_job(bumps_payload, form_data, _file, job_id):
     fSent = False
     try:
@@ -285,15 +295,6 @@ def send_celery_job(bumps_payload, form_data, _file, job_id):
         print_debug ("send_celery_job error: " + str(e))
     return (fSent)
 #------------------------------------------------------------------------------
-def print_dict (dict_data):
-    k, v = dict_data.keys(), dict_data.values()
-    strDebug = ""
-    for n in range(len(k)):
-        strDebug += str(k[n]) + ": " + str(v[n]) + "\n"
-    print_debug (strDebug)
-#------------------------------------------------------------------------------
-from werkzeug.utils import secure_filename
-#------------------------------------------------------------------------------
 @app.route('/api/fit', methods=['GET', 'POST'])
 @jwt_required
 def fit_job(results=False):
@@ -306,12 +307,6 @@ def fit_job(results=False):
 
     form = FitForm()
     if form.validate_on_submit():
-
-#        try:
-#            form.celery.update_chices()
-#        except Exception as e:
-#            print_debug ("error: " + str(e))
-        # Parse through the form data
         form_data = (process_request_form(form.data))
 
         try:
@@ -344,7 +339,6 @@ def fit_job(results=False):
 
         if (use_celery):
 #            folder, file_path, cli_opts = get_job_params(bumps_payload, form_data, form.upload.data['script'])
-#            print_debug("views.py, fit_job()\nfile_path: '" + str(file_path) + "'\ncli_opts: '" + cli_opts + "'")
             if (send_celery_job(bumps_payload, form_data, form.upload.data['script'], job_id) == False):
                 add_job(bumps_payload)
         else:
@@ -356,9 +350,7 @@ def fit_job(results=False):
     #queues = get_celery_queue_names()
     user_token = get_jwt_identity()
     return render_template('service.html', form=form, id=user_token)
-#    return render_template('service.html', form=form, id=user_token, celery_queue=queues)
-
-
+#------------------------------------------------------------------------------
 @app.route('/refresh')
 @jwt_refresh_token_required
 def refresh():
@@ -384,8 +376,7 @@ def logout():
     response = make_response(redirect(url_for('index')))
     unset_jwt_cookies(response)
     return response
-
-
+#------------------------------------------------------------------------------
 # The following functions define the responses for JWT callbacks
 
 @jwt.token_in_blacklist_loader
@@ -404,8 +395,7 @@ def expired_token_callback():
     '''
     return render_template(
         'error.html', reason="Expired token", expired=True), 401
-
-
+#------------------------------------------------------------------------------
 @jwt.unauthorized_loader
 # @jwt_refresh_token_required
 def unauthorized_token_callback(error):
@@ -415,8 +405,7 @@ def unauthorized_token_callback(error):
     '''
 
     return render_template('error.html', reason=error), 401
-
-
+#------------------------------------------------------------------------------
 @jwt.invalid_token_loader
 def invalid_token_callback(error):
     '''
@@ -432,8 +421,7 @@ def invalid_token_callback(error):
         return response
 
     return render_template('error.html', reason=error), 401
-
-
+#------------------------------------------------------------------------------
 @jwt.revoked_token_loader
 def revoked_token_callback():
     '''

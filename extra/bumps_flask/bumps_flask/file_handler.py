@@ -9,7 +9,7 @@ from flask_jwt_extended import (get_jwt_identity)
 
 from . import app, rdb
 from .run_job import execute_python_script, execute_slurm_script
-from .misc import get_celery_queue_names, print_debug, get_results_dir
+from .misc import get_results_dir
 #------------------------------------------------------------------------------
 def get_in_file(_file):
     file_content = str(_file.stream.getvalue().decode("utf-8"))
@@ -39,10 +39,6 @@ def get_job_params(payload, _input, _file):
     # Add the filename to the payload
 #    payload['filebase'] = filename.split('.')[0]
 
-    print_debug ("file_handler.py, get_job_params, file_path: " + file_path)
-    print_debug ("file_handler.py, get_job_params, cli_opts: " + str(cli_opts))
-    print_debug ("file_handler.py, get_job_params, folder: " + str(folder))
-    print_debug ('file_handler.py, get_job_params()\nbumps {} {}\n'.format(file_path, cli_opts))
     return file_path, cli_opts
 #------------------------------------------------------------------------------
 def setup_files(payload, _input, _file, queue='slurm', run_script=True):
@@ -69,8 +65,6 @@ def setup_files(payload, _input, _file, queue='slurm', run_script=True):
 
     # Add the filename to the payload
     payload['filebase'] = filename.split('.')[0]
-
-    print_debug ('file_handler.py, setup_files()\nbumps {} {}\n'.format(file_path, cli_opts))
 
     # Build the slurm batch script for running the job
     if queue == 'slurm':
@@ -180,8 +174,6 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path, run_script=True):
 
     if (run_script):
         execute_slurm_script('bumps', cli_opts.split(), job_file, job_path)
-    else:
-        print_debug("file_handler.py, build_slurm_script, not running script")
     return
 #------------------------------------------------------------------------------
 def search_results(path):
