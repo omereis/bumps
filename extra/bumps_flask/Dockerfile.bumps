@@ -5,19 +5,20 @@ FROM ubuntu:16.04
 # docker build --rm -t bumps_base -f Dockerfile.bumps .
 
 # Update the apt-get index and then install project dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    apache2         \
-    apache2-dev     \
-    libssl-dev      \
-    git             \
-    python-dev      \
-    python-pip      \
-    vim             \
-    libmunge-dev    \
-    python          \
-    iputils-ping    \
-    net-tools
+RUN apt-get update
+RUN apt-get install -y build-essential
+RUN apt-get install -y apache2
+RUN apt-get install -y apache2-dev
+RUN apt-get install -y libssl-dev
+RUN apt-get install -y git
+RUN apt-get install -y python-dev
+RUN apt-get install -y python-pip
+RUN apt-get install -y vim
+RUN apt-get install -y libmunge-dev
+RUN apt-get update
+RUN apt-get install -y python3.6
+RUN apt-get install -y iputils-ping
+RUN apt-get install -y net-tools
 
 # Create the home directory for the new app user.
 RUN apt-get install -y sudo
@@ -43,7 +44,6 @@ ENV LINES=45
 ENV COLUMNS=150
 
 # Set the directory for relative file paths
-#WORKDIR /home/bumps_user/
 WORKDIR /home/bumps_user/bumps_flask/bumps_flask
 
 # Create the folder for the html templates and static assets
@@ -53,7 +53,6 @@ RUN mkdir templates/ && mkdir static/
 RUN pip install -U pip
 COPY ./requirements.txt /home/bumps_user/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
-#RUN pip install git+https://github.com/omereis/bumps.git
 RUN pip install git+https://github.com/omereis/bumps.git@master
 
 # Copy app files to the container
@@ -66,14 +65,8 @@ RUN pip install redis
 # Make the 5000 port available from outside the container
 EXPOSE 5000
 
-# Create a new user called 'bumps_client' and set it up on the OS
-#RUN groupadd -r bumps_client && useradd --no-log-init -r -g bumps_client bumps_client
-
 # Install the application locally
 RUN pip install --no-cache-dir -e ..
-
-# Log in with 'bumps_client' for the rest of the process
-#USER bumps_client
 
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
