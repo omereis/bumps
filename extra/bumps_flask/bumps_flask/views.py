@@ -162,28 +162,6 @@ def index_logout():
         form = TokenForm()
         response = make_response(redirect(url_for('index')))
 #------------------------------------------------------------------------------
-def save_celery_results_zip (completed_results, params, res_dir):
-    zip_name = None
-    try:
-        if (not os.path.exists(res_dir)):
-            os.makedirs(res_dir)
-            zip_data = completed_results[n][1]
-            zip_name = "%s/%s_%s.zip" % (res_dir, str(user_token), str(completed_results[n][2]))
-            f = open (zip_name, "wb+")
-            f.write (zip_data)
-            f.close()
-    except Exception as e:
-        print_debug ("Exception in retrieve_celery_results: " + str(e))
-    return zip_name
-#------------------------------------------------------------------------------
-def extract_celery_zip (zip_name):
-    try:
-        zip_ref = zipfile.ZipFile(zip_name, 'r')
-        zip_ref.extractall(res_dir)
-        zip_ref.close()
-    except Exception as e:
-        print_debug ("Exception in retrieve_celery_results: " + str(e))
-#------------------------------------------------------------------------------
 def retrieve_celery_results (user_token):
     try:
         db = bumps_sql()
@@ -192,11 +170,21 @@ def retrieve_celery_results (user_token):
         for n in range(len(completed_results)):
             params = completed_results[n][0]
             res_dir = tasks.get_result_dir_name (params.split())
-            zip_name = save_celery_results_zip (completed_results, params, res_dir)
-            if zip_name:
-                extract_celery_zip (zip_name)
+            if (not os.path.exists(res_dir)):
+                os.makedirs(res_dir)
+                zip_data = completed_results[n][1]
+                zip_name = "%s/%s_%s.zip" % (res_dir, str(user_token), str(completed_results[n][2]))
+                f = open (zip_name, "wb+")
+                f.write (zip_data)
+                f.close()
+                unzip_celery_results (zip_name, res_dir)
     except Exception as e:
         print_debug ("Exception in retrieve_celery_results: " + str(e))
+#------------------------------------------------------------------------------
+def unzip_celery_results (zip_name, res_dir):
+    zip_ref = zipfile.ZipFile(zip_name, 'r')
+    zip_ref.extractall(res_dir)
+    zip_ref.close()
 #------------------------------------------------------------------------------
 @app.route('/api/dashboard', methods=['GET', 'POST'])
 @jwt_optional
