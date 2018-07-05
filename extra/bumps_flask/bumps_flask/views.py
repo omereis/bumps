@@ -1,6 +1,7 @@
 import os
 import json
 import datetime
+import zipfile
 
 from flask import (
     url_for, render_template, redirect,
@@ -174,12 +175,12 @@ def retrieve_celery_results (user_token):
                 f = open (zip_name, "wb+")
                 f.write (zip_data)
                 f.close()
-                print_debug("views.py, retrieve_celery_results\nparams: zip written")
+                print_debug("views.py, retrieve_celery_results\nparams: zip written: " + zip_name)
 #                unpack_archive (zip_name, res_dir, "zip")
-import zipfile
-zip_ref = zipfile.ZipFile(path_to_zip_file, 'r')
-zip_ref.extractall(directory_to_extract_to)
-zip_ref.close()                print_debug("views.py, retrieve_celery_results\nparams: unzipped")
+                zip_ref = zipfile.ZipFile(zip_name, 'r')
+                zip_ref.extractall(res_dir)
+                zip_ref.close()
+                print_debug("views.py, retrieve_celery_results\nparams: unzipped")
     except Exception as e:
         print_debug ("Exception in retrieve_celery_results: " + str(e))
 #------------------------------------------------------------------------------
