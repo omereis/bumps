@@ -98,17 +98,12 @@ RUN groupadd -g 5000 bumps
 RUN useradd -g bumps bumps_user
 RUN chown -R bumps_user:bumps /home/bumps_user/
 
-#USER bumps_user
+USER bumps_user
 
 #RUN chmod a+x /home/bumps_user/test/run_b.sh
 
 WORKDIR /home/bumps_user/bumps_flask
 
-#ARG container_type
-
-#CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
-
 # Launch the app
-# CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
-# gunicorn --bind 0.0.0.0:5000 bumps_flask:app
-# CMD ["celery", "-A ", "bumps_flask.celery_bumps", "worker", "-E", "-l info"]
+ENTRYPOINT  celery -A bumps_flask.celery_bumps worker -E -l info
+
