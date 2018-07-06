@@ -6,7 +6,8 @@ FROM ubuntu:16.04
 
 # Update the apt-get index and then install project dependencies
 RUN apt-get update
-RUN apt-get install -y build-essential
+RUN apt-get upgrade -y
+RUN apt-get update && apt-get install -y build-essential
 RUN apt-get install -y apache2
 RUN apt-get install -y apache2-dev
 RUN apt-get install -y libssl-dev
@@ -16,7 +17,7 @@ RUN apt-get install -y python-pip
 RUN apt-get install -y vim
 RUN apt-get install -y libmunge-dev
 RUN apt-get update
-RUN apt-get install -y python3.6
+RUN apt-get install -y python
 RUN apt-get install -y iputils-ping
 RUN apt-get install -y net-tools
 
@@ -95,5 +96,5 @@ WORKDIR /home/bumps_user/bumps_flask
 #CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
 
 # Launch the app
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+# CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
 # gunicorn --bind 0.0.0.0:5000 bumps_flask:app

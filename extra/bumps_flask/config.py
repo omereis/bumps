@@ -1,7 +1,6 @@
 import os
 import datetime
 from tempfile import gettempdir
-print ("Stating config")
 
 # TODO: Fix cookies so they work when options are True
 

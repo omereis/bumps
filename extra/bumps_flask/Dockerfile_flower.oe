@@ -36,18 +36,19 @@ RUN find /usr/local \
     -o \( -type f -a -name '*.pyc' -o -name '*.pyo' \) -exec echo rm -f '{}' + \
   && rm -rf /usr/src/python ~/.cache
 
-ADD celeryconfig.py flowerconfig.py  /opt/celery-flower/
-ADD flower.sh /opt/celery-flower/bin/
-ADD flower.sh /opt/celery-flower/bin/
+# ADD celeryconfig.py flowerconfig.py  /opt/celery-flower/
+# ADD flower.sh /opt/celery-flower/bin/
+# ADD flower.sh /opt/celery-flower/bin/
 
-RUN chmod +x /opt/celery-flower/bin/flower.sh
+# RUN chmod +x /opt/celery-flower/bin/flower.sh
 
-RUN mkdir -p /opt/celery-flower/proj
-ADD proj/*.* /opt/celery-flower/proj/
+# RUN mkdir -p /opt/celery-flower/proj
+# ADD *.* /opt/celery-flower/
 
-COPY celery_bumps/ /opt/celery-flower/celery_bumps/
-
+#COPY celery_bumps/ /opt/celery-flower/celery_bumps/
+RUN mkdir -p /opt/celery-flower
 WORKDIR /opt/celery-flower
+COPY ./ /opt/celery-flower
 
 EXPOSE 5555
 
