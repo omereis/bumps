@@ -104,6 +104,7 @@ class bumps_sql(object):
         return file_path, file_data
 #------------------------------------------------------------------------------
     def save_results (self, job_id, token, str_end_time, zip_name):
+        f_results_saved = False
         try :
             zip_data = read_file (zip_name)
             if (not self.conn.is_connected()):
@@ -115,6 +116,7 @@ class bumps_sql(object):
             query= "update %s set %s=%%s %s;" %  (TABLE_PARAMS, FIELD_RES_CONTENT, strWhere)
             self.cursor.execute(query, (zip_data, ))
             self.conn.commit()
+            f_results_saved = True
         except Error as e:
             print_debug("sql_db.py, save_results\nMySQL Error: " + str(e))
         except Exception as e:
@@ -122,6 +124,7 @@ class bumps_sql(object):
         finally:
             self.cursor.close()
             self.conn.close()
+        return (f_results_saved)
 #------------------------------------------------------------------------------
     def get_completed_results(self, user_token):
         try :

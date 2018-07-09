@@ -6,21 +6,18 @@ from .sql_db import bumps_sql, get_current_time_string
 from .oe_debug import print_debug
 import os
 import shutil
+#------------------------------------------------------------------------------
 @app.task
 def add(x, y):
     return x + y
-
-'''
+#------------------------------------------------------------------------------
 @app.task
 def mult(x, y):
     return x * y
-
-
+#------------------------------------------------------------------------------
 @app.task
 def xsum(numbers):
     return sum(numbers)
-'''
-
 #------------------------------------------------------------------------------
 def save_definition_file(job_id, token):
     db = bumps_sql()
@@ -68,7 +65,7 @@ def run_bumps(params, job_id, token):
             create_result_dir (params)
             bumps_result = cli.main(params)
             if (bumps_result):
-                save_results(params, job_id, token)
+                result_dir = save_results(params, job_id, token)
     except Exception as e:
         print_debug("tasks.py, run_bumps\nExxception: " + str(e))
     return(bumps_result)
@@ -83,12 +80,27 @@ def zip_results(job_id, token, result_dir):
     return (result_zip_name)
 #------------------------------------------------------------------------------
 def save_results(params, job_id, token):
-    str_end_time = get_current_time_string()
-    result_dir = get_result_dir_name (params)
-    db = bumps_sql()
-    db.connect_to_db()
-    zip_name = zip_results(job_id, token, result_dir)
-    db.save_results (job_id, token, str_end_time, zip_name)
+    try:
+        str_end_time = get_current_time_string()
+        result_dir = get_result_dir_name (params)
+        db = bumps_sql()
+        db.connect_to_db()
+        zip_name = zip_results(job_id, token, result_dir)
+        if (db.save_results (job_id, token, str_end_time, zip_name) == True):
+            delete_results_dir(result_dir, zip_name)
+    except Exception as e:
+        print_debug ("save_results exception: " + str(e))
+        result_dir = None
+    return result_dir
+#------------------------------------------------------------------------------
+def  delete_results_dir(result_dir, zip_name):
+    try:
+        if (result_dir != None):
+            shutil.rmtree (result_dir)
+        if (zip_name != None):
+            os.remove(zip_name)
+    except Exception as e:
+        print_debug ("tasks.py, delete_results_dir:\nEception: " + str(e))
 #------------------------------------------------------------------------------
 @app.task
 def run_bumps1(params):

@@ -1,11 +1,28 @@
-version: '2'
+version: '3'
 services:
-  web:
-    build: .
-    ports:
-    - "8888:5000"
+  bumps_base:
+    build:
+      context: .
+      dockerfile: Dockerfile.bumps
+    image:      oe_bumps_base
+    container_name: oe_bumps_base
+  bumps_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile_bumps_worker.oe
+    image:      bumps_worker
+    container_name: oe_bumps_worker
     depends_on:
-    - redis
-    - slurm
-  slurm:
-      image: giovtorres/docker-centos7-slurm:latest
+      - bumps_base
+  bumps_gui:
+    build:
+      context: .
+      dockerfile: Dockerfile_bumps.oe
+    depends_on:
+      - bumps_base
+      - redis
+    image:      bumps_gui
+    container_name: oe_bumps_gui
+  redis:
+    image: redis
+    container_name: redis-server

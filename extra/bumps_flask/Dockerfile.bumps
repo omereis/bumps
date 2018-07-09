@@ -64,7 +64,7 @@ RUN pip install celery
 RUN pip install redis 
 
 # Make the 5000 port available from outside the container
-EXPOSE 5000
+# EXPOSE 5000
 
 # Install the application locally
 RUN pip install --no-cache-dir -e ..
