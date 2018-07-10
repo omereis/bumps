@@ -3,7 +3,13 @@ rem docker build --rm -t bumps_base -f Dockerfile.bumps .
 docker build --rm -t oe_bumps_worker -f Dockerfile_bumps_worker.oe .
 rem celery -A bumps_flask.celery_bumps worker -E -l info
 rem docker run -d -it --link redis-server --link rabbit-server -h oe_bumps_worker --name oe_bumps_worker oe_bumps_worker
-docker run -d -it --link redis-server --link rabbit-server -h oe_bumps_worker --name oe_bumps_worker oe_bumps_worker
+
+rem *  docker run -d -it --link redis-server --link rabbit-server -h oe_bumps_worker --name oe_bumps_worker oe_bumps_worker
+
+docker run -d -it --link redis-server --link rabbit-server -h oe_bumps_worker --name oe_bumps_worker --env BROKER_SERVER=ncnr-r9nano --env BACKEND_SERVER=ncnr-r9nano oe_bumps_worker
+docker run -d -it -h oe_bumps_worker --name oe_bumps_worker --env BROKER_SERVER=ncnr-r9nano --env BACKEND_SERVER=ncnr-r9nano oe_bumps_worker
+rem docker run -d -it --link redis-server --link rabbit-server -h oe_bumps_worker --name oe_bumps_worker --env BACKEND_SERVER=redis-server oe_bumps_worker
+
 rem docker run -d -it --link redis-server --link rabbit-server -h oe_bumps_worker --name oe_bumps_worker bumps_base
 rem docker run -d -it -h --link redis-server --link rabbit-server oe_bumps_worker --name oe_bumps_worker bumps_base
 rem docker run -d -it --link redis-server --link rabbit-server -h r9_bumps_worker --name r9_bumps_worker bumps_base

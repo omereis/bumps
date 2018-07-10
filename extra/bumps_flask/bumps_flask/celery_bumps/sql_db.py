@@ -135,6 +135,7 @@ class bumps_sql(object):
                                                             FIELD_TIME_ENDED)
             self.cursor.execute(strSql)
             results_recoreds = self.cursor.fetchall()
+            print_debug("sql_db.py, save_results\nstrSql: '%s" %  strSql)
         except Exception as e:
             print_debug("sql_db.py, save_results\nException: " + str(e))
             results_recoreds = None

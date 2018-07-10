@@ -78,8 +78,8 @@ RUN pip install --no-cache-dir -e ..
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
 
-ENV BACKEND_SERVER=redis-server
-ENV REDIS_SERVER=redis-server
+#ENV BACKEND_SERVER=redis-server
+#ENV REDIS_SERVER=redis-server
 
 RUN echo "root:Docker!" | chpasswd
 
