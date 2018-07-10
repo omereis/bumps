@@ -164,33 +164,16 @@ def index_logout():
 #------------------------------------------------------------------------------
 def retrieve_celery_results (user_token):
     try:
-        print_debug("views.py, retrieve_celery_results\nparams: ")
         db = bumps_sql()
         db.connect_to_db()
-        print_debug("views.py, retrieve_celery_results\ndatabase connected")
         completed_results = db.get_completed_results(user_token)
-        print_debug("views.py, retrieve_celery_results\nlen(completed_results): " + str(len(completed_results)))
-#        print_debug("views.py, retrieve_celery_results\nresult_fetched")
-#        print_debug("views.py, retrieve_celery_results\nlen(results): " + str(len(completed_results)))
         for n in range(len(completed_results)):
-#            params = str(completed_results[0])
-#            print_debug("views.py, retrieve_celery_results\nparams: " + str(params))
-            if completed_results[n][0] != None:
-                print_debug("views.py, retrieve_celery_results\nlen(completed_results[n][0]): " + str(len(completed_results[n][0])))
-            else:
-                print_debug("views.py, retrieve_celery_results\ncompleted_results[n][0] is NULL ")
             params = completed_results[n][0]
-            print_debug("views.py, retrieve_celery_results\nparams: " + str(params))
             res_dir = tasks.get_result_dir_name (params.split())
-            print_debug("views.py, retrieve_celery_results\nres_dir: " + str(res_dir))
             if (not os.path.exists(res_dir)):
                 os.makedirs(res_dir)
                 zip_data = completed_results[n][1]
-                print_debug("views.py, retrieve_celery_results\nzip_data: " + str(zip_data))
-#                zip_data = completed_results[n][1]
                 zip_name = "%s/%s_%s.zip" % (res_dir, str(user_token), str(completed_results[n][2]))
-                print_debug ("views.py, retrieve_celery_results\nzip_name: " + str(zip_name))
-#                zip_name = "%s/%s_%s.zip" % (res_dir, str(user_token), str(completed_results[n][2]))
                 f = open (zip_name, "wb+")
                 f.write (zip_data)
                 f.close()
@@ -289,14 +272,10 @@ def send_celery_job(bumps_payload, form_data, _file, job_id):
         job_params = "bumps {} {}\n".format(file_path, cli_opts)
         job_params_list = job_params.split()
         db.connect_to_db()
-        print_debug ("viws.py, send_celery_job\ndatabase connected")
         db.insert_new_key(get_jwt_identity(), job_id, job_params)
-#        tasks.run_bumps.delay (job_params_list)
         tasks.run_bumps.delay (job_params_list, job_id, get_jwt_identity())
-#        cli.main.delay(job_params_list)
         add_job(bumps_payload)
         fSent = True
-#        fSent = False
     except Exception as e:
         print_debug ("send_celery_job error: " + str(e))
     return (fSent)
