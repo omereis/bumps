@@ -28,11 +28,12 @@ def print_stack():
 #            f.write(str(s) + "\n")
     finally:
         f.close()
+from .celery_bumps import celery_misc
 #-------------------------------------------------------------------------------
 def get_celery_queue_names():
     lstQueueNames = []
-    appCeleryBumps = Celery('bumps', broker='amqp://rabbit-server', \
-                    backend='redis://redis-server')
+    appCeleryBumps = Celery('bumps', broker=celery_misc.get_broker_url(), \
+                    backend=celery_misc.get_backend_url())
     dictQueues = appCeleryBumps.control.inspect().active_queues()
     if dictQueues:
         for email in dictQueues:
