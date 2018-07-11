@@ -3,6 +3,7 @@ from flask_redis import FlaskRedis
 from flask_jwt_extended import JWTManager
 from flask_restful import Api
 from .database import Database
+from .misc import print_debug
 
 # Set app
 app = Flask(__name__, instance_relative_config=True)

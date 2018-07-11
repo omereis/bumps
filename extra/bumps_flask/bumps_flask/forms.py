@@ -12,6 +12,7 @@ from werkzeug.utils import secure_filename
 from . import rdb
 from .misc import print_debug
 
+
 # Consider that --remote is implied, --parallel, --notify, --queue and
 # --time are built-in
 
@@ -31,7 +32,6 @@ class TokenForm(FlaskForm):
         Validation consists of checking whether or not the submitted
         value corresponds to an existing database token
         '''
-        print_debug ("validate_token, str(field.data)=: " + str(field.data))
         if not rdb.exists(str(field.data)):
             raise ValidationError(
                 'Token \"' +
@@ -96,7 +96,7 @@ class SeedForm(FlaskForm):
     seed = IntegerField(
         label='Set the seed for the random generator in Numpy: ')
 
-####################
+#------------------------------------------------------------------------------
 # Stopping condition forms
 #--------------------------------------
 class StepForm(FlaskForm):
@@ -104,18 +104,6 @@ class StepForm(FlaskForm):
     steps = IntegerField(
         label='steps: ',
         validators=[Optional()], default=100)
-#------------------------------------------------------------------------------
-from .misc import get_celery_queue_names, print_debug
-#--------------------------------------
-class CeleryQueueForm(FlaskForm):
-    celery_choices = []
-    queues = get_celery_queue_names()
-    celery_choices.append(('',''))
-    if queues:
-        for n in range(len(queues)):
-            t=(queues[n],queues[n])
-            celery_choices.append(t)
-    celery_queue = SelectField('Celery Queue', choices=sorted(celery_choices))
 #------------------------------------------------------------------------------
 class UseCeleryForm(FlaskForm):
     '''Indicates if the user wants to use Celery queue'''

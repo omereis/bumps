@@ -5,7 +5,10 @@ import zipfile
 #------------------------------------------------------------------------------
 from .misc import get_celery_queue_names, print_debug, get_results_dir
 from bumps import cli
-from celery_bumps.sql_db import bumps_sql
+try:
+    from .celery_bumps.sql_db import bumps_sql
+except Exception as e:
+    print_debug ("views.py, exception in importing sql_db.py:\n'%s'" % (str(e)))
 #------------------------------------------------------------------------------
 from werkzeug.utils import secure_filename
 
@@ -21,14 +24,20 @@ from flask_jwt_extended import (
     jwt_refresh_token_required, set_refresh_cookies, unset_jwt_cookies)
 
 from . import app, rdb, jwt, api
+
+
 from .api import (
     create_user_token, register_token, disconnect,
     process_request_form, add_job, create_auth_token)
 
 from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
+
 from .file_handler import setup_files, get_in_file, update_job_info, search_results, zip_files, cli_commands
 
-from celery_bumps import tasks
+try:
+    from .celery_bumps import tasks
+except Exception as e:
+    print_debug ("views.py, exception in importing celery_bumps.tasks:\n'%s'" % (str(e)))
 #------------------------------------------------------------------------------
 @app.route('/oe_index', methods=['GET', 'POST'])
 @jwt_optional
