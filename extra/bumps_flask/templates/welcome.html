@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Flask Intro</title>
+    <link href="static/bootstrap.css" rel="stylesheet" media="screen">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body>
+    <div>
+      <h2><center>Welcome to Flask!</center></h2>
+      <br>
+      <h3><center>Hi There</center></h3>
+        <br>
+        <image src="{{ url_for ('images', filename='ncnr01.jpg') }}" width="100%"></image>
+      <br>
+      <p>Click <a href="/">here</a> to go home.</p>
+      {% for message in get_flashed_messages() %}
+        {{ message }}
+      {% endfor %}
+    </div>
+  </body>
+</html>

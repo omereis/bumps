@@ -1,0 +1,14 @@
+{%  extends "base.html" %}
+{% block content %}
+<h1>Welcome to Flask</h1>
+<br>
+You are looged in as {{session['username']}}
+<hr>
+{% for post in posts %}
+  <strong>Title:</strong> {{ post.title }} <br>
+  <strong>Post:</strong> {{ post.description }} <br>
+<br>
+<hr>
+{% endfor %}
+<hr>
+{% endblock %}
