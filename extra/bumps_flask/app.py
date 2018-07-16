@@ -62,7 +62,9 @@ def register():
         password = request.form['password']
         user = BumpsUser()
         if user.username_exists (username):
+            error = "Username '%s' already exists.<br>Can't have two :-(" % username
             print_debug ("app.py, register\nusername exists")
+            return render_template('register.html', error=error)
         else:
             print_debug ("app.py, register\nusername doesn't exists")
             user.add_user(username,password)
@@ -73,13 +75,23 @@ def register():
 def login():
     error = None
     if request.method == 'POST':
-        if request.form['username'] != 'admin' or request.form['password'] != 'admin':
-            error = 'Invalid Credentials. Please try again.'
-        else:
+        username = request.form['username']
+        password = request.form['password']
+        user = BumpsUser()
+        if user.authenticate(username, password):
             session['logged_in'] = True
-            session['username']  = 'admin'
+            session['username']  = username
             flash ('Just logged in :-)')
             return redirect(url_for('home'))
+        else:
+            error = 'Invalid Credentials. Please try again.'
+#        if request.form['username'] != 'admin' or request.form['password'] != 'admin':
+#            error = 'Invalid Credentials. Please try again.'
+#        else:
+#            session['logged_in'] = True
+#            session['username']  = 'admin'
+#            flash ('Just logged in :-)')
+#            return redirect(url_for('home'))
     return render_template('login.html', error=error)
 #------------------------------------------------------------------------------
 @app.route('/logout')
