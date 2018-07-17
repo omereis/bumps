@@ -70,13 +70,13 @@ class bumps_sql(object):
             fInsert = False
         return (fInsert)
     #------------------------------------------------------------------------------
-    def connect_to_db(self):
+    def connect_to_db(self,buffered=True):
         fConnect = None
         try:
             self.conn = mysql.connector.connect(host = self.host, database = self.database, user = self.user, password = self.password)
 #            self.conn = mysql.connector.connect(host='ncnr-r9nano', database='bumps_db', user='bumps',password='bumps_dba')
 #            self.conn = mysql.connector.connect(host='p858547', database='bumps_db', user='bumps',password='bumps_dba')
-            self.cursor = self.conn.cursor()
+            self.cursor = self.conn.cursor(buffered=buffered)
             fConnect = True
         except Exception as e:
             print_debug("sql_db.py, connect, exception :" + str(e))
@@ -154,7 +154,7 @@ class bumps_sql(object):
             if get_results:
                 results_recoreds = self.cursor.fetchall()
         except Exception as e:
-            print_debug("sql_db.py, run_sql\nException: " + str(e))
+            print_debug("sql_db.py, run_sql\nException: %s\nQuery: '%s'" % (str(e), strSql))
         return results_recoreds
 #---------------- class and ---------------------------------------------------
 #------------------------------------------------------------------------------

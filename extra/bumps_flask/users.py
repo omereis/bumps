@@ -18,20 +18,17 @@ class BumpsUser (object):
         username_exists = False
         try:
             db = self.connect_to_db()
-            db.free_result()
-            strSql = "select count(*) from %s where %s='%s';" % (TABLE_USERS, FIELD_USERNAME, username)
+            db.conn.free_result()
             res = db.run_sql (strSql, get_results=True)
-            print_debug ("users.py, username_exists:\nstr(res): %s" % str(res))
             username_exists = res[0][0] > 0
-            print_debug ("users.py, username_exists:\nusername_exists" % str(username_exists))
         except Exception as e:
             print_debug ("users.py, username_exists exceiption:\n%s" % str(e))
         return username_exists
 #------------------------------------------------------------------------------
-    def connect_to_db(self):
+    def connect_to_db(self, buffered=True):
         if not self.db:
             self.db = bumps_sql()
-            self.db.connect_to_db()
+            self.db.connect_to_db(buffered=buffered)
         return self.db
 #------------------------------------------------------------------------------
     def hash_pass (self, password):
@@ -54,24 +51,31 @@ class BumpsUser (object):
             db.run_sql (strSql, get_results=False)
             user_added = True
         except Exception as e:
-            print_debug ("users.py, username_exists exceiption:\n%s" % str(e))
+            print_debug ("users.py, username_exists exception:\n%s" % str(e))
         return user_added
 #------------------------------------------------------------------------------
     def authenticate(self, username, password):
         authenticated = False
         try:
-            db = self.connect_to_db()
+            print_debug ("users.py, authenticate, before connect_to_db")
+            db = self.connect_to_db(buffered=True)
+            print_debug ("users.py, authenticate, AFTER connect_to_db")
+            db.conn.free_result()
             db_pass = self.hash_pass (password)
-            strSql = "select count(*) from %s where (%s='%s') and (%s='%s');" & \
-                    (TABLE_USERS, FIELD_USERNAME, FIELD_PASSWORD, username, db_pass)
+            strSql = "select count(*) from %s where (%s='%s') and (%s='%s');" % \
+                    (TABLE_USERS, FIELD_USERNAME, username, FIELD_PASSWORD, db_pass)
             res = db.run_sql (strSql, get_results=True)
             if res[0][0] > 0:
                 authenticated = True
         except Exception as e:
-            print_debug ("users.py, username_exists exceiption:\n%s" % str(e))
+            print_debug ("users.py, authenticate exception:\n%s" % str(e))
+        print_debug("users.py, authenticate\nauthenticated: %s" % str(authenticated))
         return authenticated
 #------------------------------------------------------------------------------
 def encode(key, string):
+#
+# Source: https://stackoverflow.com/questions/2490334/simple-way-to-encode-a-string-according-to-a-password
+#
     encoded_chars = []
     for i in xrange(len(string)):
         key_c = key[i % len(key)]
