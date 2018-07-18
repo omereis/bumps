@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link type="text/css" rel="stylesheet"  href="{{ url_for('static', filename='bumps.css') }}" />
+        <title>BUMPS Login</title>
+<style>
+h1 {
+    color: blue;
+}
+</style>    </head>
+<body>    
+<h1>Bumps Login</h1>
+<br>
+<form action="" method="post">
+    <input type="text" placeholder="Username" name="username"
+                value="{{ request.form.username }}">
+    <input type="password" placeholder="Password" name="password"
+                value="{{ request.form.password }}">
+    <input class="btn btn-default" type="submit" value="Login">
+</form>
+
+<hr>
+Don't have an account? Click <a href="/register">here</a> to register.<br>
+<img src="{{ url_for('static', filename='ncnr01.jpg') }}">
+</body>
+</html>
+

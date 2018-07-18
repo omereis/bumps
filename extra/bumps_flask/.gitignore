@@ -1,0 +1,11 @@
+*.pyc
+*.egg
+*.egg-info
+*.rdb
+&*.pdf
+*.doc
+#*.docx
+*.zip
+.bumps_folder
+instance/
+slurm_test/

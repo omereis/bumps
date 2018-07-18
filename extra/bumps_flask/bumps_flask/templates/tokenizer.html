@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+    <form action="{{url_for('index')}}" method="GET">
+        <h4>Your token is: {{token}} </h4>
+        <p><input type="submit" value="Back"/></p>
+    </form>
+    <form action="{{url_for('api_celery_add')}}" method="GET">
+        <p><input type="submit" value="Try Celery Add"/></p>
+    </form>
+
+    <hr>
+    <table border="0" cellspacing="15" align="center">
+        <tr>
+            <td>
+                <form action="{{ url_for('logout', redirect=1) }}" method="GET">
+                    <input type="submit" value="Logout"/>
+                </form>
+            </td>
+            <td>
+                <button onclick="goBack()">Back</button>
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+    </script>
+{% endblock %}

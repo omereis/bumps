@@ -1,0 +1,16 @@
+{%  extends "base.html" %}
+{% block content %}
+<h1>Welcome to Bumps</h1>
+<hr>
+<h3>What would you like to do</h3>
+Submit New Job
+
+{% for post in posts %}
+  <strong>Title:</strong> {{ post.title }} <br>
+  <strong>Post:</strong> {{ post.description }} <br>
+<br>
+<hr>
+{% endfor %}
+<hr>
+You are looged in as "{{session['username']}}"
+{% endblock %}
