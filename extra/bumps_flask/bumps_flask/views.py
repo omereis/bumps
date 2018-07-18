@@ -95,10 +95,20 @@ def use_old_token():
 #------------------------------------------------------------------------------
 @app.route('/', methods=['POST'])
 def my_form_post():
-    text = request.form['text']
-    processed_text = text.upper()
-    print_debug("views.poy, my_form_post()\ntext: '{}'".format(text))
-    return render_template('index.html', jwt_id=processed_text)
+    token = request.form['old_token']
+    if token:
+        try:
+            resp = json.loads(register_token(token).get_data())  # POST/GET
+            jwt_token = resp['access_token']
+            refresh_token = resp['refresh_token']
+            response = make_response(redirect(url_for('dashboard', jwt_id=token)))
+        # Bundle the JWT cookies into the response object
+            set_access_cookies(response, jwt_token)
+            set_refresh_cookies(response, refresh_token)
+            return response
+        except Exception as e:
+            print_debug("views.py, my_form_post\nexception: '{}'".format(e))
+    return render_template('index.html', jwt_id=token, message='inserted token not valid')
 #------------------------------------------------------------------------------
 @app.route('/')
 @jwt_optional
