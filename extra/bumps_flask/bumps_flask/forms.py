@@ -296,3 +296,10 @@ class FitForm(FlaskForm):
     optimizer = FormField(OptimizerForm)
     upload = FormField(UploadForm)
     email = FormField(EmailForm)
+#<!--
+
+#    <form method = "POST">
+#        <p> {{ form.csrf_token }} {{ form.token.label }} {{ form.token(size=20) }}
+#        <input type="submit" value="Submit" /> </p>
+#    </form>
+#-->

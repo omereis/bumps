@@ -2,20 +2,18 @@
 {% block content %}
     {% if jwt_id %}
     <h4> You are logged in as token {{ jwt_id }}.</h4>
-    {% else %}
-    <h4> Welcome. Please use your user token to sign in or request a new user token.</h4>
-    {% endif %}
     <form action = "{{ url_for('dashboard') }}" method="POST">
         <p> View your jobs and submit new jobs.
         <input type="submit" value="Go" /></p>
     </form>
-<hr>
-here was a form
-<form method="POST">
-    <input name="text">
-    <input type="submit">
-</form>
-<hr>
+
+    {% else %}
+    <h4> Welcome. Please use your user token to sign in or request a new user token.</h4>
+
+    <form method = "POST">
+        <p> {{ form.csrf_token }} {{ form.token.label }} {{ form.token(size=20) }}
+        <input type="submit" value="Submit" /> </p>
+    </form>
 
 <table align="Left" border="0" width="100%">
 	<tr>
@@ -38,7 +36,22 @@ here was a form
 			</form>
 		</td>
 	</tr>
-    <center>Version of Tuesday 7/18, 15:26</center>
+</table>
+<br>
+<br>
+<br>
+<table>
+<tr>
+	<td>
+		<center>Version of Tuesday 7/10, 09:18</center>
+		<form action = "{{ url_for('check_celery') }}" method="GET">
+			Is there a <a href="http://www.celeryproject.org/">Celelry</a> Worker?
+			<input type="submit" value="Check Celery" /></p>
+	</form>
+</td>
+</tr>
+</table>
 <p><em> Note: This page currently uses cookies to remember your authorization token.</em></p>
 
+    {% endif %}
 {% endblock %}

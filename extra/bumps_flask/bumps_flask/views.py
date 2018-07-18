@@ -13,7 +13,7 @@ except Exception as e:
 from werkzeug.utils import secure_filename
 
 from flask import (
-    url_for, render_template, redirect,
+    url_for, render_template, redirect,request,
     make_response, flash, jsonify)
 
 from flask import request as flask_request
@@ -81,7 +81,26 @@ def oe_index():
 
         return render_template('index.html', form=form)
 #------------------------------------------------------------------------------
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/api/old_token', methods=['GET', 'POST'])
+@jwt_optional
+def use_old_token():
+    print_debug("views.py, use_old_token")
+    try:
+        text = request.form['text']
+    except Exception as e:
+        print_debug("views.py, use_old_token\nexception: '{}'".format(text))
+        text = str(e)
+    print_debug("views.py, use_old_token\ntext: '{}'".format(text))
+    return render_template('index.html', jwt_id='use_old_token')
+#------------------------------------------------------------------------------
+@app.route('/', methods=['POST'])
+def my_form_post():
+    text = request.form['text']
+    processed_text = text.upper()
+    print_debug("views.poy, my_form_post()\ntext: '{}'".format(text))
+    return render_template('index.html', jwt_id=processed_text)
+#------------------------------------------------------------------------------
+@app.route('/')
 @jwt_optional
 def index():
     '''
@@ -97,9 +116,9 @@ def index():
     form = TokenForm()
 
     # The user already has a valid JWT, let them move along
-    token_str = str(jwt_id)
-    flash (str(jwt_id))
-    flash("token_str: " + token_str)
+#    token_str = str(jwt_id)
+#    flash (str(jwt_id))
+#    flash("token_str: " + token_str)
 #    user_token = None
     if jwt_id:
         try:
@@ -117,8 +136,9 @@ def index():
         refresh_token = resp['refresh_token']
 
         # Prepare a redirect for a successful login
-        response = make_response(redirect(url_for('dashboard')))
-
+        print_debug ("viviews.py, index()\nmaking dashboard return")
+        response = make_response(redirect(url_for('dashboard', jwt_id=jwt_id)))
+        print_debug ("viviews.py, index()\ndashboard return made, jwt_id: '{}'".format(jwt_id))
         # Bundle the JWT cookies into the response object
         set_access_cookies(response, jwt_token)
         set_refresh_cookies(response, refresh_token)
@@ -130,7 +150,8 @@ def index():
 #        perform_logout()
 #        if form.errors:
 #            flash('Error: {}'.format(''.join(form.errors['token'])))
-        return render_template('index.html', form=form, stam_patam='stam')
+        print_debug ("views.py, index()\nreturning index.html, jwt_id: '{}'".format(jwt_id))
+        return render_template('index.html', form=form, jwt_id=jwt_id, stam_patam='stam')
 #------------------------------------------------------------------------------
 def perform_logout():
     try:
@@ -207,6 +228,7 @@ def dashboard():
 
     # Retrieve the UID
     user_token = get_jwt_identity()
+    print_debug ("views.py, dashboard()\nuser_token: '{}'".format(user_token))
 
     retrieve_celery_results (user_token)
     update_job_info(user_token)  # DEBUG (Polling job status here)  # POST/GET

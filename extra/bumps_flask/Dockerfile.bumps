@@ -85,6 +85,8 @@ RUN groupadd -g 5000 bumps
 RUN useradd -g bumps bumps_user
 RUN chown -R bumps_user:bumps /home/bumps_user/
 
+COPY ./vimrc /etc/vim/vimrc
+
 #USER bumps_user
 
 #RUN chmod a+x /home/bumps_user/test/run_b.sh
@@ -95,4 +97,4 @@ WORKDIR /home/bumps_user/bumps_flask
 # CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
 # CMD gunicorn--bind 0.0.0.0:5000 bumps_flaskbumps_flask:app
 # gunicorn --bind 0.0.0.0:5000 bumps_flask:app
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app","--reload"]

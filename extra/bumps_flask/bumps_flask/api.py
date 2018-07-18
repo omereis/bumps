@@ -18,8 +18,6 @@ from . import app, rdb, jwt, api
 from .file_handler import setup_files, clean_job_files
 from .misc import get_celery_queue_names, print_debug, get_results_dir
 #------------------------------------------------------------------------------
-from .celery_bumps import tasks
-#------------------------------------------------------------------------------
 def create_user_token():
     '''
     Generates a user id for identification.
@@ -355,6 +353,8 @@ def check_celery():
     set_access_cookies(response, jwt_token)
     set_refresh_cookies(response, refresh_token)
     return response
+#------------------------------------------------------------------------------
+from celery_bumps import tasks
 #------------------------------------------------------------------------------
 @app.route('/api/celery_test_add', methods=['GET', 'POST'])
 def api_celery_add():
