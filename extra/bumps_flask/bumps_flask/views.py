@@ -1,3 +1,9 @@
+#------------------------------------------------------------------------------
+# Changes Log
+# ===========
+# 1. Change by O.E., Jul. 19, 2018: invalid_token_callback redirects to main page
+#------------------------------------------------------------------------------
+
 import os
 import json
 import datetime
@@ -39,48 +45,6 @@ try:
 except Exception as e:
     print_debug ("views.py, exception in importing celery_bumps.tasks:\n'%s'" % (str(e)))
 #------------------------------------------------------------------------------
-@app.route('/oe_index', methods=['GET', 'POST'])
-@jwt_optional
-def oe_index():
-    '''
-    View for the main landing page. Works as a simple authentication page.
-    User can request a new UID (user token), which will also assign to them a
-    JWT auth token that must be sent in every subsequent request to the
-    server in order to maintain a sort of session.
-    '''
-    # Will return None if the current user does not have a JWT (cookie/header)
-    jwt_id = get_jwt_identity()
-
-    # The user already has a valid JWT, let them move along
-    if jwt_id:
-        return redirect(url_for('dashboard'))
-
-    # Get the WTForm and validate the user token, move them along
-    form = TokenForm()
-    if form.validate_on_submit():
-        user_token = form.data['token']
-        # Get the auth and refresh tokens from the api
-        resp = json.loads(register_token(user_token).get_data())  # POST/GET
-        jwt_token = resp['access_token']
-        refresh_token = resp['refresh_token']
-
-        # Prepare a redirect for a successful login
-        response = make_response(redirect(url_for('dashboard')))
-
-        # Bundle the JWT cookies into the response object
-        set_access_cookies(response, jwt_token)
-        set_refresh_cookies(response, refresh_token)
-        flash('Logged in!')
-        return response
-
-    # If the user does not yet have a JWT token and has not filled the form,
-    # display the main login page
-    else:
-        if form.errors:
-            flash('Error: {}'.format(''.join(form.errors['token'])))
-
-        return render_template('index.html', form=form)
-#------------------------------------------------------------------------------
 @app.route('/api/old_token', methods=['GET', 'POST'])
 @jwt_optional
 def use_old_token():
@@ -96,6 +60,7 @@ def use_old_token():
 @app.route('/', methods=['POST'])
 def my_form_post():
     token = request.form['old_token']
+    print_debug("views.py, my_form_post\ntoken: '{}'".format(token))
     if token:
         try:
             resp = json.loads(register_token(token).get_data())  # POST/GET
@@ -121,7 +86,7 @@ def index():
     '''
     # Will return None if the current user does not have a JWT (cookie/header)
     jwt_id = get_jwt_identity()
-
+    print_debug("views.py, index")
     # Get the WTForm and validate the user token, move them along
     form = TokenForm()
 
@@ -136,8 +101,6 @@ def index():
         except:
             user_token = None
 #        return redirect(url_for('dashboard'))
-    if (form.is_submitted()):
-        strDir = str(dir(form))
     if form.validate_on_submit():
         user_token = form.data['token']
         # Get the auth and refresh tokens from the api
@@ -146,13 +109,14 @@ def index():
         refresh_token = resp['refresh_token']
 
         # Prepare a redirect for a successful login
-        print_debug ("viviews.py, index()\nmaking dashboard return")
+        print_debug ("views.py, index()\nmaking dashboard return")
         response = make_response(redirect(url_for('dashboard', jwt_id=jwt_id)))
-        print_debug ("viviews.py, index()\ndashboard return made, jwt_id: '{}'".format(jwt_id))
+        print_debug ("views.py, index()\ndashboard return made, jwt_id: '{}'".format(jwt_id))
         # Bundle the JWT cookies into the response object
         set_access_cookies(response, jwt_token)
         set_refresh_cookies(response, refresh_token)
         flash('Logged in!')
+        print_debug ("views.py, index()\nreturning index.html after logged in, jwt_id: '{}'".format(jwt_id))
         return response
     # If the user does not yet have a JWT token and has not filled the form,
     # display the main login page
@@ -170,12 +134,14 @@ def perform_logout():
     except:
         jti = None
     response = make_response(redirect(url_for('index')))
+    print_debug ("views.py, perform_logout")
     unset_jwt_cookies(response)
     return (response)
 #------------------------------------------------------------------------------
 @app.route('/index/continue', methods=['GET', 'POST'])
 @jwt_optional
 def index_continue_current_token():
+    print_debug ("views.py, index_continue_current_token")
     jwt_id = get_jwt_identity()
     token_str = str(jwt_id)
     if jwt_id:
@@ -188,6 +154,7 @@ def index_continue_current_token():
 @app.route('/api/request', methods=['GET', 'POST'])
 @jwt_optional
 def index_logout():
+    print_debug ("views.py, index_logout")
     jwt_id = get_jwt_identity()
     if jwt_id:
         response = perform_logout()
@@ -272,6 +239,7 @@ def tokenizer():
     # Create a UID
     user_token = create_user_token()
 
+    print_debug("views.py, tokenizer()")
     # Associate an auth JWT and a refresh JWT to the UID
     try :
         rt = register_token(user_token)
@@ -397,6 +365,7 @@ def refresh():
 def logout():
     # Get the JWT identifier and set logged_out to 'true' in DB
     jti = get_raw_jwt()['jti']
+    print_debug("views.py, logout")
     rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
 
     response = make_response(redirect(url_for('index')))
@@ -437,16 +406,11 @@ def invalid_token_callback(error):
     '''
     Function to call when an invalid token accesses a protected endpoint
     Takes one argument - an error string indicating why the token is invalid
+    Change by O.E., Jul. 19, 2018
+    =============================
+    The function performs logout and directs the user to the main page.
     '''
-
-    user_token = get_jwt_identity()
-    if user_token:
-        response = make_response(redirect(url_for('index')))
-        unset_jwt_cookies(response)
-        flash('Invalid token detected, redirected to the frontpage.')
-        return response
-
-    return render_template('error.html', reason=error), 401
+    return perform_logout()
 #------------------------------------------------------------------------------
 @jwt.revoked_token_loader
 def revoked_token_callback():
