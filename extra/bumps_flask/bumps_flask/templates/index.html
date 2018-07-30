@@ -17,29 +17,29 @@
 <table class="table1">
     <tr>
         <td class="td1">
-            User old token
+            Need new token?
         </td>
         <td class="td1">
-            Need new token?
+            User old token
         </td>
     </tr>
     <tr>
+        <td class="td1">
+			<form action = "{{ url_for('tokenizer') }}" method="GET">
+				<input type="submit" value="Request" />
+			</form>
+        </td>
         <td class="td1">
             <form method="POST">
                 <input name="old_token">
                 <input type="submit" value="Reload">
             </form>
         </td>
-        <td class="td1">
-			<form action = "{{ url_for('tokenizer') }}" method="GET">
-				<input type="submit" value="Request" />
-			</form>
-        </td>
     </tr>
 </table>
 <hr>
 
-    <center>Version of Thursday 7/19, 12:04</center>
+    <center>Version of Thursday 7/30, 11:32</center>
 <p><em> Note: This page currently uses cookies to remember your authorization token.</em></p>
 <bottom>
     <center>

@@ -52,3 +52,6 @@ def get_results_dir (upload_folder, job_id, add_results=False):
         dir = os.path.join(dir, 'results')
     return (dir)
 #------------------------------------------------------------------------------
+class debug_data(object):
+    debug_dir = "debug_dir"
+#------------------------------------------------------------------------------

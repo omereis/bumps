@@ -16,7 +16,10 @@ from flask_jwt_extended import (
 
 from . import app, rdb, jwt, api
 from .file_handler import setup_files, clean_job_files
-from .misc import get_celery_queue_names, print_debug, get_results_dir
+from .misc import get_celery_queue_names, print_debug, get_results_dir, debug_data
+from .celery_bumps import tasks
+from .celery_bumps.sql_db import bumps_sql
+#from .views import DEBUG_DIR
 #------------------------------------------------------------------------------
 def create_user_token():
     '''
@@ -199,6 +202,7 @@ class Jobs(Resource):
         # A delete was requested, delete the job record and files
         elif action == 'delete':
             # Check if the user actually has a DB entry
+            print_debug ("api.py, Jobs.get\naction: '{}'".format(action))
             if not rdb.hexists(user_id, job_id):
                 abort(404)
 
@@ -206,7 +210,14 @@ class Jobs(Resource):
             rdb.hdel(user_id, job_id)
 
             # Delete up the job folder and files
-            clean_job_files(user_id, job_id)
+            _dir = clean_job_files(user_id, job_id)
+            print_debug ("api.py, get\n_dir exists? {}".format(os.path.exists(_dir)))
+            debug_data.debug_dir = _dir
+#            DEBUG_DIR = _dir
+            print_debug("api.py, jobs.get()\nuser_id: '{}', job_id: '{}'".format(user_id, job_id))
+            db = bumps_sql()
+            db.delete_job(user_id, job_id)
+
 
             # Return result in specified format
             if _format == 'json':
@@ -214,6 +225,8 @@ class Jobs(Resource):
 
             else:
                 flash('Job successfully deleted.')
+                print_debug ("api.py, get\n_dir exists before redirecting to dashboard? {}".format(os.path.exists(_dir)))
+                print_debug ("api.py, get\n_dir  before redirecting to dashboard? {}".format(_dir))
                 return redirect(url_for('dashboard'))
 
     def post(self):
@@ -353,8 +366,6 @@ def check_celery():
     set_access_cookies(response, jwt_token)
     set_refresh_cookies(response, refresh_token)
     return response
-#------------------------------------------------------------------------------
-from celery_bumps import tasks
 #------------------------------------------------------------------------------
 @app.route('/api/celery_test_add', methods=['GET', 'POST'])
 def api_celery_add():

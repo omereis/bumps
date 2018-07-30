@@ -102,5 +102,5 @@ WORKDIR /home/bumps_user/bumps_flask
 #CMD if [ $container_type = "client" ] ; then ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"] ; else echo Argument is $arg ; fi
 
 # Launch the app
-ENTRYPOINT  celery -A bumps_flask.celery_bumps worker -E -l info
+# ENTRYPOINT  celery -A bumps_flask.celery_bumps worker -E -l info
 

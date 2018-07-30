@@ -116,6 +116,7 @@ class bumps_sql(object):
             query= "update %s set %s=%%s %s;" %  (TABLE_PARAMS, FIELD_RES_CONTENT, strWhere)
             self.cursor.execute(query, (zip_data, ))
             self.conn.commit()
+            print_debug("sql_db.py, save_results\nResults Saved!")
             f_results_saved = True
         except Error as e:
             print_debug("sql_db.py, save_results\nMySQL Error: " + str(e))
@@ -142,6 +143,23 @@ class bumps_sql(object):
             self.cursor.close()
             self.conn.close()
         return (results_recoreds)
+#------------------------------------------------------------------------------
+    def delete_job(self, user_id, job_id):
+        try:
+#            if (not self.conn.is_connected()):
+#                self.connect_to_db()
+            self.connect_to_db()
+            strSql = "delete from {} where ({}='{}') and ({}={});".format(TABLE_PARAMS,
+                                                                    FIELD_TOKEN, user_id,
+                                                                    FIELD_JOB_ID, job_id)
+            self.cursor.execute(strSql)
+            self.conn.commit()
+        except Exception as e:
+            print_debug("sql_db.py, delete_job\nException: " + str(e))
+            results_recoreds = None
+        finally:
+            self.cursor.close()
+            self.conn.close()
 #---------------- class and ---------------------------------------------------
 #------------------------------------------------------------------------------
 def read_file(filename):
@@ -193,6 +211,7 @@ def NextID(conn,table,field):
     finally:
         cursor.close()
     return id
+#------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #def update_blob(filename):
 #------------------------------------------------------------------------------

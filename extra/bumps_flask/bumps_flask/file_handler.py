@@ -9,7 +9,7 @@ from flask_jwt_extended import (get_jwt_identity)
 
 from . import app, rdb
 from .run_job import execute_python_script, execute_slurm_script
-from .misc import get_results_dir
+from .misc import print_debug, get_results_dir
 #------------------------------------------------------------------------------
 def get_in_file(_file):
     file_content = str(_file.stream.getvalue().decode("utf-8"))
@@ -92,14 +92,22 @@ def zip_files(_dir, file_list):
         with zipfile.ZipFile(os.path.join(work_dir, 'job_results.zip'), mode='w') as zip_file:
             for _file in work_list:
                 zip_file.write(os.path.join(work_dir, _file), arcname=_file)
-
-
+#------------------------------------------------------------------------------
 def clean_job_files(user, job_id):
     _dir = get_results_dir (app.config.get('UPLOAD_FOLDER'), job_id)
+    print_debug ("file_handler.py, clean_job_files\n_dir: '{}'".format(_dir))
 #    _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', user, 'job{}'.format(job_id))
-    shutil.rmtree(_dir)
-
-
+    try:
+        DEBUG_DIR = _dir
+        shutil.rmtree(_dir)
+        print_debug ("file_handler.py, clean_job_files\n_dir: '{}' deleted".format(_dir))
+        if os.path.exists(_dir):
+            os.rmdir(_dir)
+            print_debug ("file_handler.py, clean_job_files\n_dir deleted (again)")
+    except Exception as e:
+        print_debug ("file_handler.py, clean_job_files\nexception: '{}'".format(e))
+    return _dir
+#------------------------------------------------------------------------------
 def slurm_commands(slurm_dict):
     '''
     Buils a string to consisting of parsed SLURM commands
@@ -177,6 +185,8 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path, run_script=True):
     return
 #------------------------------------------------------------------------------
 def search_results(path):
+#    print_debug("file_handler.py, search_results()\nDEBUG_DIR: '{}'".format (DEBUG_DIR))
+#    print_debug("file_handler.py, search_results()\npath: '{}'".format (path))
     from glob import glob
     possible_ext = ('dat', 'err', 'mon', 'par',
                     'png', 'log', 'mc')

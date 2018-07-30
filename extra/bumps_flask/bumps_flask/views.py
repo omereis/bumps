@@ -9,7 +9,8 @@ import json
 import datetime
 import zipfile
 #------------------------------------------------------------------------------
-from .misc import get_celery_queue_names, print_debug, get_results_dir
+from .misc import get_celery_queue_names, print_debug, get_results_dir, debug_data
+#from .misc import get_celery_queue_names, print_debug, get_results_dir
 from bumps import cli
 try:
     from .celery_bumps.sql_db import bumps_sql
@@ -30,7 +31,6 @@ from flask_jwt_extended import (
     jwt_refresh_token_required, set_refresh_cookies, unset_jwt_cookies)
 
 from . import app, rdb, jwt, api
-
 
 from .api import (
     create_user_token, register_token, disconnect,
@@ -60,7 +60,6 @@ def use_old_token():
 @app.route('/', methods=['POST'])
 def my_form_post():
     token = request.form['old_token']
-    print_debug("views.py, my_form_post\ntoken: '{}'".format(token))
     if token:
         try:
             resp = json.loads(register_token(token).get_data())  # POST/GET
@@ -86,7 +85,7 @@ def index():
     '''
     # Will return None if the current user does not have a JWT (cookie/header)
     jwt_id = get_jwt_identity()
-    print_debug("views.py, index")
+
     # Get the WTForm and validate the user token, move them along
     form = TokenForm()
 
@@ -109,14 +108,11 @@ def index():
         refresh_token = resp['refresh_token']
 
         # Prepare a redirect for a successful login
-        print_debug ("views.py, index()\nmaking dashboard return")
         response = make_response(redirect(url_for('dashboard', jwt_id=jwt_id)))
-        print_debug ("views.py, index()\ndashboard return made, jwt_id: '{}'".format(jwt_id))
         # Bundle the JWT cookies into the response object
         set_access_cookies(response, jwt_token)
         set_refresh_cookies(response, refresh_token)
         flash('Logged in!')
-        print_debug ("views.py, index()\nreturning index.html after logged in, jwt_id: '{}'".format(jwt_id))
         return response
     # If the user does not yet have a JWT token and has not filled the form,
     # display the main login page
@@ -124,7 +120,6 @@ def index():
 #        perform_logout()
 #        if form.errors:
 #            flash('Error: {}'.format(''.join(form.errors['token'])))
-        print_debug ("views.py, index()\nreturning index.html, jwt_id: '{}'".format(jwt_id))
         return render_template('index.html', form=form, jwt_id=jwt_id, stam_patam='stam')
 #------------------------------------------------------------------------------
 def perform_logout():
@@ -134,14 +129,12 @@ def perform_logout():
     except:
         jti = None
     response = make_response(redirect(url_for('index')))
-    print_debug ("views.py, perform_logout")
     unset_jwt_cookies(response)
     return (response)
 #------------------------------------------------------------------------------
 @app.route('/index/continue', methods=['GET', 'POST'])
 @jwt_optional
 def index_continue_current_token():
-    print_debug ("views.py, index_continue_current_token")
     jwt_id = get_jwt_identity()
     token_str = str(jwt_id)
     if jwt_id:
@@ -154,7 +147,6 @@ def index_continue_current_token():
 @app.route('/api/request', methods=['GET', 'POST'])
 @jwt_optional
 def index_logout():
-    print_debug ("views.py, index_logout")
     jwt_id = get_jwt_identity()
     if jwt_id:
         response = perform_logout()
@@ -205,19 +197,26 @@ def dashboard():
 
     # Retrieve the UID
     user_token = get_jwt_identity()
-    print_debug ("views.py, dashboard()\nuser_token: '{}'".format(user_token))
-
+#    print_debug("views.py, dashboard()\ndebug_data.debug_dir: '{}'".format(debug_data.debug_dir))
+#    print_debug ("views.py, dashboard()\n\ndirectory exists? {}".format(os.path.exists(debug_data.debug_dir)))
     retrieve_celery_results (user_token)
     update_job_info(user_token)  # DEBUG (Polling job status here)  # POST/GET
 
     # Get the database info for the current user
     user_jobs = rdb.hvals(user_token)
+#    print_debug ("views.py, dashboard()\nuser_token: '{}'".format(user_token))
 
     files = {}
     for job in user_jobs:
+        print_debug ("views.py, dashboard()\njob: '{}'".format(job))
+        n = 1;
         if job['status'] == 'COMPLETED':
+            print_debug ("views.py, dashboard()\nn: '{}'".format(n))
+            n = n + 1;
             files[job['_id']] = search_results(job['directory'])
+            print_debug ("views.py, dashboard()\nfiles[job['_id']]: '{}'".format(files[job['_id']]))
             zip_files(job['directory'], files[job['_id']])
+#    print_debug ("views.py, dashboard()\n\nafter files loop, directory exists? {}".format(os.path.exists(debug_data.debug_dir)))
 
     return render_template(
         'dashboard.html',
@@ -239,7 +238,6 @@ def tokenizer():
     # Create a UID
     user_token = create_user_token()
 
-    print_debug("views.py, tokenizer()")
     # Associate an auth JWT and a refresh JWT to the UID
     try :
         rt = register_token(user_token)
@@ -365,7 +363,6 @@ def refresh():
 def logout():
     # Get the JWT identifier and set logged_out to 'true' in DB
     jti = get_raw_jwt()['jti']
-    print_debug("views.py, logout")
     rdb.set(jti, 'true', app.config.get('JWT_ACCESS_TOKEN_EXPIRES'))
 
     response = make_response(redirect(url_for('index')))
