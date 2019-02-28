@@ -30,6 +30,17 @@ import warnings
 from .multicomplex import bicomplex
 from .extrapolation import Richardson, dea3, convolve
 
+# CRUFT: nanmedian introduced in numpy 1.9, 2014-09-07.
+try:
+    from numpy import nanmedian
+except ImportError:
+    import numpy
+    numpy.nanmedian = numpy.median
+    numpy.nanpercentile = numpy.percentile
+    numpy.nanmin = numpy.min
+    numpy.nanargmin = numpy.argmin
+
+
 __all__ = ('dea3', 'Derivative', 'Jacobian', 'Gradient', 'Hessian', 'Hessdiag',
            'MinStepGenerator', 'MaxStepGenerator', 'Richardson')
 # NOTE: we only do double precision internally so far
@@ -1358,6 +1369,12 @@ class Hessian(_Derivative):
 
 def test_docstrings():
     import doctest
+    # Whitespace changes between numpy 1.13 and 1.14 will cause the doctests
+    # to fail; when doctests are updated to 1.14 format, this can be removed.
+    try:    # CRUFT
+        np.set_printoptions(legacy='1.13')
+    except TypeError:
+        pass
     doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE)
 
 

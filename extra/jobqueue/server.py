@@ -282,7 +282,6 @@ def init_scheduler(conf):
     if conf == 'slurm':
         from . import slurm
         Scheduler = slurm.Scheduler
-        logging.warn("Scheduler is a GOOD choice!")
     elif conf == 'direct':
         logging.warn("direct scheduler is not a good choice!")
         try: os.nice(19)

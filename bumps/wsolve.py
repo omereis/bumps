@@ -368,13 +368,13 @@ class PolynomialModel(object):
         x = np.linspace(min_x-padding, max_x+padding, 200)
         y = self.__call__(x)
         pylab.errorbar(self.x, self.y, self.dy, fmt='b.')
-        pylab.plot(x, y, 'b-', hold=True)
+        pylab.plot(x, y, 'b-')
         if ci > 0:
             _, cdy = self.ci(x, ci)
-            pylab.plot(x, y + cdy, 'b-.', x, y - cdy, 'b-.', hold=True)
+            pylab.plot(x, y + cdy, 'b-.', x, y - cdy, 'b-.')
         if pi > 0:
             py, pdy = self.pi(x, pi)
-            pylab.plot(x, y + pdy, 'b-.', x, y - pdy, 'b-.', hold=True)
+            pylab.plot(x, y + pdy, 'b-.', x, y - pdy, 'b-.')
 
 def wpolyfit(x, y, dy=1, degree=None, origin=False):
     r"""
@@ -422,6 +422,7 @@ def test():
     """
     Check that results are correct for a known problem.
     """
+    from numpy.testing import assert_array_almost_equal_nulp
     x = np.array([0, 1, 2, 3, 4], 'd')
     y = np.array([2.5, 7.9, 13.9, 21.1, 44.4], 'd')
     dy = np.array([1.7, 2.4, 3.6, 4.8, 6.2], 'd')
@@ -446,9 +447,9 @@ def test():
     assert dperr < 1e-14, "||dp-Tdp||=%g" % dperr
     assert cierr < 1e-14, "||ci-Tci||=%g" % cierr
     assert pierr < 1e-14, "||pi-Tpi||=%g" % pierr
-    assert py == poly(px), "direct call to poly function fails"
+    assert_array_almost_equal_nulp(py, poly(px), nulp=8)
 
 if __name__ == "__main__":
     #test()
-    #demo()
-    demo2()
+    demo()
+    #demo2()

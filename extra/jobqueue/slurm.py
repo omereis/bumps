@@ -67,12 +67,6 @@ class Scheduler(object):
         script = os.path.join(jobdir,"J%s.sh"%jobid)
         #commands = ['export %s="%s"'%(k,v) for k,v in config.env().items()]
         commands = ["srun -n 1 -K -o slurm-out.txt nice -n 19 %s &"%service]
-        try:
-            f = open('debug1.txt', 'a')
-            f.write("Change time: 9:06 AM\n")
-            f.write("commands: " + str(commands) + "\n")
-        finally:
-            f.close()
 #                     "srun -n %d -K -o kernel.out nice -n 19 %s"%(num_workers,kernel)]
         create_batchfile(script,commands)
 
