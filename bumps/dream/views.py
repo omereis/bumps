@@ -15,11 +15,11 @@ from scipy.stats import kde
 
 from . import corrplot
 from .formatnum import format_value
-from .stats import var_stats, format_vars, save_vars
+from .stats import var_stats, format_vars
 
 def plot_all(state, portion=1.0, figfile=None):
-    from pylab import figure, savefig, suptitle, rcParams
-
+    from pylab import figure, savefig, suptitle, rcParams, gcf
+    import mpld3
     figext = '.'+rcParams.get('savefig.format', 'png')
 
     draw = state.draw(portion=portion)
@@ -30,13 +30,22 @@ def plot_all(state, portion=1.0, figfile=None):
         suptitle(state.title)
     print(format_vars(all_vstats))
     if figfile is not None:
+        with open(figfile + "-vars.html", 'w') as fid:
+            fid.write('<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+            fid.write('<script type="text/javascript" src="https://bitbucket.org/jason_s/svg_mathjax/raw/a538dd453eea2ddd6e50096643038ad6229a6547/src/svg_mathjax.js"></script>\n')
+            fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+            fid.write(mpld3.fig_to_html(gcf()))
         savefig(figfile+"-vars"+figext)
-    if figfile is not None:
-        save_vars(all_vstats, figfile+"-err.json")
     figure()
-    plot_traces(state, portion=portion)
-    suptitle("Parameter history" + (" for " + state.title if state.title else ""))
+    plot_trace(state, portion=portion)
+    if state.title:
+        suptitle(state.title)
     if figfile is not None:
+        with open(figfile + "-trace.html", 'w') as fid:
+            fid.write('<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+            fid.write('<script type="text/javascript" src="https://bitbucket.org/jason_s/svg_mathjax/raw/a538dd453eea2ddd6e50096643038ad6229a6547/src/svg_mathjax.js"></script>\n')
+            fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+            fid.write(mpld3.fig_to_html(gcf()))
         savefig(figfile+"-trace"+figext)
     # Suppress R stat for now
     #figure()
@@ -50,6 +59,11 @@ def plot_all(state, portion=1.0, figfile=None):
     if state.title:
         suptitle(state.title)
     if figfile is not None:
+        with open(figfile + "-logp.html", 'w') as fid:
+            fid.write('<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+            fid.write('<script type="text/javascript" src="https://bitbucket.org/jason_s/svg_mathjax/raw/a538dd453eea2ddd6e50096643038ad6229a6547/src/svg_mathjax.js"></script>\n')
+            fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+            fid.write(mpld3.fig_to_html(gcf()))
         savefig(figfile+"-logp"+figext)
     if draw.num_vars <= 25:
         figure()
@@ -57,6 +71,11 @@ def plot_all(state, portion=1.0, figfile=None):
         if state.title:
             suptitle(state.title)
         if figfile is not None:
+            with open(figfile + "-corr.html", 'w') as fid:
+                fid.write('<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+                fid.write('<script type="text/javascript" src="https://bitbucket.org/jason_s/svg_mathjax/raw/a538dd453eea2ddd6e50096643038ad6229a6547/src/svg_mathjax.js"></script>\n')
+                fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+                fid.write(mpld3.fig_to_html(gcf()))
             savefig(figfile+"-corr"+figext)
 
 
@@ -106,7 +125,7 @@ def tile_axes(n, size=None):
 
 def plot_var(draw, vstats, var, cbar, nbins=30):
     values = draw.points[:, var].flatten()
-    _make_logp_histogram(values, draw.logp, nbins, vstats.p95_range,
+    _make_logp_histogram(values, draw.logp, nbins, vstats.p95,
                          draw.weights, cbar)
     _decorate_histogram(vstats)
 
@@ -114,15 +133,15 @@ def plot_var(draw, vstats, var, cbar, nbins=30):
 def _decorate_histogram(vstats):
     import pylab
     from matplotlib.transforms import blended_transform_factory as blend
-
-    l95, h95 = vstats.p95_range
-    l68, h68 = vstats.p68_range
-
     # Shade things inside 1-sigma
-    pylab.axvspan(l68, h68, color='gold', alpha=0.5, zorder=-1)
+    pylab.axvspan(vstats.p68[0], vstats.p68[1],
+                  color='gold', alpha=0.5, zorder=-1)
     # build transform with x=data, y=axes(0,1)
     ax = pylab.gca()
     transform = blend(ax.transData, ax.transAxes)
+
+    l95, h95 = vstats.p95
+    l68, h68 = vstats.p68
 
     def marker(symbol, position):
         if position < l95:
@@ -210,7 +229,7 @@ def _make_logp_histogram(values, logp, nbins, ci, weights, cbar):
     #open('/tmp/out','a').write("ci=%s, range=%s\n"
     #                           % (ci,(min(values),max(values))))
     edges = linspace(ci[0], ci[1], nbins+1)
-    idx = searchsorted(values[1:-1], edges)
+    idx = searchsorted(values, edges)
     weightsum = cumsum(weights)
     heights = diff(weightsum[idx])/weightsum[-1]  # normalized weights
 
@@ -236,10 +255,7 @@ def _make_logp_histogram(values, logp, nbins, ci, weights, cbar):
             if pidx[-1] < len(z)-1:
                 pidx = hstack((pidx, -1))
             y, z = y[pidx], z[pidx]
-        pylab.pcolormesh(x, y, z, vmin=vmin, vmax=vmax, cmap=cmap)
-    # Check for broken distribution
-    if not bins:
-        return
+        pylab.pcolormesh(x, y, z, vmin=vmin, vmax=vmax, hold=True, cmap=cmap)
     centers, height, maxlikelihood = array(bins).T
     # Normalize maximum likelihood plot so it contains the same area as the
     # histogram, unless it is really spikey, in which case make sure it has
@@ -249,7 +265,7 @@ def _make_logp_histogram(values, logp, nbins, ci, weights, cbar):
     ml_peak = np.max(maxlikelihood)
     if ml_peak > hist_peak*1.3:
         maxlikelihood *= hist_peak*1.3/ml_peak
-    pylab.plot(centers, maxlikelihood, '-g')
+    pylab.plot(centers, maxlikelihood, '-g', hold=True)
 
 
 def _make_var_histogram(values, logp, nbins, ci, weights):
@@ -274,11 +290,11 @@ def _make_var_histogram(values, logp, nbins, ci, weights):
     # Plot the kernel density estimate
     #density = KDE1D(values)
     #x = linspace(bins[0],bins[-1],100)
-    #pylab.plot(x, density(x), '-k')
+    #pylab.plot(x, density(x), '-k', hold=True)
 
     # Plot the marginal maximum likelihood
     centers = (bins[:-1]+bins[1:])/2
-    pylab.plot(centers, histbest, '-g')
+    pylab.plot(centers, histbest, '-g', hold=True)
 
 
 def plot_corrmatrix(draw):
@@ -345,29 +361,16 @@ def plot_corr(draw, vars=(0, 1)):
     setp(ax_hist_y.get_yticklabels(), visible=False)
 
 
-def plot_traces(state, vars=None, portion=None):
-    from pylab import subplot, clf, subplots_adjust
-
-    if vars is None:
-        vars = list(range(min(state.Nvar, 6)))
-    clf()
-    nw, nh = tile_axes(len(vars))
-    subplots_adjust(hspace=0.0)
-    for k, var in enumerate(vars):
-        subplot(nw, nh, k+1)
-        plot_trace(state, var, portion)
-
-
 def plot_trace(state, var=0, portion=None):
     from pylab import plot, title, xlabel, ylabel
 
     draw, points, _ = state.chains()
-    label = state.labels[var]
     start = int((1-portion)*len(draw)) if portion else 0
     plot(arange(start, len(points))*state.thinning,
          squeeze(points[start:, state._good_chains, var]))
+    title('Parameter history for variable %d' % (var+1,))
     xlabel('Generation number')
-    ylabel(label)
+    ylabel('Parameter value')
 
 
 def plot_R(state, portion=None):

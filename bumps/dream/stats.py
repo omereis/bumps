@@ -6,7 +6,6 @@ __all__ = ["VarStats", "var_stats", "format_vars", "parse_var",
            "stats", "credible_intervals"]
 
 import re
-import json
 
 import numpy as np
 
@@ -30,10 +29,6 @@ ONE_SIGMA = 1 - 2*0.15865525393145705
 def _var_stats_one(draw, var):
     weights, values = draw.weights, draw.points[:, var].flatten()
 
-    integer = draw.integers is not None and draw.integers[var]
-    if integer:
-        values = np.floor(values)
-
     best_idx = np.argmax(draw.logp)
     best = values[best_idx]
 
@@ -49,10 +44,8 @@ def _var_stats_one(draw, var):
     mean, std = stats(x=values, weights=weights)
 
     vstats = VarStats(label=draw.labels[var], index=var+1,
-                      p95=p95, p95_range=(p95[0], p95[1]+integer*0.9999999999),
-                      p68=p68, p68_range=(p68[0], p68[1]+integer*0.9999999999),
-                      median=p0[0], mean=mean, std=std, best=best,
-                      integer=integer)
+                      p95=p95, p68=p68,
+                      median=p0[0], mean=mean, std=std, best=best)
 
     return vstats
 
@@ -72,9 +65,7 @@ def format_vars(all_vstats):
          "[%(interval68)15s] [%(interval95)15s]" % v]
     for v in all_vstats:
         # Make sure numbers are formatted with the appropriate precision
-        place = (int(np.log10(v.p95[1]-v.p95[0]))-2 if v.p95[1] > v.p95[0]
-                 else int(np.log10(abs(v.p95[0])))-3 if v.p95[0] != 0
-                 else 0)
+        place = int(np.log10(v.p95[1]-v.p95[0]))-2
         summary = dict(mean=format_uncertainty(v.mean, v.std),
                        median=format_num(v.median, place-1),
                        best=format_num(v.best, place-1),
@@ -89,28 +80,6 @@ def format_vars(all_vstats):
 
     return "\n".join(s)
 
-
-def save_vars(all_vstats, filename):
-    with open(filename, 'w') as fid:
-        json.dump(
-            dict((v.label, v.__dict__) for v in all_vstats),
-            fid,
-            default=numpy_json,
-            sort_keys=True,
-            indent=2,
-            )
-
-def numpy_json(o):
-    """
-    JSON encoder for numpy data.
-
-    To automatically convert numpy data to lists when writing a datastream
-    use json.dumps(object, default=numpy_json).
-    """
-    try:
-        return o.tolist()
-    except AttributeError:
-        raise TypeError
 
 VAR_PATTERN = re.compile(r"""
    ^\ *

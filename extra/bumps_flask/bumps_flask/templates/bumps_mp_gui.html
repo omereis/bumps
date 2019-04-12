@@ -1,0 +1,112 @@
+<!doctype html>
+<html>
+    <head>
+        <script src="../static/js/bg.js" charset="utf-8"></script>
+        <link rel="stylesheet" href="../static/css/bumps_gui.css" />
+            <style>
+            /*.graphs {margin: 5em;}*/
+            body{
+                background-color: rgb(63, 140, 150);
+            }
+            table, th, td, tr, th {
+                border: 1px solid black;
+            }
+            th {
+                text-align: center;
+                background-color: rgb(155, 155, 155);
+            }
+            .no_border {
+                border: 0px;
+            }
+        </style>
+        <script>
+            //init_app();
+            function change_to_slurm (value) {
+                var div_slurm_params = document.getItemsById ("slurm_params");
+                alert ("Moving to SLURM");
+            }
+        </script>
+		</head>
+            <title>bumps distribution Server</title>
+    <body onload="init_app()">
+			<h2><b>bumps</b> Multi Processing User Interface</h2>
+			<table>
+				<tr>
+					<th>
+						Problem Definition
+					</th>
+					<th>
+						Fitting Parameters
+					</th>
+					<th>
+                        Remote Parameters
+					</th>
+				</tr>
+                <tr>
+                    <td>
+                        <table class="no_border" width="100%"><tr>
+                            <td class="no_border"><input type="button" id="clear_file"  value="Clear"></td>
+                            <td class="no_border"><input type="file" id="problemFile"></td>
+                            <td class="no_border"><input type="button" id="save_problem_file"  value="Save As..."></td>
+                        </tr></table>
+                        <label style="text-align:center;" for="problem_text">Problem code</label><br>
+                        <textarea cols="50" rows="20" id="problem_text"></textarea>
+                    </td>
+                    <td valign="top">
+                        <p></p>Fitting Algorithm<br>
+                        <select>
+                            <option value="lm">Levenberg Marquardt</option>
+                            <option value="newton">Quasi-Newton BFGS</option>
+                            <option value="de">Differential Evolution</option>
+                            <option value="dream">DREAM</option>
+                            <option value="amoeba">Nelder-Mead Simplex</option>
+                            <option value="pt">Parallel Tempering</option>
+                            <option value="ps">Particle Swarm</option>
+                            <option value="rl">Random Lines</option>
+                        </select>
+                    </td>
+                    <td valign="top">
+                        <label style="text-align:left;" for="remote_port">Remote Port</label>
+                        <input type="text" size="3" id="remote_port" value="8765"><br><br>
+                        <label style="text-align:left;" for="remote_server">Remote Server</label>
+                        <input type="text" id="remote_server" size="35" value="NCNR-R9nano.campus.nist.gov">
+                        <hr>
+                        <table width="100%"><tr>
+                            <td style="text-align:center;"><input type="radio" id="mp_none" onclick="change_multi_processing(this.value)" checked="true" value="none">None</td>
+                            <td style="text-align:center;"><input type="radio" id="mp_celery" onclick="change_multi_processing(this.value)" value="celery">Celery</td>
+                            <td style="text-align:center;"><input type="radio" id="mp_slurm" onclick="change_multi_processing(this.value)" value="slurm">Slurm</td>
+                        </tr></table>
+                        <div id="slurm_params">
+                            <table width="100%">
+                                <tr>
+                                    <td>Processors</td>
+                                    <td><input type="number" id="slurm_processors" value="1" min="1" size="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>GPUs</td>
+                                    <td><input type="text" id="slurm_gpus" value="0" cols="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>Memory</td>
+                                    <td>
+                                        <input type="text" name="slurm_procs" value="512" size="5">
+                                        <select>
+                                            <option value="mb">Mega Bytes</option>
+                                            <option value="gb">Giga Bytes</option>
+                                        </select>
+                                    </td>
+                                    </tr>
+                                </table>
+                        </div>
+                        <div id="celery_params">Using Celery</div>
+                        <div id="no_mp_params">Using Local Only</div>
+                    </td>
+                </tr>
+            </table>
+    </body>
+    <script>
+        document.getElementById("problemFile").onchange = load_bumps_problem;
+        document.getElementById("clear_file").onclick = clear_file;
+        document.getElementById("save_problem_file").onclick = save_model;
+    </script>
+</html>

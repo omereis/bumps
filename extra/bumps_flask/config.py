@@ -7,13 +7,7 @@ from tempfile import gettempdir
 SECRET_KEY = os.urandom(24)  # Set a secret key here
 MAX_CONTENT_LENGHT = 8 * 1024 * 1024  # 8MB
 UPLOAD_FOLDER = os.path.join(gettempdir(), 'bumps_flask')
-try:
-    REDIS_SERVER=os.environ['REDIS_SERVER']
-except:
-    REDIS_SERVER='bumps_redis'
-REDIS_URL = os.getenv('REDISTOGO_URL', 'redis://' + REDIS_SERVER + ':6379')
-#REDIS_URL = os.getenv('REDISTOGO_URL', 'redis://redis-server:6379')
-#REDIS_URL = os.getenv('REDISTOGO_URL', 'redis://bumps_redis:6379')
+REDIS_URL = os.getenv('REDISTOGO_URL', 'redis://bumps_redis:6379')
 
 ERROR_404_HELP = False
 

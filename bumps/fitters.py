@@ -57,14 +57,18 @@ class StepMonitor(monitor.Monitor):
     """
     FIELDS = ['step', 'time', 'value', 'point']
 
-    def __init__(self, problem, fid, fields=FIELDS):
+    def __init__(self, problem, fid, sfid, fields=FIELDS):
+        import json
         if any(f not in self.FIELDS for f in fields):
             raise ValueError("invalid monitor field")
+        self.dump = json.dump
         self.fid = fid
+        self.sfid = sfid
         self.fields = fields
         self.problem = problem
         self._pattern = "%%(%s)s\n" % (")s %(".join(fields))
         fid.write("# " + ' '.join(fields) + '\n')
+
 
     def config_history(self, history):
         history.requires(time=1, value=1, point=1, step=1)
@@ -77,7 +81,12 @@ class StepMonitor(monitor.Monitor):
         value = "%.15g" % (scale * history.value[0])
         out = self._pattern % dict(point=point, time=time,
                                    value=value, step=step)
+        json_out = dict(value=value, step=step)
+
         self.fid.write(out)
+        self.dump(json_out, self.sfid)
+        self.sfid.write('\n')
+
 
 class MonitorRunner(object):
     """
@@ -497,92 +506,6 @@ class SimplexFit(FitBase):
                      population_points=x, population_values=fx)
         return True
 
-class MPFit(FitBase):
-    """
-    MPFit optimizer.
-    """
-    name = "MPFit"
-    id = "mp"
-    settings = [('steps', 200), ('ftol', 1e-10), ('xtol', 1e-10)]
-
-    def solve(self, monitors=None, abort_test=None, mapper=None, **options):
-        from .mpfit import mpfit
-        if abort_test is None:
-            abort_test = lambda: False
-        options = _fill_defaults(options, self.settings)
-        self._low, self._high = self.problem.bounds()
-        self._update = MonitorRunner(problem=self.problem,
-                                     monitors=monitors)
-        self._abort = abort_test
-        x0 = self.problem.getp()
-        parinfo = []
-        for low, high in zip(*self.problem.bounds()):
-            parinfo.append({
-                #'value': None,  # passed in by xall instead
-                #'fixed': False,  # everything is varying
-                'limited': (np.isfinite(low), np.isfinite(high)),
-                'limits': (low, high),
-                #'parname': '',  # could probably ask problem for this...
-                # From the code, default step size is sqrt(eps)*abs(value)
-                # or eps if value is 0.  This seems okay.  The other
-                # other alternative is to limit it by bounds.
-                #'step': 0,  # compute step automatically
-                #'mpside': 0,  # 1, -1 or 2 for right-, left- or 2-sided deriv
-                #'mpmaxstep': 0.,  # max step for this parameter
-                #'tied': '',  # parameter expressions tying fit parameters
-                #'mpprint': 1,  # print the parameter value when iterating
-            })
-
-        result = mpfit(
-            fcn=self._residuals,
-            xall=x0,
-            parinfo=parinfo,
-            autoderivative=True,
-            fastnorm=True,
-            #damp=0,  # no damping when damp=0
-            # Stopping conditions
-            ftol=options['ftol'],
-            xtol=options['xtol'],
-            #gtol=1e-100, # exclude gtol test
-            maxiter=options['steps'],
-            # Progress monitor
-            iterfunct=self._monitor,
-            nprint=1,  # call monitor each iteration
-            quiet=True,  # leave it to monitor to print any info
-            # Returns values
-            nocovar=True,  # use our own covar calculation for consistency
-        )
-
-        if result.status > 0:
-            x, fx = result.params, result.fnorm
-        else:
-            x, fx = None, None
-
-        return x, fx
-
-
-    def _monitor(self, fcn, p, k, fnorm,
-                 functkw=None, parinfo=None,
-                 quiet=0, dof=None, **extra):
-        self._update(k, p, fnorm)
-
-    def _residuals(self, p, fjac=None):
-        if self._abort():
-            return -1, None
-
-        self.problem.setp(p)
-        # treat prior probabilities on the parameters as additional
-        # measurements
-        residuals = np.hstack(
-            (self.problem.residuals().flat, self.problem.parameter_residuals()))
-        # Tally costs for broken constraints
-        extra_cost = self.problem.constraints_nllf()
-        # Spread the cost over the residuals.  Since we are smoothly increasing
-        # residuals as we leave the boundary, this should push us back into the
-        # boundary (within tolerance) during the lm fit.
-        residuals += np.sign(residuals) * (extra_cost / len(residuals))
-        return 0, residuals
-
 
 class LevenbergMarquardtFit(FitBase):
     """
@@ -630,8 +553,7 @@ class LevenbergMarquardtFit(FitBase):
         # covariance output and calculate it again ourselves.  Not ideal if
         # f is expensive, but it will be consistent with other optimizers.
         if x is not None:
-            x += self._stray_delta(x)
-            self.problem.setp(x)
+            self.problem.setp(x + self._stray_delta(x))
             fx = self.problem.nllf()
         else:
             fx = None
@@ -779,7 +701,7 @@ class DreamFit(FitBase):
             self.state.set_visible_vars(visible_vars)
         integer_vars = getattr(self.problem, 'integer_vars', None)
         if integer_vars is not None:
-            self.state.set_integer_vars(integer_vars)
+            self.state.integer_vars(integer_vars)
 
         x, fx = self.state.best()
 
@@ -820,8 +742,7 @@ class DreamFit(FitBase):
     def load(self, input_path):
         from .dream.state import load_state
         print("loading saved state (this might take awhile) ...")
-        fn, labels = getattr(self.problem, 'derive_vars', (None, []))
-        self.state = load_state(input_path, report=100, derived_vars=len(labels))
+        self.state = load_state(input_path, report=100)
 
     def save(self, output_path):
         self.state.save(output_path)
@@ -844,6 +765,11 @@ class DreamFit(FitBase):
             pylab.figure()
             errplot.show_errors(res)
             pylab.savefig(figfile + "-errors.png", format='png')
+            with open(figfile + "-errors.html", 'w') as fid:
+                fid.write('<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+                fid.write('<script type="text/javascript" src="https://bitbucket.org/jason_s/svg_mathjax/raw/a538dd453eea2ddd6e50096643038ad6229a6547/src/svg_mathjax.js"></script>\n')
+                fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+                fid.write(mpld3.fig_to_html(pylab.gcf()))
 
 
 class Resampler(FitBase):
@@ -893,7 +819,7 @@ def _resampler(fitter, xinit, samples=100, restart=False, **options):
         # Restore the state of the problem
         fitter.problem.restore_data()
         fitter.problem.setp(xinit)
-        #fitter.problem.model_update()  # setp does model update
+        fitter.problem.model_update()
     return points
 
 
@@ -907,7 +833,6 @@ class FitDriver(object):
         self.monitors = monitors
         self.abort_test = abort_test
         self.mapper = mapper if mapper else lambda p: list(map(problem.nllf, p))
-        self.fitter = None
 
     def fit(self, resume=None):
 
@@ -1006,9 +931,9 @@ class FitDriver(object):
         norm = np.sqrt(self.problem.chisq())
         print("=== Uncertainty est. from curvature: par    dx           dx/sqrt(chisq) ===")
         for k, v, dv in zip(self.problem.labels(), self.problem.getp(), err):
-            print("%40s %-15s %-15s" % (k,
+            print("%40s %-15s %-15s", k,
                   format_uncertainty(v, dv),
-                  format_uncertainty(v, dv/norm)))
+                  format_uncertainty(v, dv/norm))
         print("="*75)
 
     def save(self, output_path):
@@ -1033,7 +958,6 @@ class FitDriver(object):
             self.fitter.plot(output_path=output_path)
 
 
-
 def _fill_defaults(options, settings):
     """
     Returns options dict with missing values filled from settings.
@@ -1049,7 +973,6 @@ FITTERS = [
     DreamFit,
     BFGSFit,
     LevenbergMarquardtFit,
-    MPFit,
     PSFit,
     PTFit,
     RLFit,
@@ -1065,60 +988,9 @@ FIT_ACTIVE_IDS = [
     DreamFit.id,
     BFGSFit.id,
     LevenbergMarquardtFit.id,
-    MPFit.id,
     ]
 
 FIT_DEFAULT_ID = SimplexFit.id
 
 assert FIT_DEFAULT_ID in FIT_ACTIVE_IDS
 assert all(f in FIT_AVAILABLE_IDS for f in FIT_ACTIVE_IDS)
-
-def fit(problem, method=FIT_DEFAULT_ID, verbose=False, **options):
-    """
-    Simplified fit interface.
-
-    Given a fit problem, the name of a fitter and the fitter options,
-    it will run the fit and return the best value and standard error of
-    the parameters.  If *verbose* is true, then the console monitor will
-    be enabled, showing progress through the fit and showing the parameter
-    standard error at the end of the fit, otherwise it is completely
-    silent.
-
-    Returns an *OptimizeResult* object containing "x" and "dx".  The
-    dream fitter also includes the "state" object, allowing for more
-    detailed uncertainty analysis.  Optimizer information such as the
-    stopping condition and the number of function evaluations are not
-    yet included.
-    """
-    from scipy.optimize import OptimizeResult
-
-    #verbose = True
-    if method not in FIT_AVAILABLE_IDS:
-        raise ValueError("unknown method %r not one of %s"
-                         % (method, ", ".join(sorted(FIT_ACTIVE_IDS))))
-    for fitclass in FITTERS:
-        if fitclass.id == method:
-            break
-    monitors = None if verbose else []  # default is step monitor
-    driver = FitDriver(
-        fitclass=fitclass, problem=problem, monitors=monitors,
-        **options)
-    x0 = problem.getp()
-    x, fx = driver.fit()
-    problem.setp(x)
-    dx = driver.stderr()
-    if verbose:
-        print("final chisq", problem.chisq_str())
-        driver.show_err()
-    result = OptimizeResult(
-        x=x, dx=driver.stderr(),
-        fun=fx,
-        success=True, status=0, message="successful termination",
-        #nit=0, # number of iterations
-        #nfev=0, # number of function evaluations
-        #njev, nhev # jacobian and hessian evaluations
-        #maxcv=0, # max constraint violation
-        )
-    if hasattr(driver.fitter, 'state'):
-        result.state = driver.fitter.state
-    return result

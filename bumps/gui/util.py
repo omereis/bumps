@@ -6,8 +6,6 @@ import string
 
 import wx
 
-import numpy as np
-
 class EmbeddedPylab(object):
     """
     Define a 'with' context manager that lets you use pylab commands to
@@ -23,7 +21,7 @@ class EmbeddedPylab(object):
     The following example shows how to use the WxAgg backend in a wx panel::
 
         from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-        from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as Toolbar
+        from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
         from matplotlib.figure import Figure
 
         class PlotPanel(wx.Panel):
@@ -98,7 +96,7 @@ class Validator(wx.PyValidator):
 
 def nice(v, digits=4):
     """Fix v to a value with a given number of digits of precision"""
-    if v == 0. or not np.isfinite(v):
+    if v == 0.:
         return v
     else:
         sign = v/abs(v)

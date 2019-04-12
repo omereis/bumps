@@ -5,55 +5,13 @@ Interface between the models and the fitters.
 These models can be bundled together into a :func:`FitProblem` and sent
 to :class:`bumps.fitters.FitDriver` for optimization and uncertainty
 analysis.
-
-
-Summary of problem attributes::
-
-    # Used by fitters
-    nllf(p: Optional[Vector]) -> float  # main calculation
-    bounds() -> Tuple(Vector, Vector)    # or equivalent sequence
-    setp(p: Vector) -> None
-    getp() -> Vector
-    residuals() -> Vector  # for LM, MPFit
-    parameter_residuals() -> Vector  # for LM, MPFit
-    constraints_nllf() -> float # for LM, MPFit;  constraint cost is spread across the individual residuals
-    randomize() -> None # for multistart
-    resynth_data() -> None  # for Monte Carlo resampling of maximum likelihood
-    restore_data() -> None # for Monte Carlo resampling of maximum likelihood
-    name: str  # DREAM uses this
-    chisq() -> float
-    chisq_str() -> str
-    labels() -> List[str]
-    summarize() -> str
-    show() -> None
-    load(input_path: str) -> None
-    save(output_path: str) -> None
-    plot(figfile: str, view: str) -> None
-
-    # Set/used by bumps.cli
-    model_reset() -> None # called by load_model
-    path: str  # set by load_model
-    name: str # set by load_model
-    title: str = filename # set by load_moel
-    options: List[str]  # from sys.argv[1:]
-    undefined:List[int]  # when loading a save .par file, these parameters weren't defined
-    store: str # set by make_store
-    output_path: str # set by make_store
-    simulate_data(noise: float) -> None # for --simulate in opts
-    cov() -> Matrix   # for --cov in opts
-
 """
-# Don't include print_function in imports; since the model coded is exec'd
-# in the __future__ context of this file, it would force the models to use the
-# new print function syntax.  load_problem() should be moved to its own file
-# to avoid this issue.
-from __future__ import division, with_statement
+from __future__ import division, with_statement, print_function
 
 __all__ = ['Fitness', 'FitProblem', 'load_problem',
            'BaseFitProblem', 'MultiFitProblem']
 
 import sys
-import os
 import traceback
 import logging
 
@@ -62,7 +20,6 @@ from numpy import inf, isnan, NaN
 
 from . import parameter, bounds as mbounds
 from .formatnum import format_uncertainty
-from . import util
 
 # Abstract base class
 class Fitness(object):
@@ -451,6 +408,7 @@ class BaseFitProblem(object):
             pparameter = self.parameter_nllf()
             if isnan(pparameter):
                 # TODO: make sure errors get back to the user
+                import logging
                 info = ["Parameter nllf is wrong"]
                 info += ["%s %g"%(p, p.nllf()) for p in self.bounded]
                 logging.error("\n  ".join(info))
@@ -477,9 +435,9 @@ class BaseFitProblem(object):
         """
         return 2 * self.nllf(pvec) / self.dof
 
-    def show(self, _subs={}):
+    def show(self):
         """Print the available parameters to the console as a tree."""
-        print(parameter.format(self.model_parameters(), freevars=_subs))
+        print(parameter.format(self.model_parameters()))
         print("[chisq=%s, nllf=%g]" % (self.chisq_str(), self.nllf()))
         #print(self.summarize())
 
@@ -515,6 +473,7 @@ class BaseFitProblem(object):
             return
 
         import pylab
+        import mpld3
         if fignum is not None:
             pylab.figure(fignum)
         if p is not None:
@@ -522,8 +481,16 @@ class BaseFitProblem(object):
         self.fitness.plot(view=view)
         pylab.text(0.01, 0.01, 'chisq=%s' % self.chisq_str(),
                    transform=pylab.gca().transAxes)
+
         if figfile is not None:
             pylab.savefig(figfile + "-model.png", format='png')
+            with open(figfile + "-model.html", 'w') as fid:
+                fid.write('<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+                fid.write('<script type="text/javascript" src="https://bitbucket.org/jason_s/svg_mathjax/raw/a538dd453eea2ddd6e50096643038ad6229a6547/src/svg_mathjax.js"></script>\n')
+                fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+                fid.write(mpld3.fig_to_html(pylab.gcf()))
+
+
 
     def cov(self):
         """
@@ -654,11 +621,11 @@ class MultiFitProblem(BaseFitProblem):
     def show(self):
         for i, f in enumerate(self.models):
             print("-- Model %d %s" % (i, f.name))
-            subs = self.freevars.get_model(i) if self.freevars else {}
-            f.show(_subs=subs)
+            f.show()
         print("[overall chisq=%s, nllf=%g]" % (self.chisq_str(), self.nllf()))
 
     def plot(self, p=None, fignum=1, figfile=None, view=None):
+        import mpld3
         import pylab
         if p is not None:
             self.setp(p)
@@ -667,6 +634,11 @@ class MultiFitProblem(BaseFitProblem):
             pylab.suptitle('Model %d - %s' % (i, f.name))
             if figfile is not None:
                 pylab.savefig(figfile + "-model%d.png" % i, format='png')
+                with open(figfile + "-model%d.html" % i, 'w') as fid:
+                    fid.write('<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_SVG"></script>\n')
+                    fid.write('<script type="text/javascript" src="https://bitbucket.org/jason_s/svg_mathjax/raw/a538dd453eea2ddd6e50096643038ad6229a6547/src/svg_mathjax.js"></script>\n')
+                    fid.write('<script type="text/javascript">new Svg_MathJax().install();</script>\n')
+                    fid.write(mpld3.fig_to_html(pylab.gcf()))
 
     # Note: restore default behaviour of getstate/setstate rather than
     # inheriting from BaseFitProblem
@@ -714,11 +686,7 @@ def load_problem(filename, options=None):
 
     Raises ValueError if the script does not define problem.
     """
-    # Allow relative imports from the bumps model
-    package = util.relative_import(filename)
-    module = os.path.splitext(os.path.basename(filename))[0]
-
-    ctx = dict(__file__=filename, __package__=package, __name__=module)
+    ctx = dict(__file__=filename, __name__="bumps_model")
     old_argv = sys.argv
     sys.argv = [filename] + options if options else [filename]
     source = open(filename).read()

@@ -141,15 +141,10 @@ def _read_part(fh, key_sep=None, col_sep=None, comment="#", multi_part=False):
 
     return header, data, bins
 
-
 @contextmanager
 def maybe_open(file_or_path):
-    """
-    A context manager for file opening, given a string to the file, or an open
-    file handle.
-    """
     if hasattr(file_or_path, 'readline'):
-        fh = file_or_path
+        fh = file
     elif not string_like(file_or_path):
         raise ValueError('file must be a name or a file handle')
     elif file_or_path.endswith('.gz'):
@@ -160,7 +155,6 @@ def maybe_open(file_or_path):
     yield fh
     if fh is not file_or_path:
         fh.close()
-
 
 def string_like(s):
     """

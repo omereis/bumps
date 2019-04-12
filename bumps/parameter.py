@@ -14,9 +14,7 @@ parts of the model, or different models.
 from six.moves import reduce
 import warnings
 from copy import copy
-import math
 
-import numpy as np
 from numpy import inf, isinf, isfinite
 
 from . import bounds as mbounds
@@ -46,7 +44,6 @@ class BaseParameter(object):
     discrete = False
     _bounds = mbounds.Unbounded()
     name = None
-    value = None # value is an attribute of the derived class
 
     # Parameters may be dependent on other parameters, and the
     # fit engine will need to access them.
@@ -85,7 +82,7 @@ class BaseParameter(object):
         self.bounds = mbounds.Bounded(*mbounds.pm(self.value, *args))
         return self
 
-    def dev(self, std, mean=None, limits=None, sigma=None, mu=None):
+    def dev(self, std, mean=0, limits=None, sigma=None, mu=None):
         """
         Allow the parameter to vary according to a normal distribution, with
         deviations from the mean added to the overall cost function for the
@@ -101,12 +98,10 @@ class BaseParameter(object):
         if sigma is not None or mu is not None:
             # CRUFT: remove sigma and mu parameters
             warnings.warn(DeprecationWarning("use std,mean instead of mu,sigma in Parameter.dev"))
-            if sigma is not None:
-                std = sigma
-            if mu is not None:
-                mean = mu
+            if sigma is not None: std = sigma
+            if mu is not None: mean = mu
         if mean is None:
-            mean = self.value  # Note: value is an attribute of the derived class
+            mean = self.value # Note: value is an attribute of the derived class
         if limits is None:
             self.bounds = mbounds.Normal(mean, std)
         else:
@@ -134,7 +129,6 @@ class BaseParameter(object):
         probability, stray from the range.
         """
         self.bounds = mbounds.SoftBounded(low, high, std)
-        return self
 
     @property
     def bounds(self):
@@ -255,14 +249,6 @@ class BaseParameter(object):
     def __repr__(self):
         return "Parameter(%s)" % self
 
-    def to_dict(self):
-        """
-        Return a dict represention of the object.
-        """
-        return dict(name=self.name, type=type(self).__name__,
-                    value=self.value, fixed=self.fixed,
-                    bounds=dict(type=type(self._bounds).__name__, limits=self._bounds.limits))
-
 
 class Constant(BaseParameter):
     """
@@ -373,13 +359,13 @@ class Parameter(BaseParameter):
         """
         Set a random value for the parameter.
         """
-        self.value = self.bounds.random(rng if rng is not None else mbounds.RNG)
+        self.value = self.bounds.rand(rng if rng is not None else mbounds.RNG)
 
     def feasible(self):
         """
         Value is within the limits defined by the model
         """
-        return self.bounds.limits[0] <= self.value <= self.bounds.limits[1]
+        return self.limits[0] <= self.value <= self.limits[1]
 
 
 class Reference(Parameter):
@@ -428,9 +414,7 @@ class ParameterSet(object):
         """
         self.names = names
         self.reference = reference
-        # Force numpy semantics on slice operations by using an array
-        # of objects rather than a list of objects
-        self.parameters = np.array([copy(reference) for _ in names])
+        self.parameters = [copy(reference) for _ in names]
         # print self.reference, self.parameters
         for p, n in zip(self.parameters, names):
             p.name = " ".join((n, p.name))
@@ -441,8 +425,7 @@ class ParameterSet(object):
     def __getitem__(self, i):
         """
         Return the underlying parameter for the model index.  Index can
-        either be an integer or a model name.  It can also be a slice,
-        in which case a new parameter set is returned.
+        either be an integer or a model name.
         """
         # Try looking up the free variable by model name rather than model
         # index. If this fails, assume index is a model index.
@@ -450,22 +433,9 @@ class ParameterSet(object):
             i = self.names.index(i)
         except ValueError:
             pass
-        if isinstance(i, slice):
-            obj = copy(self)
-            obj.names = self.names[i]
-            obj.reference = self.reference
-            obj.parameters = self.parameters[i]
-            return obj
         return self.parameters[i]
 
     def __setitem__(self, i, v):
-        """
-        Set the underlying parameter for the model index.  Index can
-        either be an integer or a model name.  It can also be a slice,
-        in which case all underlying parameters are set, either to the
-        same value if *v* is a single parameter, otherwise *v* must have
-        the same length as the slice.
-        """
         try:
             i = self.names.index(i)
         except ValueError:
@@ -483,12 +453,6 @@ class ParameterSet(object):
         Set the underlying model parameter to the value of the nth model.
         """
         self.reference.value = self.parameters[index].value
-
-    def get_model(self, index):
-        """
-        Get the reference and underlying model parameter for the nth model.
-        """
-        return (id(self.reference), self.parameters[index])
 
     @property
     def values(self):
@@ -582,11 +546,6 @@ class FreeVariables(object):
         for p in self._parametersets.values():
             p.set_model(i)
 
-    def get_model(self, i):
-        """
-        Get the parameters for model *i* as {reference: substitution}
-        """
-        return dict(p.get_model(i) for p in self._parametersets.values())
 
 # Current implementation computes values on the fly, so you only
 # need to plug the values into the parameters and the parameters
@@ -693,8 +652,6 @@ def substitute(a):
         return [substitute(v) for v in a]
     elif isinstance(a, dict):
         return dict((k, substitute(v)) for k, v in a.items())
-    elif isinstance(a, np.ndarray):
-        return np.array([substitute(v) for v in a])
     else:
         return a
 
@@ -712,23 +669,16 @@ class Function(BaseParameter):
     def __init__(self, op, *args, **kw):
         self.name = kw.pop('name', None)
         self.op, self.args, self.kw = op, args, kw
-        self._parameters = self._find_parameters()
 
-    def _find_parameters(self):
+    def parameters(self):
         # Figure out which arguments to the function are parameters
         #deps = [p for p in self.args if isinstance(p,BaseParameter)]
-        args = [arg for arg in self.args if isinstance(arg, BaseParameter)]
-        kw = dict((name, arg) for name, arg in self.kw.items()
-                  if isinstance(arg, BaseParameter))
-        deps = flatten((args, kw))
+        deps = flatten((self.args, self.kw))
         # Find out which other parameters these parameters depend on.
         res = []
         for p in deps:
             res.extend(p.parameters())
         return res
-
-    def parameters(self):
-        return self._parameters
 
     def _value(self):
         # Expand args and kw, replacing instances of parameters
@@ -749,8 +699,7 @@ class Function(BaseParameter):
             args = [str(v) for v in self.args]
             kw = [str(k) + "=" + str(v) for k, v in self.kw.items()]
             name = self.op.__name__ + "(" + ", ".join(args + kw) + ")"
-        return name
-        #return "%s:%g" % (name, self.value)
+        return "%s:%g" % (name, self.value)
 
 
 def function(op):
@@ -770,96 +719,9 @@ def function(op):
     return function_generator
 _abs = function(abs)
 
-# Numpy trick: math functions from numpy delegate to the math function of
-# the class if that function exists as a class attribute.  Unfortunately,
-# this doesn't work for
-BaseParameter.exp = function(math.exp)
-BaseParameter.expm1 = function(math.expm1)
-BaseParameter.log = function(math.log)
-BaseParameter.log10 = function(math.log10)
-BaseParameter.log1p = function(math.log1p)
-BaseParameter.sqrt = function(math.sqrt)
-
-BaseParameter.degrees = function(math.degrees)
-BaseParameter.radians = function(math.radians)
-
-BaseParameter.sin = function(math.sin)
-BaseParameter.cos = function(math.cos)
-BaseParameter.tan = function(math.tan)
-BaseParameter.arcsin = function(math.asin)
-BaseParameter.arccos = function(math.acos)
-BaseParameter.arctan = function(math.atan)
-
-BaseParameter.sinh = function(math.sinh)
-BaseParameter.cosh = function(math.cosh)
-BaseParameter.tanh = function(math.tanh)
-BaseParameter.arcsinh = function(math.asinh)
-BaseParameter.arccosh = function(math.acosh)
-BaseParameter.arctanh = function(math.atanh)
-
-BaseParameter.ceil = function(math.ceil)
-BaseParameter.floor = function(math.floor)
-BaseParameter.trunc = function(math.trunc)
-
-def boxed_function(f):
-    box = function(f)
-    def wrapped(*args, **kw):
-        if any(isinstance(v, BaseParameter) for v in args):
-            return box(*args, **kw)
-        else:
-            return f(*args, **kw)
-    wrapped.__name__ = f.__name__
-    wrapped.__doc__ = f.__doc__
-    return wrapped
-
-# arctan2 is special since either argument can be a parameter
-arctan2 = boxed_function(math.atan2)
-
-# Trig functions defined in degrees rather than radians
-@boxed_function
-def cosd(v):
-    """Return the cosine of x (measured in in degrees)."""
-    return math.cos(math.radians(v))
-
-@boxed_function
-def sind(v):
-    """Return the sine of x (measured in in degrees)."""
-    return math.sin(math.radians(v))
-
-@boxed_function
-def tand(v):
-    """Return the tangent of x (measured in in degrees)."""
-    return math.tan(math.radians(v))
-
-@boxed_function
-def acosd(v):
-    """Return the arc cosine (measured in in degrees) of x."""
-    return math.degrees(math.acos(v))
-arccosd = acosd
-
-@boxed_function
-def asind(v):
-    """Return the arc sine (measured in in degrees) of x."""
-    return math.degrees(math.asin(v))
-arcsind = asind
-
-@boxed_function
-def atand(v):
-    """Return the arc tangent (measured in in degrees) of x."""
-    return math.degrees(math.atan(v))
-arctand = atand
-
-@boxed_function
-def atan2d(dy, dx):
-    """Return the arc tangent (measured in in degrees) of y/x.
-    Unlike atan(y/x), the signs of both x and y are considered."""
-    return math.degrees(math.atan2(dy, dx))
-arctan2d = atan2d
-
-
 
 def flatten(s):
-    if isinstance(s, (tuple, list, np.ndarray)):
+    if isinstance(s, (tuple, list)):
         return reduce(lambda a, b: a + flatten(b), s, [])
     elif isinstance(s, set):
         raise TypeError("parameter flattening cannot order sets")
@@ -873,52 +735,48 @@ def flatten(s):
         raise TypeError("don't understand type %s for %r" % (type(s), s))
 
 
-def format(p, indent=0, freevars={}, field=None):
+def format(p, indent=0):
     """
     Format parameter set for printing.
 
     Note that this only says how the parameters are arranged, not how they
     relate to each other.
     """
-    p = freevars.get(id(p), p)
     if isinstance(p, dict) and p != {}:
         res = []
         for k in sorted(p.keys()):
             if k.startswith('_'):
                 continue
-            s = format(p[k], indent + 2, field=k, freevars=freevars)
+            s = format(p[k], indent + 2)
             label = " " * indent + "." + k
             if s.endswith('\n'):
                 res.append(label + "\n" + s)
             else:
                 res.append(label + " = " + s + '\n')
         if '_index' in p:
-            res .append(format(p['_index'], indent, freevars=freevars))
+            res .append(format(p['_index'], indent))
         return "".join(res)
-
-    elif isinstance(p, (list, tuple, np.ndarray)) and len(p):
+    elif isinstance(p, list) and p != []:
         res = []
         for k, v in enumerate(p):
-            s = format(v, indent + 2, freevars=freevars)
+            s = format(v, indent + 2)
             label = " " * indent + "[%d]" % k
             if s.endswith('\n'):
                 res.append(label + '\n' + s)
             else:
                 res.append(label + ' = ' + s + '\n')
         return "".join(res)
+    # elif isinstance(p, tuple) and p != ():
+    #    return "".join(format(v, indent) for v in p)
 
     elif isinstance(p, Parameter):
-        s = ""
-        if str(p) != field:
-            s += str(p) + " = "
-        s += "%g" % p.value
-        if not p.fixed:
-            s += " in [%g,%g]" %  p.bounds.limits
-        return s
-
+        if p.fixed:
+            bounds = ""
+        else:
+            bounds = ", bounds=(%g,%g)" %  p.bounds.limits
+        return "Parameter(%g, name='%s'%s)" % (p.value, str(p), bounds)
     elif isinstance(p, BaseParameter):
-        return "%s = %g" % (str(p), p.value)
-
+        return str(p)
     else:
         return "None"
 
@@ -935,7 +793,7 @@ def summarize(pars, sorted=False):
         pars = sorted(pars, cmp=lambda x, y: cmp(x.name, y.name))
     for p in pars:
         if not isfinite(p.value):
-            bar = ["*invalid* "]
+            bar = "*invalid* "
         else:
             position = int(p.bounds.get01(p.value) * 9.999999999)
             bar = ['.'] * 10

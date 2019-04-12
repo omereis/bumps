@@ -10,7 +10,6 @@ from wtforms.validators import DataRequired, Optional, Email, ValidationError
 from werkzeug.utils import secure_filename
 
 from . import rdb
-from .misc import print_debug
 
 
 # Consider that --remote is implied, --parallel, --notify, --queue and
@@ -52,10 +51,14 @@ class UploadForm(FlaskForm):
 
 
 class EmailForm(FlaskForm):
-    email = StringField(label='Email address: ',
-                        validators=[
-                        Email(message='Please enter a valid email address.'),
-                        Optional()])
+    email = StringField(
+        label='Email address: ',
+        validators=[
+            Email(
+                message='Please enter a valid email address.'),
+            Optional()],
+            default='one4@nist.gov')
+    
 
 
 # Translating form data to CLI commands for bumps itsel
@@ -96,22 +99,17 @@ class SeedForm(FlaskForm):
     seed = IntegerField(
         label='Set the seed for the random generator in Numpy: ')
 
-#------------------------------------------------------------------------------
+####################
 # Stopping condition forms
-#--------------------------------------
+
+
 class StepForm(FlaskForm):
     '''Corresponds to the bumps CLI command --steps'''
     steps = IntegerField(
         label='steps: ',
         validators=[Optional()], default=100)
-#------------------------------------------------------------------------------
-class UseCeleryForm(FlaskForm):
-    '''Indicates if the user wants to use Celery queue'''
-    use_celery = BooleanField(label='Use Celery?')
-#------------------------------------------------------------------------------ 
-    def update_chices(self):
-        print_debug("dir(celery_queue): " +  str(self.queues))
-#------------------------------------------------------------------------------
+
+
 class SampleForm(FlaskForm):
     '''Corresponds to the bumps CLI command --sample'''
     pass
@@ -278,7 +276,7 @@ class SlurmForm(FlaskForm):
     walltime = DateTimeField(
         label='Walltime (HH:MM:SS)', default=time(
             00, 30, 00), format='%H:%M:%S')
-    jobname = StringField(validators=[Optional()])
+    jobname = StringField(validators=[Optional()], default='Job')
 
 
 class FitForm(FlaskForm):
@@ -289,17 +287,7 @@ class FitForm(FlaskForm):
     '''
     slurm = FormField(SlurmForm)
     steps = FormField(StepForm)
-#    celery = FormField (CeleryQueueForm)
-    use_celery = FormField (UseCeleryForm)
-    
     burn = FormField(BurnForm)
     optimizer = FormField(OptimizerForm)
     upload = FormField(UploadForm)
     email = FormField(EmailForm)
-#<!--
-
-#    <form method = "POST">
-#        <p> {{ form.csrf_token }} {{ form.token.label }} {{ form.token(size=20) }}
-#        <input type="submit" value="Submit" /> </p>
-#    </form>
-#-->

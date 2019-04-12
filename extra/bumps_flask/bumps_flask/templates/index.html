@@ -1,49 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
-{% if message %}
-    <b><center>{{ message }}</center></b>}
-{% endif %}
     {% if jwt_id %}
-        <p>You are logged in as token <b>{{ jwt_id }}.</b></p>
-        <hr>
-        <form action = "{{ url_for('dashboard') }}" method="POST">
-            <p>View submitted job()s:
-            <input type="submit" value="Go" /></p>
-        </form>
-    {% else %}
-        <p>You are logged out</p><br>
-    {% endif %}
-<hr>
-<table class="table1">
-    <tr>
-        <td class="td1">
-            Need new token?
-        </td>
-        <td class="td1">
-            User old token
-        </td>
-    </tr>
-    <tr>
-        <td class="td1">
-			<form action = "{{ url_for('tokenizer') }}" method="GET">
-				<input type="submit" value="Request" />
-			</form>
-        </td>
-        <td class="td1">
-            <form method="POST">
-                <input name="old_token">
-                <input type="submit" value="Reload">
-            </form>
-        </td>
-    </tr>
-</table>
-<hr>
+    <h4> You are logged in as token {{ jwt_id }}.</h4>
+    <form action = "{{ url_for('dashboard') }}" method="POST">
+        <p> View your jobs and submit new jobs.
+        <input type="submit" value="Go" /></p>
+    </form>
 
-    <center>Version of Thursday 7/30, 11:32</center>
-<p><em> Note: This page currently uses cookies to remember your authorization token.</em></p>
-<bottom>
-    <center>
-        {% include 'footer.html' %}
-    </center>
-</bottom>
+    {% else %}
+    <h4> Welcome. Please use your user token to sign in or request a new user token.</h4>
+
+    <form method = "POST">
+        <p> {{ form.csrf_token }} {{ form.token.label }} {{ form.token(size=20) }}
+        <input type="submit" value="Submit" /> </p>
+    </form>
+
+    <form action = "{{ url_for('tokenizer') }}" method="GET">
+        <!--<br>{flash}-->
+        <p> Don't have access?
+        <input type="submit" value="Request" /></p>
+    </form>
+
+    <p><em> Note: This page currently uses cookies to remember your authorization token.</em></p>
+
+    {% endif %}
 {% endblock %}

@@ -44,6 +44,7 @@ import numpy as np
 
 from .. import stop
 from .. import solver
+from ..util import choose_without_replacement
 
 CROSSOVER = 'c_exp','c_bin'
 MUTATE = 'best1','best1u','best2','randtobest1','rand1','rand2'
@@ -135,20 +136,14 @@ def rand2(F, best, pop, idx, dims):
 ############################################################
 
 
-def _candidates(pop, k, exclude=None):
+def _candidates(pop, n, exclude=None):
     """
     Select *n* random candidates from *pop*, not including the
     candidate at index *exclude*.
     """
-    n = len(pop)
-    if exclude is not None:
-        selection = np.arange(n-1, dtype='i')
-        if exclude < n-1:
-            selection[exclude] = n-1
-    else:
-        selection = np.arange(n, dtype='i')
-    np.random.shuffle(selection)
-    return pop[selection[:k]]
+    selection = choose_without_replacement(len(pop)-1, n)
+    selection[selection>=exclude] += 1
+    return pop[selection]
 
 ##########################################################################
 

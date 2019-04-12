@@ -23,55 +23,20 @@ If a compiler is available, then significant speedup is possible for DREAM using
 
 For now this requires an install from source rather than pip.
 
-|TravisStatus|_ |DOI|_
-
-.. |TravisStatus| image:: https://travis-ci.org/bumps/bumps.svg?branch=master
-.. _TravisStatus: https://travis-ci.org/bumps/bumps
-
-.. |DOI| image:: https://zenodo.org/badge/18489/bumps/bumps.svg
-.. _DOI: https://zenodo.org/badge/latestdoi/18489/bumps/bumps
+.. image:: https://zenodo.org/badge/18489/bumps/bumps.svg
+    :target: https://zenodo.org/badge/latestdoi/18489/bumps/bumps
 
 Release notes
 =============
 
-v0.7.11 2018-09-24
-------------------
-
-* Added support for parameter serialization
-
-v0.7.10 2018-06-15
-------------------
-
-* restructure parameter table in gui
-
-v0.7.9 2018-06-14
------------------
-
-* full support for python 3 in wx GUI
-* allow added or missing parameters in reloaded .par file
-* add dream state to return from fit() call
-
-v0.7.8 2018-05-18
------------------
-
-* fix source distribution (bin directory was missing)
-
-v0.7.7 2018-05-17
+v0.7.7
 -----------------
 
 * merge in amdahl branch for improved performance
 * update plot so that the displayed "chisq" is consistent with nllf
 * slight modification to the DREAM DE crossover ratio so that no crossover
   weight ever goes to zero.
-* par.dev(std) now uses the initial value of the parameter as the center of the
-  distribution for a gaussian prior on par, as stated in the documentation. In
-  older releases it was incorrectly defaulting to mean=0 if the mean was
-  not specified.
-* save parameters and uncertainties as JSON as well as text
-* convert discrete variables to integer prior to computing DREAM statistics
-* allow relative imports from model files
-* support latest numpy/matplotlib stack
-* initial support for wxPhoenix/python 4 GUI (fit ranges can't yet be set)
+
 
 v0.7.6 2016-08-05
 -----------------

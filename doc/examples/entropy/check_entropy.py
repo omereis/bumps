@@ -1,22 +1,6 @@
 # Check the entropy calculator
 # ============================
 #
-# A single measure for a multivariate distribution is the entropy
-#
-# .. math:
-#    E = - \int_\Omega \log(p(x)) p(x)\,\text{d}x
-#
-# By comparing the entropy of the prior distribution (usually a box uniform
-# distribution with entropy $\sum_{i=1}^n \log(w_i)$ where $w_i$ is the
-# range on parameter $i$ and $n$ is the number of paramters, but maybe
-# lower if explicit priors are given for any of the parameters based on
-# information from other sources) to the entropy computed from the posterior,
-# you can estimate the number of bits of information from the fit to the data.
-#
-# Note that bumps calculates the entropy expected from the closest multivariate
-# normal distribution (MVN) as well as directly from the samples.  The sample
-# derived entropy has more variability, particularly in high dimensions.
-#
 # Many of the probability distributions in scipy.stats include a method
 # to compute the entropy of the distribution.  We can use these to test
 # the values from bumps against known good values.
@@ -61,8 +45,7 @@ problem = FitProblem(M)
 
 # Before fitting, print the expected entropy from the fit.
 
-entropy = D.entropy()
-print("*** Expected entropy: %.4f bits %.4f nats"%(entropy/log(2), entropy))
+print("*** Expected entropy: %.4f"%(D.entropy()/log(2)))
 
 # To exercise the entropy calculator, try fitting some non-normal
 # distributions:

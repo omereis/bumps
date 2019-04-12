@@ -8,8 +8,10 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     git        \
     python-dev \
-    python-pip
+    python-pip \
+    vim
 
+#RUN apt-get install vim
 # Create the home directory for the new app user.
 RUN mkdir -p /home/app_user
 
@@ -26,7 +28,7 @@ RUN mkdir templates/ && mkdir static/
 RUN pip install -U pip
 COPY requirements.txt /home/app_user/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
-RUN pip install git+https://github.com/rnegron/bumps.git
+RUN pip install git+https://github.com/omereis/bumps.git
 
 # Include mod_wsgi to run Flask behind Apache in this container
 # RUN pip install mod_wsgi
@@ -52,4 +54,4 @@ ENV FLASK_APP=bumps_flask
 
 # Launch the app
 # CMD ["mod_wsgi-express", "start-server", "--host", "0.0.0.0", "--port", "5000", "bumps_flask.wsgi"]
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+# CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]

@@ -102,6 +102,6 @@ Generation %(step)d, chisq %(cost)g
 
         # print "step",history.step[0],"chisq",history.value[0]
         self.problem.setp(history.point[0])
-        pylab.cla()
+        pylab.hold(False)
         self.problem.plot(figfile=os.path.join(self.path, 'K'))
         pylab.gcf().canvas.draw()

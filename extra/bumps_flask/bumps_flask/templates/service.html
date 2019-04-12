@@ -32,40 +32,19 @@
 
         <h4>Specify job options</h4>
         <br>
-        Logged in with ID of {{ id }}
-        <br>
         <form method="POST" enctype="multipart/form-data">
             {{ form.hidden_tag() }}
             {% for field in form if field.widget.input_type != 'hidden' %}
                 {{ with_errors(field, style='font-weight: bold; margin-top:1em;') }}
             {% endfor %}
-<!--
-            <br>
-        <table>
-            <tr>
-                <td>
-                    Celery Queue:
-                </td>
-                <td>
-
-                </td>
-            </tr>
-        </table>
--->
-            <br>
-            <table border="0" width="50%">
-                <tr>
-                    <td valign="center" align="center">
-                        <input style="margin-bottom:1em;" type="submit" value="Submit Job" />
-                    </td valign="center">
-                </tr>
-            </table>
-<!--            <input style="margin-bottom:1em;" type="submit" value="Submit Job" /> -->
+        <br><br>
+        <input style="margin-bottom:1em;" type="submit" value="Submit Job" />
         </form>
 
     {% endif %}
+    <form action="{{url_for('dashboard')}}" method="GET">
+        <p><input type="submit" value="Back"/></p>
+    </form>
 
-    <bottom>
-        {% include 'footer.html' %}
-    </bottom>
+
 {% endblock %}

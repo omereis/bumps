@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2><b>bumps</b> Multi Processing User Interface</h2>
+<table>
+    <tr>
+        <td>
+            Problem Definition
+        </td>
+        <td>
+            Problem Parameters
+        </td>
+        <td>
+            Remote Parameters
+        </td>
+    </tr>
+    <tr>
+        <td>
+                <option value="0">Fit Optimizer:</option>
+                ('lm', 'Levenberg Marquardt'),
+                ('newton', 'Quasi-Newton BFGS'),
+                ('de', 'Differential Evolution'),
+                ('dream', 'DREAM'),
+                ('amoeba', 'Nelder-Mead Simplex'),
+                ('pt', 'Parallel Tempering'),
+                ('ps', 'Particle Swarm'),
+                ('rl', 'Random Lines')
+        
+        </td>
+        <td>
+            Remote Server: <input type="text" size="3" id="remote_port" value="8765"><br>
+            Remote Server: <input type="text" id="remote_server" size="35" value="NCNR-R9nano.campus.nist.gov">
+        </td>
+    </tr>
+</table>
+{% endblock %}

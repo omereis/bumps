@@ -2,34 +2,35 @@
 <html>
     <head>
         <style>
-            /*
-            body {
-                background: linear-gradient(aqua, CadetBlue);
+            /*.graphs {margin: 5em;}*/
+            table#graphs {border-collapse: separate; border-spacing: 35px 35px;}
+            input.thumbnail {width: 26em; height: 26em;}
+            input[name="graph_btn"] {display: block; width: 100%; margin: 0; text-align: center;}
+            body{
+                background-color: rgb(63, 140, 150);
             }
-            */
-            table.table1 {
-                border-collapse: collapse;
-                width: 80%;
-                text-align: center;
+            table, th, td {
+                border: 1px solid black;
             }
-
-            td.td1 {
+            th {
                 text-align: center;
-                padding: 8px;
+                background-color: rgb(104, 111, 112);
             }
         </style>
 
-        <title>bumps distribution server</title>
+        <title>bumps distribution Server</title>
         <div class="container">
-            <h2 align="center"><i>bumps</i> distribution server</h2>
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
-                    <ul class="flashes, container"> {% for message in messages %}
-                        <li>{{ message }}</li>{% endfor %}
-                    </ul> {% endif %}
+                    <ul class="flashes, container">
+                    {% for message in messages %}
+                        <li><i>{{ message }}</i></li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
 
-                {% endwith %}
-        <h2><center>NCNR bumps Fitting Test Server</center></h2>
+            {% endwith %}
+        <h2><a href="http://www-i.ncnr.nist.gov/">NCNR</a> <a href="http://localhost:5000">bumps</a> Fitting Test Server</h2>
         </div>
     </head>
 
@@ -37,6 +38,7 @@
 
         <div class="container">
             {% block content %} {% endblock %}
+            <p> For help, please contact <a href="mailto:omer.eisenberg@nist.gov">support</a>.</p>
         </div>
     </body>
 

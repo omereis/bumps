@@ -7,7 +7,7 @@ IS_MAC = (wx.Platform == '__WXMAC__')
 from numpy import inf
 
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-from matplotlib.backends.backend_wxagg import NavigationToolbar2WxAgg as Toolbar
+from matplotlib.backends.backend_wxagg import NavigationToolbar2Wx as Toolbar
 
 # The Figure object is used to create backend-independent plot representations.
 from matplotlib.figure import Figure
@@ -183,6 +183,7 @@ class DataView(wx.Panel):
                     for i,p in enumerate(self.problem.models):
                         #if hasattr(p.fitness,'plot'):
                         p.fitness.plot(view=self.view)
+                        pylab.hold(True)
                         if self._cancel_calculate: break
                     pylab.text(0.01, 0.01,
                                'chisq=%s' % self.problem.chisq_str(),

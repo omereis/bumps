@@ -5,17 +5,12 @@ import zipfile
 import tempfile
 import datetime
 from werkzeug.utils import secure_filename
-from flask_jwt_extended import (get_jwt_identity)
 
 from . import app, rdb
 from .run_job import execute_python_script, execute_slurm_script
-from .misc import print_debug, get_results_dir
-#------------------------------------------------------------------------------
-def get_in_file(_file):
-    file_content = str(_file.stream.getvalue().decode("utf-8"))
-    return (file_content)
-#------------------------------------------------------------------------------
-def get_job_params(payload, _input, _file):
+
+
+def setup_files(payload, _input, _file, queue='slurm'):
 
     # Add the store location to the bumps args
     folder = payload['directory']
@@ -24,39 +19,20 @@ def get_job_params(payload, _input, _file):
     # Make sure the upload and results
     # folders exist beforehand
     if not os.path.exists(folder):
-        os.makedirs(folder)
-#        os.makedirs(_input['cli']['store'])
+        os.makedirs(_input['cli']['store'])
 
     # Sanitize the filename
     filename = secure_filename(_file.filename)
     file_path = os.path.join(folder, filename)
-    # Save the uploaded file
-    _file.save(file_path)
-
-    # Parse the CLI options
-    cli_opts = cli_commands(_input['cli'])
-
-    # Add the filename to the payload
-#    payload['filebase'] = filename.split('.')[0]
-
-    return file_path, cli_opts
-#------------------------------------------------------------------------------
-def setup_files(payload, _input, _file, queue='slurm', run_script=True):
-    
-#    get_job_params(payload, _input, _file)
-    # Add the store location to the bumps args
-    folder = payload['directory']
-    _input['cli']['store'] = os.path.join(folder, 'results')
-
-    # Make sure the upload and results
-    # folders exist beforehand
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-#        os.makedirs(_input['cli']['store'])
-
-    # Sanitize the filename
-    filename = secure_filename(_file.filename)
-    file_path = os.path.join(folder, filename)
+    try:
+        f = open('debug.txt', 'a')
+        f.write("-----------------------------\n")
+        f.write("file_handler.py-setup_files\n")
+        f.write("\tfilename : '" + filename + "'\n")
+        f.write("\tfile_path: '" + file_path + "'\n")
+        f.write("\tqueue    : '" + queue + "'\n")
+    finally:
+        f.close()
     # Save the uploaded file
     _file.save(file_path)
 
@@ -71,9 +47,10 @@ def setup_files(payload, _input, _file, queue='slurm', run_script=True):
         # Open a non-volatile named tempfile for for output
         slurm_file = tempfile.NamedTemporaryFile(dir=folder, delete=False)
 
-        build_slurm_script(slurm_file, _input['slurm'], cli_opts, file_path, run_script)
+        build_slurm_script(slurm_file, _input['slurm'], cli_opts, file_path)
 
         slurm_file.close()
+
     # Currently only support for slurm is available
     elif queue == 'rq':
         payload = execute_python_script.queue(
@@ -92,22 +69,15 @@ def zip_files(_dir, file_list):
         with zipfile.ZipFile(os.path.join(work_dir, 'job_results.zip'), mode='w') as zip_file:
             for _file in work_list:
                 zip_file.write(os.path.join(work_dir, _file), arcname=_file)
-#------------------------------------------------------------------------------
+
+
 def clean_job_files(user, job_id):
-    _dir = get_results_dir (app.config.get('UPLOAD_FOLDER'), job_id)
-    print_debug ("file_handler.py, clean_job_files\n_dir: '{}'".format(_dir))
-#    _dir = os.path.join(app.config.get('UPLOAD_FOLDER'), 'fit_problems', user, 'job{}'.format(job_id))
-    try:
-        DEBUG_DIR = _dir
-        shutil.rmtree(_dir)
-        print_debug ("file_handler.py, clean_job_files\n_dir: '{}' deleted".format(_dir))
-        if os.path.exists(_dir):
-            os.rmdir(_dir)
-            print_debug ("file_handler.py, clean_job_files\n_dir deleted (again)")
-    except Exception as e:
-        print_debug ("file_handler.py, clean_job_files\nexception: '{}'".format(e))
-    return _dir
-#------------------------------------------------------------------------------
+    _dir = os.path.join(
+        app.config.get('UPLOAD_FOLDER'), 'fit_problems',
+                        user, 'job{}'.format(job_id))
+    shutil.rmtree(_dir)
+
+
 def slurm_commands(slurm_dict):
     '''
     Buils a string to consisting of parsed SLURM commands
@@ -163,8 +133,7 @@ def cli_commands(cli_dict):
     return output_s.lstrip()
 
 
-#------------------------------------------------------------------------------
-def build_slurm_script(_file, slurm_dict, cli_opts, file_path, run_script=True):
+def build_slurm_script(_file, slurm_dict, cli_opts, file_path):
     '''
     Parse given slurm_dict and cli_dict into a slurm script _file
     '''
@@ -180,13 +149,21 @@ def build_slurm_script(_file, slurm_dict, cli_opts, file_path, run_script=True):
     # Write the CLI options
     _file.write('\nbumps {} {}\n'.format(file_path, cli_opts))
 
-    if (run_script):
-        execute_slurm_script('bumps', cli_opts.split(), job_file, job_path)
+    try:
+        f = open('debug.txt', 'a')
+        f.write("-----------------------------\n")
+        f.write("file_handler.py-build_slurm_script, executing slurm script\n")
+        f.write("\tjob_file: '" + job_file + "'\n")
+        f.write("\tjob_path: '" + job_path + "'\n")
+    finally:
+        f.close()
+    execute_slurm_script('bumps', cli_opts.split(),
+                         job_file, job_path)
+
     return
-#------------------------------------------------------------------------------
+
+
 def search_results(path):
-#    print_debug("file_handler.py, search_results()\nDEBUG_DIR: '{}'".format (DEBUG_DIR))
-#    print_debug("file_handler.py, search_results()\npath: '{}'".format (path))
     from glob import glob
     possible_ext = ('dat', 'err', 'mon', 'par',
                     'png', 'log', 'mc')
@@ -214,6 +191,15 @@ def update_job_info(user):
         try:
             with open(os.path.join(job['directory'], 'results',
                                    '{}-steps.json'.format(job['filebase'])), 'r') as j:
+                try:
+                    f1 = open('debug.txt', 'a')
+                    f1.write("---------------------------------------\n")
+                    f1.write("file_handler.py, update_job_info, exploring jobs status\n")
+                    f1.write("user: " + str(user) + "\n")
+                    f1.write("BEFORE status change to RUNNING, job: " + str(job) + "\n")
+                    f1.write("job: " + str(job) + "\n")
+                finally:
+                    f1.close()
                 job['status'] = 'RUNNING'
 
         except IOError:
@@ -222,8 +208,23 @@ def update_job_info(user):
         try:
             with open(os.path.join(job['directory'], 'results',
                                    '{}-model.html'.format(job['filebase'])), 'r') as f:
+                try:
+                    f1 = open('debug.txt', 'a')
+                    f1.write("---------------------------------------\n")
+                    f1.write("file_handler.py, update_job_info, exploring jobs status\n")
+                    f1.write("BEFORE status change, job: " + str(job) + "\n")
+                    f1.write("job: " + str(job) + "\n")
+                finally:
+                    f1.close()
                 job['status'] = 'COMPLETED'
                 job['completed'] = datetime.datetime.now().strftime('%c')
+                try:
+                    f1 = open('debug.txt', 'a')
+                    f1.write("---------------------------------------\n")
+                    f1.write("file_handler.py, update_job_info, exploring jobs status\n")
+                    f1.write("AFTER status change, job: " + str(job) + "\n")
+                finally:
+                    f1.close()
         except BaseException:
             pass
 
