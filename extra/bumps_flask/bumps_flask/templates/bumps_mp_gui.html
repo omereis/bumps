@@ -50,11 +50,15 @@
                             <td class="no_border"><input type="button" id="save_problem_file"  value="Save As..."></td>
                         </tr></table>
                         <label style="text-align:center;" for="problem_text">Problem code</label><br>
-                        <textarea cols="50" rows="20" id="problem_text"></textarea>
+                        <textarea cols="50" rows="20" id="problem_text"  wrap="soft"></textarea>
                     </td>
                     <td valign="top">
+                        <div style="text-align: center;">
+                            Submit a new job...<br>
+                            <input id="btnSendJob" type="button" value="Send Job">
+                        </div>
                         <p></p>Fitting Algorithm<br>
-                        <select>
+                        <select id="algorithm" selected="newton">
                             <option value="lm">Levenberg Marquardt</option>
                             <option value="newton">Quasi-Newton BFGS</option>
                             <option value="de">Differential Evolution</option>
@@ -98,15 +102,22 @@
                                     </tr>
                                 </table>
                         </div>
-                        <div id="celery_params">Using Celery</div>
-                        <div id="no_mp_params">Using Local Only</div>
+                        <div id="celery_params" style="text-align:center;">Using Celery</div>
+                        <div id="no_mp_params" style="text-align:center;">Using Local Only</div>
                     </td>
                 </tr>
             </table>
+        <div id=job_results>
+            
+        </div>
     </body>
     <script>
         document.getElementById("problemFile").onchange = load_bumps_problem;
         document.getElementById("clear_file").onclick = clear_file;
         document.getElementById("save_problem_file").onclick = save_model;
+        document.getElementById("btnSendJob").onclick = onSendJobClick;
+        var alg=document.getElementById("algorithm");
+        if (alg)
+            alg.value="newton";
     </script>
 </html>
