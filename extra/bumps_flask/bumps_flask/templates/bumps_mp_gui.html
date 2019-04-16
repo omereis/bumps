@@ -2,6 +2,7 @@
 <html>
     <head>
         <script src="../static/js/bg.js" charset="utf-8"></script>
+        <script type="text/javascript" src="../static/js/random_words.js"></script>
         <link rel="stylesheet" href="../static/css/bumps_gui.css" />
             <style>
             /*.graphs {margin: 5em;}*/
@@ -70,16 +71,18 @@
                         </select>
                     </td>
                     <td valign="top">
-                        <label style="text-align:left;" for="remote_port">Remote Port</label>
-                        <input type="text" size="3" id="remote_port" value="8765"><br><br>
-                        <label style="text-align:left;" for="remote_server">Remote Server</label>
+                        Remote Server:<br>
                         <input type="text" id="remote_server" size="35" value="NCNR-R9nano.campus.nist.gov">
+                        <p style="text-align:center;">Remote Port: <input type="text" size="3" id="remote_port" value="8765"></p>
+                        <p style="text-align:center;">
+                        Tag: <input type="text" id="remote_tag" size="5" >
                         <hr>
                         <table width="100%"><tr>
                             <td style="text-align:center;"><input type="radio" id="mp_none" onclick="change_multi_processing(this.value)" checked="true" value="none">None</td>
                             <td style="text-align:center;"><input type="radio" id="mp_celery" onclick="change_multi_processing(this.value)" value="celery">Celery</td>
                             <td style="text-align:center;"><input type="radio" id="mp_slurm" onclick="change_multi_processing(this.value)" value="slurm">Slurm</td>
-                        </tr></table>
+                        </tr>
+                        </table>
                         <div id="slurm_params">
                             <table width="100%">
                                 <tr>
