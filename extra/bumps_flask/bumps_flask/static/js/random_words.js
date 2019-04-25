@@ -249,8 +249,8 @@ var wordList = [
     "your","yourself","youth","zero","zebra","zipper","zoo","zulu"
   ];
   
-  function words(options) {
-  
+  function random_words(options) {
+
     function word() {
       if (options && options.maxLength > 1) {
         return generateWordWithMaxLength();
@@ -258,7 +258,7 @@ var wordList = [
         return generateRandomWord();
       }
     }
-  
+
     function generateWordWithMaxLength() {
       let rightSize = false;
       let wordUsed;
@@ -271,51 +271,51 @@ var wordList = [
       }
       return wordUsed;
     }
-  
+
     function generateRandomWord() {
       return wordList[randInt(wordList.length)];
     }
-  
+
     function randInt(lessThan) {
       return Math.floor(Math.random() * lessThan);
     }
-  
+
     // No arguments = generate one word
     if (typeof(options) === 'undefined') {
       return word();
     }
-  
+
     // Just a number = return that many words
     if (typeof(options) === 'number') {
       options = { exactly: options };
     }
-  
+
     // options supported: exactly, min, max, join
     if (options.exactly) {
       options.min = options.exactly;
       options.max = options.exactly;
     }
-    
+
     // not a number = one word par string
     if (typeof(options.wordsPerString) !== 'number') {
       options.wordsPerString = 1;
     }
-  
+
     //not a function = returns the raw word
     if (typeof(options.formatter) !== 'function') {
       options.formatter = (word) => word;
     }
-  
+
     //not a string = separator is a space
     if (typeof(options.separator) !== 'string') {
       options.separator = ' ';
     }
-  
+
     var total = options.min + randInt(options.max + 1 - options.min);
     var results = [];
     var token = '';
     var relativeIndex = 0;
-  
+
     for (var i = 0; (i < total * options.wordsPerString); i++) {
       if (relativeIndex === options.wordsPerString - 1) {
         token += options.formatter(word(), relativeIndex);

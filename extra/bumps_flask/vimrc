@@ -24,6 +24,8 @@ endif
 " turn on this option as well
 "set background=dark
 
+set tabstop=4
+
 " Uncomment the following to have Vim jump to the last position when
 " reopening a file
 "if has("autocmd")

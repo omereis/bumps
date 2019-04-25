@@ -1,5 +1,5 @@
 # Using the latest long-term-support Ubuntu OS
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y \
@@ -37,6 +37,7 @@ RUN pip install git+https://github.com/omereis/bumps.git
 
 # Copy app files to the container
 COPY ./ /home/app_user/bumps_flask
+COPY ./vimrc /etc/vim/vimrc
 
 #RUN chmod a+x flask_run
 # Make the 4000 port available from outside the container

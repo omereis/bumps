@@ -1,0 +1,13 @@
+body{
+    background-color: rgb(85, 150, 170);
+}
+table, th, td, tr, th {
+    border: 1px solid black;
+}
+th {
+    text-align: center;
+    background-color: rgb(155, 155, 155);
+}
+.no_border {
+    border: 0px;
+}

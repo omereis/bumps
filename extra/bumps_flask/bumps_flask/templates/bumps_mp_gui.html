@@ -1,27 +1,29 @@
 <!doctype html>
 <html>
     <head>
-        <script src="../static/js/bg.js" charset="utf-8"></script>
-        <script type="text/javascript" src="../static/js/random_words.js"></script>
-        <link rel="stylesheet" href="../static/css/bumps_gui.css" />
-            <style>
-            /*.graphs {margin: 5em;}*/
-            body{
-                background-color: rgb(63, 140, 150);
+        <script src="{{ url_for ('static', filename='js/bg.js') }}" charset="utf-8"></script>
+        <script src="{{ url_for ('static', filename='js/random_words.js') }}" charset="utf-8"></script>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+        <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_gui.css') }}"/>
+        <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_portal.css') }}"/>
+        <script type="text/javascript">
+            var g_myIP;
+            function getMyIP () {
+                $.get('http://jsonip.com', function(res) {
+                    g_myIP = res.ip;
+                    $('#ipAddress').html('IP Address is: ' + res.ip);
+                });
             }
-            table, th, td, tr, th {
-                border: 1px solid black;
+            $(document).ready(function() {
+                $.get('http://jsonip.com', function(res) {
+                    g_myIP = res.ip;
+                });
+            });
+//-----------------------------------------------------------------------------
+            function generateTag() {
+                document.getElementById('remote_tag').value = random_words();
             }
-            th {
-                text-align: center;
-                background-color: rgb(155, 155, 155);
-            }
-            .no_border {
-                border: 0px;
-            }
-        </style>
-        <script>
-            //init_app();
+//-----------------------------------------------------------------------------
             function change_to_slurm (value) {
                 var div_slurm_params = document.getItemsById ("slurm_params");
                 alert ("Moving to SLURM");
@@ -30,7 +32,8 @@
 		</head>
             <title>bumps distribution Server</title>
     <body onload="init_app()">
-			<h2><b>bumps</b> Multi Processing User Interface</h2>
+            <h2><b>bumps</b> Multi Processing User Interface</h2>
+            <div id="ipAddress"></div>
 			<table>
 				<tr>
 					<th>
@@ -56,7 +59,7 @@
                     <td valign="top">
                         <div style="text-align: center;">
                             Submit a new job...<br>
-                            <input id="btnSendJob" type="button" value="Send Job">
+                            <input id="btnSendJob" type="button" value="Send Job" onclick="sendJob()">
                         </div>
                         <p></p>Fitting Algorithm<br>
                         <select id="algorithm" selected="newton">
@@ -69,13 +72,25 @@
                             <option value="ps">Particle Swarm</option>
                             <option value="rl">Random Lines</option>
                         </select>
+                        <table width="100%">
+                            <tr>
+                                <td>Steps:</td>
+                                <td><input type="number" id="fitting_steps" value="100" steps="10" min="1" style="width: 5em;"></td>
+                            </tr>
+                            <tr>
+                                <td>Burn:</td>
+                                <td><input type="number" id="fitting_burn" value="100" steps="10" min="1" style="width: 5em;"></td>
+                            </tr>
+                        </table>
+                        <br>
+                        <br>Burn: 
                     </td>
-                    <td valign="top">
+                    <td valign="top" style="border: 2px solid blue;">
                         Remote Server:<br>
                         <input type="text" id="remote_server" size="35" value="NCNR-R9nano.campus.nist.gov">
                         <p style="text-align:center;">Remote Port: <input type="text" size="3" id="remote_port" value="8765"></p>
                         <p style="text-align:center;">
-                        Tag: <input type="text" id="remote_tag" size="5" >
+                        ID: <input type="text" id="remote_tag" size="5" > <input type="button" value="Generate" onclick="generateTag()">
                         <hr>
                         <table width="100%"><tr>
                             <td style="text-align:center;"><input type="radio" id="mp_none" onclick="change_multi_processing(this.value)" checked="true" value="none">None</td>
