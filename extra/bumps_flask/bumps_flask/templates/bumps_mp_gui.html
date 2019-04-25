@@ -57,6 +57,16 @@
                         <textarea cols="50" rows="20" id="problem_text"  wrap="soft"></textarea>
                     </td>
                     <td valign="top">
+                        <table>
+                            <tr>
+                                <td>
+                                    <input type="button" id="btnConnect" value="Connect" onclick="connectServer()">
+                                </td>
+                                <td>
+                                        <input type="button" id="btnDisconnect" value="Disconnect" onclick="disconnectServer()">
+                                    </td>
+                                </tr>
+                        </table>
                         <div style="text-align: center;">
                             Submit a new job...<br>
                             <input id="btnSendJob" type="button" value="Send Job" onclick="sendJob()">
@@ -122,6 +132,11 @@
                         </div>
                         <div id="celery_params" style="text-align:center;">Using Celery</div>
                         <div id="no_mp_params" style="text-align:center;">Using Local Only</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td width="100%">
+                        <div id="status_line"></div>
                     </td>
                 </tr>
             </table>
