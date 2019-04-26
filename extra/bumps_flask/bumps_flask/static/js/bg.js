@@ -77,25 +77,6 @@ function download(text, name, type) {
     a.href = URL.createObjectURL(file);
     a.download = name;
   }
-/*
-function download(data, filename, type) {
-    var file = new Blob([data], {type: type});
-    if (window.navigator.msSaveOrOpenBlob) // IE10+
-        window.navigator.msSaveOrOpenBlob(file, filename);
-    else { // Others
-        var a = document.createElement("a"),
-                url = URL.createObjectURL(file);
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(function() {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);  
-        }, 0); 
-    }
-}
-*/
 //-----------------------------------------------------------------------------
 function download(data, filename, type) {
     var file = new Blob([data], {type: type});
@@ -117,10 +98,11 @@ function download(data, filename, type) {
 //-----------------------------------------------------------------------------
 function onSendJobClick() {
     var txtProblem = $('#problem_text').val().trim();
-    g_socket.send('if (txtProblem.length == 0) {');
-        //alert ('Missing problem definition');
-        //$('#problem_text').focus();
-    //}
+
+    if (txtProblem.length > 0)
+        g_socket.send (txtProblem);
+    else
+        alert ('Missing problem definition');
 }
 //-----------------------------------------------------------------------------
 function ip_local() {
@@ -157,6 +139,12 @@ function disconnectServer() {
     g_socket.close();
 }
 //-----------------------------------------------------------------------------
+function socketErrorHandler (socket, eventError) {
+    if (webSocket.readyState == 3) {
+        alert('Communication faule:\nDestination not ready');
+    }
+}
+//-----------------------------------------------------------------------------
 function openWSConnection(protocol, hostname, port, endpoint) {
     var webSocketURL = null;
     webSocketURL = protocol + "://" + hostname + ":" + port + endpoint;
@@ -183,7 +171,8 @@ function openWSConnection(protocol, hostname, port, endpoint) {
             var msg = "WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4);
             console.log("WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4));
             console.log(msg);
-            document.getElementById("job_results").value += "message: " + msg + "\n";
+            socketErrorHandler (webSocket, errorEvent);
+            //document.getElementById("job_results").value += "message: " + msg + "\n";
         };
         webSocket.onmessage = function (messageEvent) {
             var wsMsg = messageEvent.data;
@@ -191,12 +180,14 @@ function openWSConnection(protocol, hostname, port, endpoint) {
             if (wsMsg.indexOf("error") > 0) {
                 document.getElementById("job_results").value += "error: " + wsMsg.error + "\r\n";
             } else {
-                document.getElementById("job_results").value += "message: " + wsMsg + "\r\n";
+				console.log(wsMsg);
+				$('#status_line').append(wsMsg);
+                //document.getElementById("job_results").value += "message: " + wsMsg + "\r\n";
             }
         };
     } catch (exception) {
         console.error(exception);
     }
-
+	return (webSocket);
 }
 //-----------------------------------------------------------------------------

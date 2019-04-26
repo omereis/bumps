@@ -191,14 +191,12 @@ function openWSConnection(protocol, hostname, port, endpoint) {
             if (wsMsg.indexOf("error") > 0) {
                 document.getElementById("job_results").value += "error: " + wsMsg.error + "\r\n";
             } else {
-				console.log(wsMsg);
-				$('#status_line').append(wsMsg);
-                //document.getElementById("job_results").value += "message: " + wsMsg + "\r\n";
+                document.getElementById("job_results").value += "message: " + wsMsg + "\r\n";
             }
         };
     } catch (exception) {
         console.error(exception);
     }
-	return (webSocket);
+
 }
 //-----------------------------------------------------------------------------
