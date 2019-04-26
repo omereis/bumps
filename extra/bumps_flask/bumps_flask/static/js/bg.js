@@ -28,9 +28,20 @@ function display_prolem(file_data) {
 
 }
 //-----------------------------------------------------------------------------
+function getGeoData() {
+	$.getJSON('http://gd.geobytes.com/GetCityDetails?callback=?', function(data) {
+      console.log(JSON.stringify(data, null, 2));
+      $('#ipAddress').val(data['geobytesremoteip']);
+	});
+}
+//-----------------------------------------------------------------------------
 function clear_file() {
     document.getElementById("problemFile").value = null;
     display_prolem(null);
+//    getGeoData();
+	//$.getJSON('http://gd.geobytes.com/GetCityDetails?callback=?', function(data) {
+	  //console.log(JSON.stringify(data, null, 2));
+	//});
 }
 //-----------------------------------------------------------------------------
 function init_app () {
@@ -96,11 +107,84 @@ function download(data, filename, type) {
     }
 }
 //-----------------------------------------------------------------------------
+function insertSelectCell (table, row, idx) {
+    var cell = row.insertCell(idx);
+	var cbox_id = 'cbox' + table.rows.length.toString(10);
+	cell.innerHTML = '<input type="checkbox" id="' + cbox_id + '">';//cbox4">';
+}
+//-----------------------------------------------------------------------------
+function insertTimeCell (table, row, idx) {
+    var cell = row.insertCell(idx);
+    var dt = new Date();
+	var month = dt.toLocaleDateString('en-us',{month:'short'});
+    cell.innerText = dt.getFullYear() + '-' + month + '-'+ dt.getDate() + ', ' + 
+        dt.getHours() + ':' + dt.getMinutes() + ':' + dt.getSeconds();
+}
+//-----------------------------------------------------------------------------
+function insertTagCell (row, tag, idx) {
+    var cell = row.insertCell(idx);
+    cell.innerText = tag;
+}
+//-----------------------------------------------------------------------------
+function insertStatusCell (row, idx) {
+    var cell = row.insertCell(idx);
+    cell.innerText = 'sent';
+}
+//-----------------------------------------------------------------------------
+function insertResultsCell (row, idx) {
+    var cell = row.insertCell(idx);
+    cell.innerText = '---';
+}
+//-----------------------------------------------------------------------------
+function addResultRow (tag)
+{
+    var table = document.getElementById('results_table');
+    var row = table.insertRow(table.rows.length);
+    insertSelectCell (table, row, 0);
+    insertTimeCell (table, row, 1);
+    insertTagCell (row, tag, 2)
+    insertStatusCell (row, 3);
+    insertResultsCell (row, 4);
+}
+//-----------------------------------------------------------------------------
+function getTag() {
+    var tag = document.getElementById('remote_tag').value;
+    if (tag == '')
+        tag = generateTag();
+    return (tag);
+}
+//-----------------------------------------------------------------------------
+function uploadFitParams() {
+    var fitParams = new Object;
+
+    fitParams['algorithm'] = 'rpg';
+    fitParams['steps'] = $('#fitting_steps').val();
+    fitParams['burns'] = $('#fitting_burn').val();
+    return (fitParams);
+}
+//-----------------------------------------------------------------------------
+function composeJobSendMessage(txtProblem) {
+    var message = new Object;
+
+    var tag = getTag();
+    message['header'] = 'bumps client';
+    message['tag']    = tag;
+    message['command'] = 'StartFit';
+    message['fit_problem'] = txtProblem;
+    message['params'] = uploadFitParams();
+    message['multi_processing'] = 'none'
+    return (message);
+}
+//-----------------------------------------------------------------------------
 function onSendJobClick() {
     var txtProblem = $('#problem_text').val().trim();
 
-    if (txtProblem.length > 0)
-        g_socket.send (txtProblem);
+    if (txtProblem.length > 0) {
+        var message = composeJobSendMessage(txtProblem);
+        var tag = message['tag'];
+        addResultRow (tag);
+        g_socket.send (JSON.stringify(message));
+    }
     else
         alert ('Missing problem definition');
 }
@@ -130,9 +214,10 @@ Source: https://stackoverflow.com/questions/20194722/can-you-get-a-users-local-l
 }
 //-----------------------------------------------------------------------------
 function connectServer() {
-    g_socket = openWSConnection("ws", "NCNR-R9nano.campus.nist.gov", 8765, "");
-    // openWSConnection(protocol, hostname, port, endpoint)
-
+    var remoteServer = $('#remote_server').val();
+    var remotePort   = $('#remote_port').val();
+    g_socket = openWSConnection("ws", remoteServer, remotePort, "");
+//    g_socket = openWSConnection("ws", "NCNR-R9nano.campus.nist.gov", 8765, "");
 }
 //-----------------------------------------------------------------------------
 function disconnectServer() {
@@ -189,5 +274,11 @@ function openWSConnection(protocol, hostname, port, endpoint) {
         console.error(exception);
     }
 	return (webSocket);
+}
+//-----------------------------------------------------------------------------
+function generateTag() {
+    var rw = random_words()
+    document.getElementById('remote_tag').value = rw;
+    return (rw)
 }
 //-----------------------------------------------------------------------------

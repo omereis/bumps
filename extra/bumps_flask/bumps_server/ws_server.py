@@ -37,12 +37,13 @@ def save_message (message):
 async def hello(websocket, path):
     message = await websocket.recv()
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#    save_message(strTime + ': '+ message)
+    save_message(strTime + ':\n'+ message)
 #    save_message(message)
     source = "{}:{}".format(websocket.host, websocket.port)
     try:
         print("Sender: {}".format(websocket.remote_address))
         print("Sender remote address[0]: {}".format(websocket.remote_address[0]))
+        remote_host = websocket.remote_address[0]
         print("Sender remote address[1]: {}".format(websocket.remote_address[1]))
     except Exception as e:
         print("Sender error: {}".format(e))
@@ -52,9 +53,11 @@ async def hello(websocket, path):
     except Exception as e:
         print('Oops: {}'.format(e))
     print(" {}".format(message))
-    greeting = "Hello {}, from {}:{}!".format(message, host, port)
+    print ("remote host: {}".format(remote_host))
+    greeting = 'your ip: {}'.format(remote_host)
+#"Hello {}, from {}:{}!".format(message, host, port)
     sleep(1)
-    await websocket.send(greeting)
+#    await websocket.send(greeting)
     await websocket.send(greeting)
     print(greeting)
 #------------------------------------------------------------------------------
