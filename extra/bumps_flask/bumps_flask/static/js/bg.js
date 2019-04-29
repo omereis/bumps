@@ -163,6 +163,18 @@ function uploadFitParams() {
     return (fitParams);
 }
 //-----------------------------------------------------------------------------
+function upload_problem_file() {
+    var fname = null;
+
+    try {
+        fname = $('#problemFile').val();
+    }
+    catch {
+        fname = 'problem.py';
+    }
+    return (fname);
+}
+//-----------------------------------------------------------------------------
 function composeJobSendMessage(txtProblem) {
     var message = new Object;
 
@@ -171,6 +183,7 @@ function composeJobSendMessage(txtProblem) {
     message['tag']    = tag;
     message['command'] = 'StartFit';
     message['fit_problem'] = txtProblem;
+    message['problem_file'] = upload_problem_file();
     message['params'] = uploadFitParams();
     message['multi_processing'] = 'none'
     return (message);

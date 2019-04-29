@@ -6,34 +6,13 @@
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
         <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_gui.css') }}"/>
         <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_portal.css') }}"/>
-        <script type="text/javascript">
-            var g_myIP;
-            function getMyIP () {
-                $.get('http://jsonip.com', function(res) {
-                    g_myIP = res.ip;
-                    $('#ipAddress').html('IP Address is: ' + res.ip);
-                });
-            }
-            $(document).ready(function() {
-                $.get('http://jsonip.com', function(res) {
-                    g_myIP = res.ip;
-                });
-            });
-//-----------------------------------------------------------------------------
-            function generateTag() {
-                document.getElementById('remote_tag').value = random_words();
-            }
-//-----------------------------------------------------------------------------
-            function change_to_slurm (value) {
-                var div_slurm_params = document.getItemsById ("slurm_params");
-                alert ("Moving to SLURM");
-            }
-        </script>
 		</head>
             <title>bumps distribution Server</title>
     <body onload="init_app()">
             <h2><b>bumps</b> Multi Processing User Interface</h2>
-            <div id="ipAddress"></div>
+            <div ip="ip_display"  style="visibility: true;">
+            <input type="button" value="IP" onclick="getGeoData()">
+            <input type="text" id="ipAddress"></div>
 			<table>
 				<tr>
 					<th>
@@ -44,7 +23,10 @@
 					</th>
 					<th>
                         Remote Parameters
-					</th>
+                    </th>
+                    <th width="50%">
+                        Submitted Jobs
+                    </th>
 				</tr>
                 <tr>
                     <td>
@@ -54,7 +36,7 @@
                             <td class="no_border"><input type="button" id="save_problem_file"  value="Save As..."></td>
                         </tr></table>
                         <label style="text-align:center;" for="problem_text">Problem code</label><br>
-                        <textarea cols="50" rows="20" id="problem_text"  wrap="soft"></textarea>
+                        <textarea cols="50" rows="20" id="problem_text" width="100%" wrap="soft"></textarea>
                     </td>
                     <td valign="top">
                         <table>
@@ -63,13 +45,13 @@
                                     <input type="button" id="btnConnect" value="Connect" onclick="connectServer()">
                                 </td>
                                 <td>
-                                        <input type="button" id="btnDisconnect" value="Disconnect" onclick="disconnectServer()">
+                                        <input type="button" id="btnDisconnect" disabled = "disabled" value="Disconnect" onclick="disconnectServer()">
                                     </td>
                                 </tr>
                         </table>
                         <div style="text-align: center;">
                             Submit a new job...<br>
-                            <input id="btnSendJob" type="button" value="Send Job" onclick="sendJob()">
+                            <input id="btnSendJob" type="button" value="Send Job" disabled = "disabled" onclick="sendJob()">
                         </div>
                         <p></p>Fitting Algorithm<br>
                         <select id="algorithm" selected="newton">
@@ -92,15 +74,13 @@
                                 <td><input type="number" id="fitting_burn" value="100" steps="10" min="1" style="width: 5em;"></td>
                             </tr>
                         </table>
-                        <br>
-                        <br>Burn: 
                     </td>
                     <td valign="top" style="border: 2px solid blue;">
                         Remote Server:<br>
                         <input type="text" id="remote_server" size="35" value="NCNR-R9nano.campus.nist.gov">
                         <p style="text-align:center;">Remote Port: <input type="text" size="3" id="remote_port" value="8765"></p>
                         <p style="text-align:center;">
-                        ID: <input type="text" id="remote_tag" size="5" > <input type="button" value="Generate" onclick="generateTag()">
+                        Tag: <input type="text" id="remote_tag" size="15" > <input type="button" value="Generate" onclick="generateTag()">
                         <hr>
                         <table width="100%"><tr>
                             <td style="text-align:center;"><input type="radio" id="mp_none" onclick="change_multi_processing(this.value)" checked="true" value="none">None</td>
@@ -133,10 +113,22 @@
                         <div id="celery_params" style="text-align:center;">Using Celery</div>
                         <div id="no_mp_params" style="text-align:center;">Using Local Only</div>
                     </td>
+                    <td width="50%" valign="top">
+                        <h3>jobs table here</h3>
+                        <table width="100%" id="results_table">
+                            <tr>
+                                <th>Select</th>
+                                <th>Date/Time</th>
+                                <th>Tag</th>
+                                <th>Status</th>
+                                <th>Results</th>
+                            </tr>
+                        </table>
+                    </td>
                 </tr>
                 <tr>
-                    <td width="100%">
-                        <div id="status_line"></div>
+                    <td colspan="3">
+                        <div id="status_line"> status line </div>
                     </td>
                 </tr>
             </table>

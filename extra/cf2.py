@@ -3,7 +3,6 @@ from bumps.names import *
 
 def line (x, m, b=0):
     return (m*x + b)
-
 x = [1,2,3,4,5,6]
 y = [2.1,4.1,6.3,8.03,9.6,11.9]
 x = [1,2,3,4,5,6]

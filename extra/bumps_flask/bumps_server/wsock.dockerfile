@@ -11,7 +11,10 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN curl -sS https://bootstrap.pypa.io/get-pip.py >>setup.py
 RUN python setup.py
 
+RUN pip install --upgrade pip
 RUN pip install websockets
+RUN pip install sqlalchemy
+RUN pip install pymysql
 
 WORKDIR /home/oe/
 ENV HOME=/home/oe/
@@ -20,3 +23,6 @@ COPY ./ /home/oe
 # Make the 8765 port available from outside the container
 EXPOSE 8765
 EXPOSE 5000
+
+#from sqlalchemy import create_engine
+#engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
