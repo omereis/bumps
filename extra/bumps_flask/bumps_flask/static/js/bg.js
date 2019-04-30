@@ -108,12 +108,32 @@ function download(data, filename, type) {
 }
 //-----------------------------------------------------------------------------
 function getNextCBoxID () {
+    var n, id, idMax, tbl = document.getElementById('tblResults');
 
+    try {
+        idMax = 1;
+        for (n=1 ; n < tbl.rows.length ; n++) {
+            var txtID=tbl.rows[n].cells[0].innerHTML;
+            if (txtID.length > 0) {
+                txtID = $(txtID).attr('id');
+                id = parseInt (txtID.substring(4,txtID.length));
+            }
+            else
+                id = 0;
+            idMax = Math.max (idMax, id);
+        }
+    }
+    catch (err) {
+        console.log(err.message);
+        idMax = 1;
+    }
+    idMax = Math.max (idMax, 1);
+    return (idMax);
 }
 //-----------------------------------------------------------------------------
 function insertSelectCell (table, row, idx) {
     var cell = row.insertCell(idx);
-	var cbox_id = 'cbox' + table.rows.length.toString(10);
+	var cbox_id = 'cbox' + getNextCBoxID ();//table.rows.length.toString(10);
 	cell.innerHTML = '<input type="checkbox" id="' + cbox_id + '">';//cbox4">';
 }
 //-----------------------------------------------------------------------------
