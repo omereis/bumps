@@ -5,12 +5,13 @@ from time import sleep
 import datetime
 from get_host_port import get_host_port
 import mysql.connector
+import json, os
 from mysql.connector import Error
 #------------------------------------------------------------------------------
 #host = 'localhost'
 host = 'NCNR-R9nano.campus.nist.gov'
 port = 8765
-get_host_port
+base_results_dir = '~/tmp/bumps_results/'
 host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
 #------------------------------------------------------------------------------
 def save_message (message):
@@ -33,20 +34,60 @@ def connect_to_db ():
                                        password='bumps_dba')
     return (connect)
 #------------------------------------------------------------------------------
-def save_to_db (key, message):
+def check_header(json_message):
+    err = ''
+    try:
+        header = json_message['header']
+        if header != 'bumps client':
+            err = 'E_INVALID_HEADER'
+        else:
+            err = ''
+    except Exception as e:
+            err = 'E_INVALID_HEADER'
+    return err, header 
+#------------------------------------------------------------------------------
+def is_valid_message(message):
+    json_message = json.loads(message)
+    header,err = check_header(json_message)
+    if len(err) > 0:
+        return err
+    print("Message header: {}".format(header))
+    return ''
+#------------------------------------------------------------------------------
+def create_results_dir (key, host_ip, message):
+    tag = message['tag']
+    results_dir = base_results_dir + host_ip + "/" + tag
+    dir_len = len(results_dir)
+    n = 1
+    while os.path.exists(results_dir):
+        if len(results_dir) == dir_len:
+            results_dir += '_'
+        results_dir += str(n)
+        n = n + 1
+    os.mkdir (results_dir, 0x755)
+    return results_dir
+#------------------------------------------------------------------------------
+def StartFit (key, host_ip, message):
+    results_dir = create_results_dir (key, host_ip, message)
+    print ("Results directory: {}".format(results_dir))
+#------------------------------------------------------------------------------
+def handle_incoming_message (key, host_ip, message):
     connect = connect_to_db ()
-    print('Database connected')
+    if message['command'] == 'StartFit':
+        StartFit (key, host_ip, message)
+#    print('Database connected')
     connect.close()
-    print('Database connection closed')
+#    print('Database connection closed')
     return (0)
 #------------------------------------------------------------------------------
 async def bumps_server(websocket, path):
     message = await websocket.recv()
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    key = generate_key (websocket.remote_address[0])
-    id = save_to_db (key, message)
-    print ('Key: {}'.format(key))
+    print ("Message Time: {}".format(strTime))
     save_message(strTime + ':\n'+ message)
+    key = generate_key (websocket.remote_address[0])
+    id = handle_incoming_message (key, websocket.remote_address[0], json.loads(message))
+    print ('Key: {}'.format(key))
 #    save_message(message)
     source = "{}:{}".format(websocket.host, websocket.port)
     print ("Just got a message from...")
