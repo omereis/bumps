@@ -107,6 +107,10 @@ function download(data, filename, type) {
     }
 }
 //-----------------------------------------------------------------------------
+function getNextCBoxID () {
+
+}
+//-----------------------------------------------------------------------------
 function insertSelectCell (table, row, idx) {
     var cell = row.insertCell(idx);
 	var cbox_id = 'cbox' + table.rows.length.toString(10);
@@ -138,7 +142,7 @@ function insertResultsCell (row, idx) {
 //-----------------------------------------------------------------------------
 function addResultRow (tag)
 {
-    var table = document.getElementById('results_table');
+    var table = document.getElementById('tblResults');
     var row = table.insertRow(table.rows.length);
     insertSelectCell (table, row, 0);
     insertTimeCell (table, row, 1);

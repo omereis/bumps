@@ -3,10 +3,11 @@
     <head>
         <script src="{{ url_for ('static', filename='js/bg.js') }}" charset="utf-8"></script>
         <script src="{{ url_for ('static', filename='js/random_words.js') }}" charset="utf-8"></script>
+        <script src="{{ url_for ('static', filename='js/results.js') }}" charset="utf-8"></script>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
         <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_gui.css') }}"/>
         <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_portal.css') }}"/>
-		</head>
+    </head>
             <title>bumps distribution Server</title>
     <body onload="init_app()">
             <h2><b>bumps</b> Multi Processing User Interface</h2>
@@ -111,8 +112,20 @@
                         <div id="no_mp_params" style="text-align:center;">Using Local Only</div>
                     </td>
                     <td width="50%" valign="top">
-                        <h3>jobs table here</h3>
-                        <table width="100%" id="results_table">
+                        <table width="100%">
+                            <tr style="text-align: center;">
+                                <td>
+                                    <input type="button" id="btnResultDelete" value="Delete" onclick="onResultsDeleteClick()">
+                                </td>
+                                <td>
+                                    <input type="button" id="btnResultDisplay" value="Display" onclick="onResultsDisplayClick()">
+                                </td>
+                                <td>
+                                    <input type="button" id="btnResultLoad" value="Load" onclick="onResultsLoadClick()">
+                                </td>
+                            </tr>
+                        </table>
+                        <table width="100%" id="tblResults">
                             <tr>
                                 <th>Select</th>
                                 <th>Date/Time</th>
