@@ -11,7 +11,7 @@ from mysql.connector import Error
 #host = 'localhost'
 host = 'NCNR-R9nano.campus.nist.gov'
 port = 8765
-base_results_dir = '~/tmp/bumps_results/'
+base_results_dir = '/tmp/bumps_results/'
 host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
 #------------------------------------------------------------------------------
 def save_message (message):
@@ -56,20 +56,54 @@ def is_valid_message(message):
 #------------------------------------------------------------------------------
 def create_results_dir (key, host_ip, message):
     tag = message['tag']
-    results_dir = base_results_dir + host_ip + "/" + tag
+    tmp_dir = results_dir = base_results_dir + host_ip + "/" + tag
     dir_len = len(results_dir)
     n = 1
     while os.path.exists(results_dir):
-        if len(results_dir) == dir_len:
-            results_dir += '_'
-        results_dir += str(n)
+        results_dir = tmp_dir + '_' + str(n)
         n = n + 1
-    os.mkdir (results_dir, 0x755)
+    os.makedirs (results_dir, 0o7777)
+    os.chmod(results_dir, 0o7777)
     return results_dir
+#------------------------------------------------------------------------------
+def extract_file_name(filename):
+    name = filename
+    if (name.find('\\') >= 0):
+        inv = name[::-1]
+        p = inv.find('\\')
+        inv = inv[0:p]
+        name = p[::-1]
+    return name
+#------------------------------------------------------------------------------
+def get_problem_file_name (message):
+    problem_file_name = ''
+    tag = message['tag']
+    filename_ok = True
+    try:
+        problem_file_name = extract_file_name(message['problem_file'])
+        if len(problem_file_name.strip()) == 0:
+            filename_ok = False
+    except:
+        filename_ok = False
+    finally:
+        if not(filename_ok):
+            problem_file_name = tag + ".py"
+    return problem_file_name
+#------------------------------------------------------------------------------
+def save_problem_file (results_dir, message):
+    problem_file_name = results_dir + "/" + get_problem_file_name (message)
+    problem_text = message['fit_problem']
+    print ("Results file: {}".format(problem_file_name))
+    file = open(problem_file_name, "w+")
+    file.write(problem_text)
+    file.close()
+    return problem_file_name
 #------------------------------------------------------------------------------
 def StartFit (key, host_ip, message):
     results_dir = create_results_dir (key, host_ip, message)
+    problem_file_name = save_problem_file (results_dir, message)
     print ("Results directory: {}".format(results_dir))
+    print ("Results file: {}".format(problem_file_name))
 #------------------------------------------------------------------------------
 def handle_incoming_message (key, host_ip, message):
     connect = connect_to_db ()
