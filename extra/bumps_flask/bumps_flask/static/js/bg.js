@@ -199,12 +199,25 @@ function upload_problem_file() {
     return (fname);
 }
 //-----------------------------------------------------------------------------
+function getMessageTime() {
+    var d = new Date;
+    var date_json = [];
+    date_json['year'] = d.getFullYear();
+    date_json['month'] = (d.getMonth() + 1);
+    date_json['date'] = d.getDate();
+    date_json['hour'] = d.getHours();
+    date_json['minutes'] = d.getMinutes();
+    date_json['seconds'] = d.getSeconds();
+    date_json['milliseconds'] = d.getMilliseconds();
+    return (date_json);
+}
+//-----------------------------------------------------------------------------
 function composeJobSendMessage(txtProblem) {
     var message = new Object;
 
-    var tag = getTag();
     message['header'] = 'bumps client';
-    message['tag']    = tag;
+    message['tag']    = getTag();
+    message['message_time'] = getMessageTime();
     message['command'] = 'StartFit';
     message['fit_problem'] = txtProblem;
     message['problem_file'] = upload_problem_file();

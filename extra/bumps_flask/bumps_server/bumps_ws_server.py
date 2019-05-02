@@ -7,12 +7,20 @@ from get_host_port import get_host_port
 import mysql.connector
 import json, os
 from mysql.connector import Error
+from oe_debug import print_debug
+from sqlalchemy import create_engine, MetaData
+from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
+                            DB_Field_Message, DB_Field_ressultsDir,DB_Field_JobStatus, DB_Field_EndTime
+
 #------------------------------------------------------------------------------
 #host = 'localhost'
 host = 'NCNR-R9nano.campus.nist.gov'
 port = 8765
 base_results_dir = '/tmp/bumps_results/'
 host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
+database_engine = None
+connection = None
+
 #------------------------------------------------------------------------------
 def save_message (message):
     file = open ("messages.txt", "a+")
@@ -54,27 +62,6 @@ def is_valid_message(message):
     print("Message header: {}".format(header))
     return ''
 #------------------------------------------------------------------------------
-def create_results_dir (key, host_ip, message):
-    tag = message['tag']
-    tmp_dir = results_dir = base_results_dir + host_ip + "/" + tag
-    dir_len = len(results_dir)
-    n = 1
-    while os.path.exists(results_dir):
-        results_dir = tmp_dir + '_' + str(n)
-        n = n + 1
-    os.makedirs (results_dir, 0o7777)
-    os.chmod(results_dir, 0o7777)
-    return results_dir
-#------------------------------------------------------------------------------
-def extract_file_name(filename):
-    name = filename
-    if (name.find('\\') >= 0):
-        inv = name[::-1]
-        p = inv.find('\\')
-        inv = inv[0:p]
-        name = p[::-1]
-    return name
-#------------------------------------------------------------------------------
 def get_problem_file_name (message):
     problem_file_name = ''
     tag = message['tag']
@@ -99,20 +86,66 @@ def save_problem_file (results_dir, message):
     file.close()
     return problem_file_name
 #------------------------------------------------------------------------------
-def StartFit (key, host_ip, message):
+def get_next_job_id(connection):
+    job_id = 0
+    try:
+        sql = 'select max({}) from {};'.format(DB_Field_JobID, DB_Table)
+        res = connection.execute(sql)
+        for row in res:
+            job_id = row.values()[0]
+    except Exception as e:
+        print("Error in get_next_job_id()")
+        print("{}".format(e))
+        job_id = None
+    return job_id
+#------------------------------------------------------------------------------
+def save_message_to_db (cm, connection):
+    job_id = get_next_job_id(connection)
+    if job_id:
+        job_id = job_id + 1
+        sql = 'insert into {} ({},{},{},{},{}) values ({},{},{},{},{});'.format(\
+                        DB_Table,
+                        DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, DB_Field_Message,
+                        job_id, cm.host_ip, cm.message_time, cm.tag, cm.message)
+        res = connection.execute(sql)
+    return job_id
+#------------------------------------------------------------------------------
+def StartFit (cm):
+    cm.create_results_dir()
+    print_debug('results directory created: {}'.format(cm.results_dir))
+    cm.save_problem_file()
+    print_debug('problem file saved: {}'.format(cm.save_problem_file ))
+    try:
+        connection = database_engine.connect()
+        job_id = save_message_to_db (cm, connection)
+    except:
+        job_id = 0
+    finally:
+        if connection:
+            connection.close()
+    return job_id
+#    problem_file_name = save_problem_file (results_dir, message)
+#------------------------------------------------------------------------------
+def StartFit1 (key, host_ip, message):
     results_dir = create_results_dir (key, host_ip, message)
     problem_file_name = save_problem_file (results_dir, message)
+    job_id = save_message_to_db (key, host_ip, message)
     print ("Results directory: {}".format(results_dir))
     print ("Results file: {}".format(problem_file_name))
+    return job_id
 #------------------------------------------------------------------------------
-def handle_incoming_message (key, host_ip, message):
-    connect = connect_to_db ()
-    if message['command'] == 'StartFit':
-        StartFit (key, host_ip, message)
+from message_parser import ClientMessage, MessageCommand
+def handle_incoming_message (key, websocket, host_ip, message):
+    cm = ClientMessage()
+    if cm.parse_message(websocket, message):
+        if cm.command == MessageCommand.StartFit:
+            StartFit (cm)
+
+#    if message['command'] == 'StartFit':
+#        job_id = StartFit (key, host_ip, message)
 #    print('Database connected')
-    connect.close()
 #    print('Database connection closed')
-    return (0)
+    return 0 
 #------------------------------------------------------------------------------
 async def bumps_server(websocket, path):
     message = await websocket.recv()
@@ -120,8 +153,9 @@ async def bumps_server(websocket, path):
     print ("Message Time: {}".format(strTime))
     save_message(strTime + ':\n'+ message)
     key = generate_key (websocket.remote_address[0])
-    id = handle_incoming_message (key, websocket.remote_address[0], json.loads(message))
-    print ('Key: {}'.format(key))
+    job_id = handle_incoming_message (key, websocket, websocket.remote_address[0], json.loads(message))
+    print ('\nmessage Key: {}\n'.format(key))
+    print ('\nmessage ID: {}\n'.format(job_id))
 #    save_message(message)
     source = "{}:{}".format(websocket.host, websocket.port)
     print ("Just got a message from...")
@@ -134,9 +168,32 @@ async def bumps_server(websocket, path):
     sleep(1)
     await websocket.send(greeting)
 #------------------------------------------------------------------------------
+#class w:
+#    remote_address = ['129.6.123.151','localhost']
+#in_msg = {"header":"bumps client","tag":"climb","message_time":"2019_5_2_11_25_613","command":"StartFit","fit_problem":"etrhae","problem_file":"","params":{"algorithm":"rpg","steps":"100","burns":"100"},"multi_processing":"none"}
+#websocket = w()
+#job_id = handle_incoming_message (0, websocket, "129.6.123.151", in_msg)
+#exit(0)
+#------------------------------------------------------------------------------
 print('Welcome to bumps WebSocket server')
 print('Host: {}'.format(host))
 print('Port: {}'.format(port))
+
+try:
+    database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
+    connection = database_engine.connect()
+    print("Database connected")
+except Exception as e:
+    print("Error while connecting to database bumps_db in NCNR-R9nano.campus.nist.gov:3306:")
+    print("{}".format(e))
+    exit(1)
+finally:
+    if connection:
+        connection.close()
+        print("Database connection closed")
+    else:
+        print("Fatal error. Aborting :-(")
+        exit(1)
 start_server = websockets.serve(bumps_server, host, port)
 
 asyncio.get_event_loop().run_until_complete(start_server)

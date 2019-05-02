@@ -21,7 +21,7 @@ ENV HOME=/home/oe/
 COPY ./ /home/oe
 
 # Make the 8765 port available from outside the container
-EXPOSE 8765
+EXPOSE 5678
 EXPOSE 5000
 
 #from sqlalchemy import create_engine
