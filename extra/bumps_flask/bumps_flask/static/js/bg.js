@@ -131,10 +131,11 @@ function getNextCBoxID () {
     return (idMax);
 }
 //-----------------------------------------------------------------------------
-function insertSelectCell (table, row, idx) {
+function insertSelectCell (row, idx) {
     var cell = row.insertCell(idx);
-	var cbox_id = 'cbox' + getNextCBoxID ();//table.rows.length.toString(10);
-	cell.innerHTML = '<input type="checkbox" id="' + cbox_id + '">';//cbox4">';
+	var cbox_id = 'cbox' + (getNextCBoxID () + 1);//table.rows.length.toString(10);
+    cell.innerHTML = '<input type="checkbox" id="' + cbox_id + '">';//cbox4">';
+    return (cbox_id);
 }
 //-----------------------------------------------------------------------------
 function insertTimeCell (table, row, idx) {
@@ -164,11 +165,12 @@ function addResultRow (tag)
 {
     var table = document.getElementById('tblResults');
     var row = table.insertRow(table.rows.length);
-    insertSelectCell (table, row, 0);
+    var cell_id = insertSelectCell (row, 0);
     insertTimeCell (table, row, 1);
     insertTagCell (row, tag, 2)
     insertStatusCell (row, 3);
     insertResultsCell (row, 4);
+    return (cell_id);
 }
 //-----------------------------------------------------------------------------
 function getTag() {
@@ -201,7 +203,7 @@ function upload_problem_file() {
 //-----------------------------------------------------------------------------
 function getMessageTime() {
     var d = new Date;
-    var date_json = [];
+    var date_json = {};
     date_json['year'] = d.getFullYear();
     date_json['month'] = (d.getMonth() + 1);
     date_json['date'] = d.getDate();
@@ -210,6 +212,7 @@ function getMessageTime() {
     date_json['seconds'] = d.getSeconds();
     date_json['milliseconds'] = d.getMilliseconds();
     return (date_json);
+    //return (JSON.stringify(date_json));
 }
 //-----------------------------------------------------------------------------
 function composeJobSendMessage(txtProblem) {
@@ -232,7 +235,8 @@ function onSendJobClick() {
     if (txtProblem.length > 0) {
         var message = composeJobSendMessage(txtProblem);
         var tag = message['tag'];
-        addResultRow (tag);
+        var row_id = addResultRow (tag);
+        message['row_id'] = row_id;
         g_socket.send (JSON.stringify(message));
     }
     else

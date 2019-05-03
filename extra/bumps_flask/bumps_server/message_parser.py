@@ -1,6 +1,6 @@
 from oe_debug import print_debug
 from enum import Enum
-import os
+import os, json
 
 base_results_dir = '/tmp/bumps_results/'
 
@@ -12,7 +12,7 @@ class MessageCommand (Enum):
     GetData  = 4
 #------------------------------------------------------------------------------
 def generate_key (client_host, time_string):
-    key = client_host.replace('.','_') + '_' + time_string
+    key = client_host.replace('.','_') + '_' + str(time_string)
     return key
 #------------------------------------------------------------------------------
 def extract_file_name(filename):
@@ -50,17 +50,20 @@ class ClientMessage:
 #------------------------------------------------------------------------------
     def parse_message(self, websocket, message):
         try:
+            parse = False
             header = message['header']
             if header ==  'bumps client':
                 self.host_ip      = websocket.remote_address[0]
                 self.message      = message
                 self.tag          = message['tag']
-                self.message_time = message['problem_file']
+                self.message_time = message['message_time']
+                self.problem_file_name = message['problem_file']
                 self.key          = generate_key(self.host_ip, self.message_time)
                 self.command      = parse_command (message['command'])
                 self.problem_text = message['fit_problem']
                 parse = True
-        except:
+        except Exception as e:
+            print('message_parser.py, parser_message: {}'.format(e))
             parse = False
         return parse
 #------------------------------------------------------------------------------

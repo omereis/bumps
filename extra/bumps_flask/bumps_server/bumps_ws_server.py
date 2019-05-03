@@ -10,7 +10,7 @@ from mysql.connector import Error
 from oe_debug import print_debug
 from sqlalchemy import create_engine, MetaData
 from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
-                            DB_Field_Message, DB_Field_ressultsDir,DB_Field_JobStatus, DB_Field_EndTime
+                            DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime
 
 #------------------------------------------------------------------------------
 #host = 'localhost'
@@ -99,26 +99,35 @@ def get_next_job_id(connection):
         job_id = None
     return job_id
 #------------------------------------------------------------------------------
+def get_message_datetime_string (message_time):
+    datetime_str = '{}-{}-{} {}:{}:{}.{}'.format(message_time['year'], message_time['month'], message_time['date'],\
+                                    message_time['hour'], message_time['minutes'], message_time['seconds'], message_time['milliseconds'])
+    return datetime_str
+#------------------------------------------------------------------------------
 def save_message_to_db (cm, connection):
-    job_id = get_next_job_id(connection)
-    if job_id:
-        job_id = job_id + 1
-        sql = 'insert into {} ({},{},{},{},{}) values ({},{},{},{},{});'.format(\
+    try:
+        job_id = get_next_job_id(connection)
+        message_date_time = get_message_datetime_string (cm.message_time)
+        if job_id:
+            job_id = job_id + 1
+            sql = 'insert into {} ({},{},{},{},{},{}) values ({},"{}","{}","{}","{}","{}");'.format(\
                         DB_Table,
-                        DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, DB_Field_Message,
-                        job_id, cm.host_ip, cm.message_time, cm.tag, cm.message)
-        res = connection.execute(sql)
+                        DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, DB_Field_Message, DB_Field_ResultsDir,
+                        job_id, cm.host_ip, message_date_time, cm.tag, cm.message, cm.results_dir)
+            res = connection.execute(sql)
+    except Exception as e:
+        print ('bumps_ws_server, save_message_to_db, bug: {}'.format(e))
     return job_id
 #------------------------------------------------------------------------------
 def StartFit (cm):
     cm.create_results_dir()
-    print_debug('results directory created: {}'.format(cm.results_dir))
     cm.save_problem_file()
-    print_debug('problem file saved: {}'.format(cm.save_problem_file ))
     try:
         connection = database_engine.connect()
+        print ('bumps_ws_server.py, StartFit, cm.results_dir: {}'.format(cm.results_dir))
         job_id = save_message_to_db (cm, connection)
     except:
+        print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
         job_id = 0
     finally:
         if connection:
