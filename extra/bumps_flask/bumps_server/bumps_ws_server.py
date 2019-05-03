@@ -173,6 +173,7 @@ async def bumps_server(websocket, path):
         print('Oops: {}'.format(e))
     greeting = 'your ip: {}'.format(remote_client)
     reply_message = {}
+    reply_message['command'] = jmsg['command']
     reply_message['sender_ip'] = remote_client
     reply_message['sender_id'] = jmsg['row_id']
     reply_message['db_id'] = job_id

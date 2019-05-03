@@ -1,7 +1,9 @@
 <!doctype html>
 <html>
     <head>
-        <script src="{{ url_for ('static', filename='js/bg.js') }}" charset="utf-8"></script>
+        <!-- Constatnts and Globals. MUST be first -->
+            <script src="{{ url_for ('static', filename='js/const.js') }}" charset="utf-8"></script>
+            <script src="{{ url_for ('static', filename='js/bg.js') }}" charset="utf-8"></script>
         <script src="{{ url_for ('static', filename='js/random_words.js') }}" charset="utf-8"></script>
         <script src="{{ url_for ('static', filename='js/results.js') }}" charset="utf-8"></script>
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>

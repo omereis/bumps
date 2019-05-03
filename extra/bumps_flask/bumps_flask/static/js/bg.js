@@ -221,7 +221,7 @@ function composeJobSendMessage(txtProblem) {
     message['header'] = 'bumps client';
     message['tag']    = getTag();
     message['message_time'] = getMessageTime();
-    message['command'] = 'StartFit';
+    message['command'] = ServerCommands.START_FIT;
     message['fit_problem'] = txtProblem;
     message['problem_file'] = upload_problem_file();
     message['params'] = uploadFitParams();
@@ -339,8 +339,10 @@ function generateTag() {
 function handle_reply(wsMsg) {
     var msg = wsMsg.split("'").join("\"");
     var jmsg = JSON.parse(msg);
-    var row_id = jmsg['sender_id'];
-    var cbox = document.getElementById(row_id);
-    cbox.setAttribute('db_id', jmsg['db_id']);
+    if (jmsg['command'] == ServerCommands.START_FIT) {
+        var row_id = jmsg['sender_id'];
+        var cbox = document.getElementById(row_id);
+        cbox.setAttribute('db_id', jmsg['db_id']);
+    }
 }
 //-----------------------------------------------------------------------------
