@@ -135,29 +135,27 @@ def StartFit (cm):
     return job_id
 #    problem_file_name = save_problem_file (results_dir, message)
 #------------------------------------------------------------------------------
-def StartFit1 (key, host_ip, message):
-    results_dir = create_results_dir (key, host_ip, message)
-    problem_file_name = save_problem_file (results_dir, message)
-    job_id = save_message_to_db (key, host_ip, message)
-    print ("Results directory: {}".format(results_dir))
-    print ("Results file: {}".format(problem_file_name))
-    return job_id
-#------------------------------------------------------------------------------
 from message_parser import ClientMessage, MessageCommand
+#------------------------------------------------------------------------------
 def handle_incoming_message (key, websocket, host_ip, message):
+    job_id = 0
     cm = ClientMessage()
     if cm.parse_message(websocket, message):
         if cm.command == MessageCommand.StartFit:
-            StartFit (cm)
+            job_id = StartFit (cm)
 
 #    if message['command'] == 'StartFit':
 #        job_id = StartFit (key, host_ip, message)
 #    print('Database connected')
 #    print('Database connection closed')
-    return 0 
+    return job_id
 #------------------------------------------------------------------------------
 async def bumps_server(websocket, path):
     message = await websocket.recv()
+    try:
+        jmsg = json.loads(message)
+    except:
+        jmsg={}
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print ("Message Time: {}".format(strTime))
     save_message(strTime + ':\n'+ message)
@@ -174,8 +172,13 @@ async def bumps_server(websocket, path):
     except Exception as e:
         print('Oops: {}'.format(e))
     greeting = 'your ip: {}'.format(remote_client)
+    reply_message = {}
+    reply_message['sender_ip'] = remote_client
+    reply_message['sender_id'] = jmsg['row_id']
+    reply_message['db_id'] = job_id
     sleep(1)
-    await websocket.send(greeting)
+    await websocket.send(str(reply_message))
+#    await websocket.send(greeting)
 #------------------------------------------------------------------------------
 #class w:
 #    remote_address = ['129.6.123.151','localhost']

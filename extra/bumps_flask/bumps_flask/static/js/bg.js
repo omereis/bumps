@@ -319,9 +319,9 @@ function openWSConnection(protocol, hostname, port, endpoint) {
             if (wsMsg.indexOf("error") > 0) {
                 document.getElementById("job_results").value += "error: " + wsMsg.error + "\r\n";
             } else {
-				console.log(wsMsg);
-				$('#status_line').append(wsMsg);
-                //document.getElementById("job_results").value += "message: " + wsMsg + "\r\n";
+                console.log(wsMsg);
+                handle_reply(wsMsg);
+				$('#status_line').append(wsMsg + '<br>');
             }
         };
     } catch (exception) {
@@ -334,5 +334,13 @@ function generateTag() {
     var rw = random_words()
     document.getElementById('remote_tag').value = rw;
     return (rw)
+}
+//-----------------------------------------------------------------------------
+function handle_reply(wsMsg) {
+    var msg = wsMsg.split("'").join("\"");
+    var jmsg = JSON.parse(msg);
+    var row_id = jmsg['sender_id'];
+    var cbox = document.getElementById(row_id);
+    cbox.setAttribute('db_id', jmsg['db_id']);
 }
 //-----------------------------------------------------------------------------
