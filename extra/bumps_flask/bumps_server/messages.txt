@@ -1,4 +1,0 @@
-2019-05-02 11:24:20:
-{"header":"bumps client","tag":"climb","message_time":"2019_5_2_11_24_163","command":"StartFit","fit_problem":"etrhae","problem_file":"","params":{"algorithm":"rpg","steps":"100","burns":"100"},"multi_processing":"none"}
-2019-05-02 11:25:43:
-{"header":"bumps client","tag":"climb","message_time":"2019_5_2_11_25_613","command":"StartFit","fit_problem":"etrhae","problem_file":"","params":{"algorithm":"rpg","steps":"100","burns":"100"},"multi_processing":"none"}
