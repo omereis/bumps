@@ -4,4 +4,3 @@ const ServerCommands = {
     GET_DATA  : 'GetData'
 };
 
-var aLinesToDel = [];
