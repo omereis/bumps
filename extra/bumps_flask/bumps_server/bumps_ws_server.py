@@ -134,22 +134,39 @@ def StartFit (cm):
             db_connection.close()
     return job_id
 #------------------------------------------------------------------------------
+def get_orred_ids (params):
+    astrWhere = []
+    for id in params:
+        astrWhere.append ('(' + DB_Field_JobID + '=' + str(id) + ')')
+    if len(astrWhere) > 1:
+        strWhere = ' or '.join(astrWhere)
+    else:
+        strWhere = astrWhere[0]
+    return strWhere
+import shutil
+#------------------------------------------------------------------------------
+def delete_results_dir(db_connection, sqlWhere):
+    sql = 'select ' + DB_Field_ResultsDir + ' from ' +  DB_Table + ' where ' + sqlWhere + ";"
+    res = db_connection.execute(sql)
+    print_debug('delete_results_dir, sql: {}'.format(sql))
+    for row in res:
+        try:
+            shutil.rmtree(row[0])
+        except Exception as e:
+            print ('delete_results_dir, error: {}'.format(e))
+        
+#------------------------------------------------------------------------------
 def HandleDelete (cm):
     return_params = cm.params
     print_debug('HandleDelete, return_params: {}'.format(return_params))
     try:
         db_connection = database_engine.connect()
         sqlBase = 'delete from ' + DB_Table + ' where '
-        astrWhere = []
-        for id in cm.params:
-            astrWhere.append ('(' + DB_Field_JobID + '=' + str(id) + ')')
-        if len(astrWhere) > 1:
-            strWhere = ' or '.join(astrWhere)
-        else:
-            strWhere = astrWhere[0]
-        sql = sqlBase + strWhere;
+        sqlWhere = get_orred_ids (cm.params)
+        delete_results_dir(db_connection, sqlWhere)
+        sql = sqlBase + sqlWhere
         db_connection.execute(sql)
-    except:
+    except Exception as e:
         print ('bumps_ws_server.py, HandleDelete, bug: {}'.format(e))
     finally:
         if db_connection:
