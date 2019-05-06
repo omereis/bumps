@@ -123,32 +123,41 @@ def StartFit (cm):
     cm.create_results_dir()
     cm.save_problem_file()
     try:
-        connection = database_engine.connect()
+        db_connection = database_engine.connect()
         print ('bumps_ws_server.py, StartFit, cm.results_dir: {}'.format(cm.results_dir))
-        job_id = save_message_to_db (cm, connection)
+        job_id = save_message_to_db (cm, db_connection)
     except:
         print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
         job_id = 0
     finally:
-        if connection:
-            connection.close()
+        if db_connection:
+            db_connection.close()
     return job_id
-#    problem_file_name = save_problem_file (results_dir, message)
+#------------------------------------------------------------------------------
+def HandleDelete (cm):
+    return_params = cm.params
+    print_debug('HandleDelete, return_params: {}'.format(return_params))
+    return return_params
 #------------------------------------------------------------------------------
 from message_parser import ClientMessage, MessageCommand
 #------------------------------------------------------------------------------
 def handle_incoming_message (key, websocket, host_ip, message):
-    job_id = 0
+    return_params = {}
     cm = ClientMessage()
+    print('\nhandle_incoming_message\n')
     if cm.parse_message(websocket, message):
+        #print('parse_message ok. {}'.format(cm))
+        print('Command: {}'.format(cm.command))
         if cm.command == MessageCommand.StartFit:
             job_id = StartFit (cm)
-
-#    if message['command'] == 'StartFit':
-#        job_id = StartFit (key, host_ip, message)
-#    print('Database connected')
-#    print('Database connection closed')
-    return job_id
+            if job_id:
+                return_params[cm.row_id] = job_id
+        elif cm.command == MessageCommand.Delete:
+            return_params = HandleDelete (cm)
+    else:
+        print('parse_message error.')
+    print('\n\n')
+    return return_params
 #------------------------------------------------------------------------------
 async def bumps_server(websocket, path):
     message = await websocket.recv()
@@ -160,9 +169,9 @@ async def bumps_server(websocket, path):
     print ("Message Time: {}".format(strTime))
     save_message(strTime + ':\n'+ message)
     key = generate_key (websocket.remote_address[0])
-    job_id = handle_incoming_message (key, websocket, websocket.remote_address[0], json.loads(message))
+    return_params = handle_incoming_message (key, websocket, websocket.remote_address[0], json.loads(message))
     print ('\nmessage Key: {}\n'.format(key))
-    print ('\nmessage ID: {}\n'.format(job_id))
+    print ('\nReturn Params: {}\n'.format(return_params))
 #    save_message(message)
     source = "{}:{}".format(websocket.host, websocket.port)
     print ("Just got a message from...")
@@ -171,13 +180,16 @@ async def bumps_server(websocket, path):
         print ("    client in {}".format(source))
     except Exception as e:
         print('Oops: {}'.format(e))
-    greeting = 'your ip: {}'.format(remote_client)
+#    greeting = 'your ip: {}'.format(remote_client)
     reply_message = {}
-    reply_message['command'] = jmsg['command']
     reply_message['sender_ip'] = remote_client
-    reply_message['sender_id'] = jmsg['row_id']
-    reply_message['db_id'] = job_id
+    reply_message['command'] = jmsg['command']
+#    reply_message['sender_id'] = jmsg['row_id']
+    if not(return_params):
+        return_params = "None"
+    reply_message['params'] = return_params
     sleep(1)
+    print('bumps_server, return_params: {}'.format(return_params))
     await websocket.send(str(reply_message))
 #    await websocket.send(greeting)
 #------------------------------------------------------------------------------

@@ -3,13 +3,21 @@ from enum import Enum
 import os, json
 
 base_results_dir = '/tmp/bumps_results/'
-
+#------------------------------------------------------------------------------
 class MessageCommand (Enum):
     Error    = -1
     StartFit = 1
     Status   = 2
     Delete   = 3
     GetData  = 4
+#------------------------------------------------------------------------------
+MessageTag         = 'tag'
+MessageTime        = 'message_time'
+MessageProblemFile = 'problem_file'
+MessageCode        = 'command'
+MessageFitProblem  = 'fit_problem'
+MessageParams      = 'params'
+MessageRowID       = 'row_id'
 #------------------------------------------------------------------------------
 def generate_key (client_host, time_string):
     key = client_host.replace('.','_') + '_' + str(time_string)
@@ -29,13 +37,21 @@ def parse_command (message_command):
         command = MessageCommand.StartFit
     elif message_command == 'status':
         command = MessageCommand.Status
-    elif message_command == 'delete':
+    elif message_command == 'Delete':
         command = MessageCommand.Delete
     elif message_command == 'get_data':
         command = MessageCommand.GetData
     else:
         command = MessageCommand.Error
     return command
+#------------------------------------------------------------------------------
+def getMessageField (message, key):
+    print_debug('getMessageField, key: {}'.format(key))
+    val = None
+    if key in message.keys():
+        val = message[key]
+        print_debug('getMessageField, key: {}'.format(message[key]))
+    return val
 #------------------------------------------------------------------------------
 class ClientMessage:
     host_ip      = None
@@ -47,6 +63,8 @@ class ClientMessage:
     results_dir  = None
     problem_text = None
     problem_file_name = None
+    params       = None
+    row_id       = None
 #------------------------------------------------------------------------------
     def parse_message(self, websocket, message):
         try:
@@ -55,15 +73,17 @@ class ClientMessage:
             if header ==  'bumps client':
                 self.host_ip      = websocket.remote_address[0]
                 self.message      = message
-                self.tag          = message['tag']
-                self.message_time = message['message_time']
-                self.problem_file_name = message['problem_file']
+                self.tag          = getMessageField (message, MessageTag)
+                self.message_time = getMessageField (message,  MessageTime)
+                self.problem_file_name = getMessageField (message, MessageProblemFile)
                 self.key          = generate_key(self.host_ip, self.message_time)
-                self.command      = parse_command (message['command'])
-                self.problem_text = message['fit_problem']
+                self.command      = parse_command (getMessageField (message, MessageCode))
+                self.problem_text = getMessageField (message, MessageFitProblem)
+                self.params       = getMessageField (message, MessageParams)
+                self.row_id       = getMessageField (message, MessageRowID)
                 parse = True
         except Exception as e:
-            print('message_parser.py, parser_message: {}'.format(e))
+            print('message_parser.py, parse_message: {}'.format(e))
             parse = False
         return parse
 #------------------------------------------------------------------------------

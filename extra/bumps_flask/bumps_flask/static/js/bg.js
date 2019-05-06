@@ -312,9 +312,12 @@ function handle_reply(wsMsg) {
     var msg = wsMsg.split("'").join("\"");
     var jmsg = JSON.parse(msg);
     if (jmsg['command'] == ServerCommands.START_FIT) {
-        var row_id = jmsg['sender_id'];
+        var params = jmsg['params'];
+        var row_id = Object.keys(params).toString();
+        var db_id = params[row_id];
+        //var row_id = jmsg['params'];
         var cbox = document.getElementById(row_id);
-        cbox.setAttribute('db_id', jmsg['db_id']);
+        cbox.setAttribute('db_id', db_id);
     }
 }
 //-----------------------------------------------------------------------------
