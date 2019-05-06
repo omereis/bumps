@@ -27,6 +27,7 @@ RUN mkdir templates/ && mkdir static/
 
 # Install the app dependencies using pip
 RUN pip install -U pip
+RUN pip install --upgrade pip
 COPY requirements.txt /home/app_user/bumps_flask/
 RUN pip install --no-cache-dir -r ../requirements.txt
 RUN pip install flask-socketio

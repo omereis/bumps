@@ -137,6 +137,23 @@ def StartFit (cm):
 def HandleDelete (cm):
     return_params = cm.params
     print_debug('HandleDelete, return_params: {}'.format(return_params))
+    try:
+        db_connection = database_engine.connect()
+        sqlBase = 'delete from ' + DB_Table + ' where '
+        astrWhere = []
+        for id in cm.params:
+            astrWhere.append ('(' + DB_Field_JobID + '=' + str(id) + ')')
+        if len(astrWhere) > 1:
+            strWhere = ' or '.join(astrWhere)
+        else:
+            strWhere = astrWhere[0]
+        sql = sqlBase + strWhere;
+        db_connection.execute(sql)
+    except:
+        print ('bumps_ws_server.py, HandleDelete, bug: {}'.format(e))
+    finally:
+        if db_connection:
+            db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
 from message_parser import ClientMessage, MessageCommand
@@ -144,10 +161,7 @@ from message_parser import ClientMessage, MessageCommand
 def handle_incoming_message (key, websocket, host_ip, message):
     return_params = {}
     cm = ClientMessage()
-    print('\nhandle_incoming_message\n')
     if cm.parse_message(websocket, message):
-        #print('parse_message ok. {}'.format(cm))
-        print('Command: {}'.format(cm.command))
         if cm.command == MessageCommand.StartFit:
             job_id = StartFit (cm)
             if job_id:
@@ -156,7 +170,6 @@ def handle_incoming_message (key, websocket, host_ip, message):
             return_params = HandleDelete (cm)
     else:
         print('parse_message error.')
-    print('\n\n')
     return return_params
 #------------------------------------------------------------------------------
 async def bumps_server(websocket, path):
@@ -172,7 +185,7 @@ async def bumps_server(websocket, path):
     return_params = handle_incoming_message (key, websocket, websocket.remote_address[0], json.loads(message))
     print ('\nmessage Key: {}\n'.format(key))
     print ('\nReturn Params: {}\n'.format(return_params))
-#    save_message(message)
+
     source = "{}:{}".format(websocket.host, websocket.port)
     print ("Just got a message from...")
     try:
@@ -180,25 +193,15 @@ async def bumps_server(websocket, path):
         print ("    client in {}".format(source))
     except Exception as e:
         print('Oops: {}'.format(e))
-#    greeting = 'your ip: {}'.format(remote_client)
     reply_message = {}
     reply_message['sender_ip'] = remote_client
     reply_message['command'] = jmsg['command']
-#    reply_message['sender_id'] = jmsg['row_id']
     if not(return_params):
         return_params = "None"
     reply_message['params'] = return_params
-    sleep(1)
+    sleep(0.1)
     print('bumps_server, return_params: {}'.format(return_params))
     await websocket.send(str(reply_message))
-#    await websocket.send(greeting)
-#------------------------------------------------------------------------------
-#class w:
-#    remote_address = ['129.6.123.151','localhost']
-#in_msg = {"header":"bumps client","tag":"climb","message_time":"2019_5_2_11_25_613","command":"StartFit","fit_problem":"etrhae","problem_file":"","params":{"algorithm":"rpg","steps":"100","burns":"100"},"multi_processing":"none"}
-#websocket = w()
-#job_id = handle_incoming_message (0, websocket, "129.6.123.151", in_msg)
-#exit(0)
 #------------------------------------------------------------------------------
 print('Welcome to bumps WebSocket server')
 print('Host: {}'.format(host))

@@ -311,13 +311,41 @@ function generateTag() {
 function handle_reply(wsMsg) {
     var msg = wsMsg.split("'").join("\"");
     var jmsg = JSON.parse(msg);
-    if (jmsg['command'] == ServerCommands.START_FIT) {
+    var command = jmsg['command'];
+    if (command == ServerCommands.START_FIT) {
         var params = jmsg['params'];
         var row_id = Object.keys(params).toString();
         var db_id = params[row_id];
-        //var row_id = jmsg['params'];
         var cbox = document.getElementById(row_id);
         cbox.setAttribute('db_id', db_id);
     }
+    else if (command == ServerCommands.DELETE) {
+        var params = jmsg['params'];
+        console.log('length(params): ' + params.length);
+        for (var n=0 ; n < params.length ; n++) {
+            var id = params[n];
+            deleteRowByDBID (id);
+        }
+    }
+}
+//-----------------------------------------------------------------------------
+function deleteRowByDBID (db_id) {
+    var id, row, tbl = document.getElementById('tblResults'), rowToDel;
+
+    for (row=1, rowToDel=-1 ; (row < tbl.rows.length) && (rowToDel < 0) ; row++) {
+        try {
+            id = $(tbl.rows[row].cells[0].innerHTML).attr('db_id');
+        }
+        catch (err) {
+            id = null
+        }
+        if (id == db_id) {
+            rowToDel = row;
+        }
+    }
+    if (rowToDel >= 0) {
+        tbl.deleteRow (rowToDel);
+    }
+        
 }
 //-----------------------------------------------------------------------------
