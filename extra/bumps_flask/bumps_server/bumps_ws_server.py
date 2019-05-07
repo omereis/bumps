@@ -10,7 +10,8 @@ from mysql.connector import Error
 from oe_debug import print_debug
 from sqlalchemy import create_engine, MetaData
 from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
-                            DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime
+                            DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime, \
+                            DB_Field_ProblemFile
 
 #------------------------------------------------------------------------------
 #host = 'localhost'
@@ -59,7 +60,6 @@ def is_valid_message(message):
     header,err = check_header(json_message)
     if len(err) > 0:
         return err
-    print("Message header: {}".format(header))
     return ''
 #------------------------------------------------------------------------------
 def get_problem_file_name (message):
@@ -80,7 +80,6 @@ def get_problem_file_name (message):
 def save_problem_file (results_dir, message):
     problem_file_name = results_dir + "/" + get_problem_file_name (message)
     problem_text = message['fit_problem']
-    print ("Results file: {}".format(problem_file_name))
     file = open(problem_file_name, "w+")
     file.write(problem_text)
     file.close()
@@ -110,10 +109,10 @@ def save_message_to_db (cm, connection):
         message_date_time = get_message_datetime_string (cm.message_time)
         if job_id:
             job_id = job_id + 1
-            sql = 'insert into {} ({},{},{},{},{},{}) values ({},"{}","{}","{}","{}","{}");'.format(\
+            sql = 'insert into {} ({},{},{},{},{},{},{}) values ({},"{}","{}","{}","{}","{}","{}");'.format(\
                         DB_Table,
-                        DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, DB_Field_Message, DB_Field_ResultsDir,
-                        job_id, cm.host_ip, message_date_time, cm.tag, cm.message, cm.results_dir)
+                        DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, DB_Field_Message, DB_Field_ResultsDir,DB_Field_ProblemFile,
+                        job_id, cm.host_ip, message_date_time, cm.tag, cm.message, cm.results_dir, cm.problem_file_name)
             res = connection.execute(sql)
     except Exception as e:
         print ('bumps_ws_server, save_message_to_db, bug: {}'.format(e))
@@ -124,7 +123,6 @@ def StartFit (cm):
     cm.save_problem_file()
     try:
         db_connection = database_engine.connect()
-        print ('bumps_ws_server.py, StartFit, cm.results_dir: {}'.format(cm.results_dir))
         job_id = save_message_to_db (cm, db_connection)
     except:
         print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
@@ -148,7 +146,6 @@ import shutil
 def delete_results_dir(db_connection, sqlWhere):
     sql = 'select ' + DB_Field_ResultsDir + ' from ' +  DB_Table + ' where ' + sqlWhere + ";"
     res = db_connection.execute(sql)
-    print_debug('delete_results_dir, sql: {}'.format(sql))
     for row in res:
         try:
             shutil.rmtree(row[0])
@@ -158,7 +155,6 @@ def delete_results_dir(db_connection, sqlWhere):
 #------------------------------------------------------------------------------
 def HandleDelete (cm):
     return_params = cm.params
-    print_debug('HandleDelete, return_params: {}'.format(return_params))
     try:
         db_connection = database_engine.connect()
         sqlBase = 'delete from ' + DB_Table + ' where '
@@ -196,11 +192,9 @@ async def bumps_server(websocket, path):
     except:
         jmsg={}
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print ("Message Time: {}".format(strTime))
     save_message(strTime + ':\n'+ message)
     key = generate_key (websocket.remote_address[0])
     return_params = handle_incoming_message (key, websocket, websocket.remote_address[0], json.loads(message))
-    print ('\nmessage Key: {}\n'.format(key))
     print ('\nReturn Params: {}\n'.format(return_params))
 
     source = "{}:{}".format(websocket.host, websocket.port)

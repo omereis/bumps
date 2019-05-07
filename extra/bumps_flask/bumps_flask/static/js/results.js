@@ -16,17 +16,14 @@ function composeSendDeleteMessage (aLinesToDel) {
     var message = getMessageStart();
     message['command'] = ServerCommands.DELETE;
     message['params'] = aLinesToDel;
-    g_socket.send (JSON.stringify(message));
+    sendMessage (JSON.stringify(message));
+//    g_socket.send (JSON.stringify(message));
 }
 //-----------------------------------------------------------------------------
 function onResultsDisplayClick() {
 }
 //-----------------------------------------------------------------------------
 function onResultsLoadClick() {
-}
-//-----------------------------------------------------------------------------
-function enableResultsButtons() {
-    
 }
 //-----------------------------------------------------------------------------
 function getMessageStart() {
@@ -39,11 +36,8 @@ function getMessageStart() {
 }
 //-----------------------------------------------------------------------------
 function composeJobSendMessage(txtProblem) {
-    //var message = new Object;
     var message = getMessageStart();
-    //message['header'] = 'bumps client';
-    //message['tag']    = getTag();
-    //message['message_time'] = getMessageTime();
+
     message['command'] = ServerCommands.START_FIT;
     message['fit_problem'] = txtProblem;
     message['problem_file'] = upload_problem_file();
@@ -60,9 +54,19 @@ function onSendJobClick() {
         var tag = message['tag'];
         var row_id = addResultRow (tag);
         message['row_id'] = row_id;
-        g_socket.send (JSON.stringify(message));
+        //g_socket = openWSConnection("ws", remoteServer, remotePort, "");
+        sendMessage (JSON.stringify(message));
+        //webSocketSendMessage ("ws", remoteServer, remotePort, "", JSON.stringify(message));
+//        g_socket.send (JSON.stringify(message));
     }
     else
         alert ('Missing problem definition');
+}
+//-----------------------------------------------------------------------------
+function sendMessage (message) {
+    var remoteServer = $('#remote_server').val();
+    var remotePort   = $('#remote_port').val();
+
+    webSocketSendMessage ("ws", remoteServer, remotePort, "", message);
 }
 //-----------------------------------------------------------------------------

@@ -41,19 +41,10 @@
                         <textarea cols="50" rows="20" id="problem_text" width="100%" wrap="soft"></textarea>
                     </td>
                     <td valign="top">
-                        <table>
-                            <tr>
-                                <td>
-                                    <input type="button" id="btnConnect" value="Connect" onclick="connectServer()">
-                                </td>
-                                <td>
-                                        <input type="button" id="btnDisconnect" disabled = "disabled" value="Disconnect" onclick="disconnectServer()">
-                                    </td>
-                                </tr>
-                        </table>
                         <div style="text-align: center;">
                             Submit a new job...<br>
-                            <input id="btnSendJob" type="button" value="Send Job" disabled = "disabled" onclick="sendJob()">
+                            <!-- <input id="btnSendJob" type="button" value="Send Job" disabled = "disabled" onclick="sendJob()"> -->
+                            <input id="btnSendJob" type="button" value="Send Job" onclick="sendJob()">
                         </div>
                         <p></p>Fitting Algorithm<br>
                         <select id="algorithm" selected="newton">
@@ -119,7 +110,7 @@
                         <table width="100%">
                             <tr style="text-align: center;">
                                 <td>
-                                    <input type="button" id="btnResultDelete" value="Delete" onclick="onResultsDeleteClick()">
+                                    <input type="button" id="btnResultDelete"  value="Delete" onclick="onResultsDeleteClick()">
                                 </td>
                                 <td>
                                     <input type="button" id="btnResultDisplay" value="Display" onclick="onResultsDisplayClick()">

@@ -256,6 +256,24 @@ function socketErrorHandler (socket, eventError) {
     }
 }
 //-----------------------------------------------------------------------------
+function enableResultsButtons(op) {
+    var fSend, fConnect, fDisconnect, fDel;
+
+    fSend = fConnect = fDisconnect = fDel = false;
+    if (op == 'open') {
+        fDisconnect = fSend = fDel = true;
+    }
+    else if (op == 'close') {
+        fConnect = true;
+    }
+    else
+        return;
+    //document.getElementById("btnSendJob").disabled      = !fSend;//false;
+    document.getElementById("btnConnect").disabled      = !fConnect;//true;
+    document.getElementById("btnDisconnect").disabled   = !fDisconnect;//false;
+    //document.getElementById("btnResultDelete").disabled = !fDel;//false;
+}
+//-----------------------------------------------------------------------------
 function openWSConnection(protocol, hostname, port, endpoint) {
     var webSocketURL = null;
     webSocketURL = protocol + "://" + hostname + ":" + port + endpoint;
@@ -268,22 +286,59 @@ function openWSConnection(protocol, hostname, port, endpoint) {
         });
         webSocket.onopen = function(openEvent) {
             console.log("WebSocket OPEN: " + JSON.stringify(openEvent, null, 4));
-            document.getElementById("btnSendJob").disabled       = false;
-            document.getElementById("btnConnect").disabled    = true;
-            document.getElementById("btnDisconnect").disabled = false;
+            enableResultsButtons('open');
         };
         webSocket.onclose = function (closeEvent) {
             console.log("WebSocket CLOSE: " + JSON.stringify(closeEvent, null, 4));
-            document.getElementById("btnSendJob").disabled       = true;
-            document.getElementById("btnConnect").disabled    = false;
-            document.getElementById("btnDisconnect").disabled = true;
+            enableResultsButtons('close');
         };
         webSocket.onerror = function (errorEvent) {
             var msg = "WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4);
             console.log("WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4));
             console.log(msg);
             socketErrorHandler (webSocket, errorEvent);
-            //document.getElementById("job_results").value += "message: " + msg + "\n";
+        };
+        webSocket.onmessage = function (messageEvent) {
+            var wsMsg = messageEvent.data;
+            console.log("WebSocket MESSAGE: " + wsMsg);
+            if (wsMsg.indexOf("error") > 0) {
+                document.getElementById("job_results").value += "error: " + wsMsg.error + "\r\n";
+            } else {
+                console.log(wsMsg);
+                handle_reply(wsMsg);
+				$('#status_line').append(wsMsg + '<br>');
+            }
+        };
+    } catch (exception) {
+        console.error(exception);
+    }
+	return (webSocket);
+}
+//-----------------------------------------------------------------------------
+function webSocketSendMessage(protocol, hostname, port, endpoint, message) {
+    var webSocketURL = null;
+    webSocketURL = protocol + "://" + hostname + ":" + port + endpoint;
+    console.log("openWSConnection::Connecting to: " + webSocketURL);
+    try {
+        webSocket = new WebSocket(webSocketURL);
+        webSocket.addEventListener('error', (event) => {
+            console.log('in addEventListener');
+            console.log(event);
+        });
+        webSocket.onopen = function(openEvent) {
+            console.log("WebSocket OPEN: " + JSON.stringify(openEvent, null, 4));
+            webSocket.send(message);
+            enableResultsButtons('open');
+        };
+        webSocket.onclose = function (closeEvent) {
+            console.log("WebSocket CLOSE: " + JSON.stringify(closeEvent, null, 4));
+            enableResultsButtons('close');
+        };
+        webSocket.onerror = function (errorEvent) {
+            var msg = "WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4);
+            console.log("WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4));
+            console.log(msg);
+            socketErrorHandler (webSocket, errorEvent);
         };
         webSocket.onmessage = function (messageEvent) {
             var wsMsg = messageEvent.data;
