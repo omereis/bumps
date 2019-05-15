@@ -1,0 +1,60 @@
+# Using the latest long-term-support Ubuntu OS
+FROM ubuntu:18.04
+
+# Update the apt-get index and then install project dependencies
+RUN apt-get update
+#RUN apt install -y software-properties-common
+RUN apt install -y python3-pip
+RUN apt install -y vim tree
+RUN ln -s /usr/bin/python3 /usr/bin/python
+RUN ln -s /usr/bin/pip3 /usr/bin/pip
+
+#RUN apt-get install vim
+# Create the home directory for the new app user.
+#RUN mkdir -p /home/app_user
+
+# Set the home directory to our app user's home.
+ENV HOME=/home/app_user
+
+# Set the directory for relative file paths
+WORKDIR /home/app_user/
+
+# Create the folder for the html templates and static assets
+#RUN mkdir templates/ && mkdir static/
+
+# Install the app dependencies using pip
+RUN pip install -U pip
+#RUN pip install --upgrade pip
+#COPY requirements*.txt /home/app_user/bumps_flask/
+#RUN pip install --no-cache-dir -r ../requirements.txt
+RUN pip install flask
+RUN pip install numpy scipy matplotlib
+#RUN pip install subprocess32
+RUN pip install flask-socketio
+#RUN pip install git+https://github.com/omereis/bumps.git
+
+# Copy app files to the container
+COPY ./ /home/app_user/
+COPY ./vimrc /etc/vim/vimrc
+
+#RUN chmod a+x flask_run
+# Make the 4000 port available from outside the container
+EXPOSE 4000
+
+# Create a new user called 'app_user' and set it up on the OS
+#RUN groupadd -r app_user && useradd --no-log-init -r -g app_user app_user
+
+# Install the application locally
+#RUN pip install --no-cache-dir -e ..
+
+# Log in with 'app_user' for the rest of the process
+
+# Set the environment variables for Flask
+ENV FLASK_APP=bumps_flask
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+
+# Launch the app
+# CMD ["mod_wsgi-express", "start-server", "--host", "0.0.0.0", "--port", "5000", "bumps_flask.wsgi"]
+# CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]

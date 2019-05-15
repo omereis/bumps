@@ -12,12 +12,12 @@ from sqlalchemy import create_engine, MetaData
 from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
                             DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime, \
                             DB_Field_ProblemFile
-#------------------------------------------------------------------------------
-from message_parser import ClientMessage, MessageCommand
+
 #------------------------------------------------------------------------------
 #host = 'localhost'
 host = 'NCNR-R9nano.campus.nist.gov'
-port = 8765
+host = '0.0.0.0'
+port = 7654
 base_results_dir = '/tmp/bumps_results/'
 host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
 database_engine = None
@@ -170,6 +170,8 @@ def HandleDelete (cm):
             db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
+from message_parser import ClientMessage, MessageCommand
+#------------------------------------------------------------------------------
 def handle_incoming_message (key, websocket, host_ip, message):
     return_params = {}
     cm = ClientMessage()
@@ -180,7 +182,6 @@ def handle_incoming_message (key, websocket, host_ip, message):
                 return_params[cm.row_id] = job_id
         elif cm.command == MessageCommand.Delete:
             return_params = HandleDelete (cm)
-#        elif cm.command == MessageCommand.Status:
     else:
         print('parse_message error.')
     return return_params

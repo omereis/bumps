@@ -1,0 +1,21 @@
+# /usr/local/bin/bumps curve.py --batch --stepmon --burn=100 --steps=100 --store=/tmp/bumps_flask/fit_problems/a11714/job1/results --fit=dream
+.b = Parameter(2, name='b', bounds=(-5,5))
+.m = Parameter(2, name='m', bounds=(0,4))
+
+[chisq=1230.72(57), nllf=2461.43]
+# steps: 100, # draws: 2000
+step 1 cost 1230.70(57)
+                                       b ......|...    1.99999 in (-5,5)
+                                       m ....|.....          2 in (0,4)
+step 26 cost 6.45(57)
+step 49 cost 2.09(57)
+step 74 cost 1.77(57)
+step 99 cost 1.76(57)
+step 122 cost 1.76(57)
+step 147 cost 1.76(57)
+step 172 cost 1.76(57)
+step 195 cost 1.76(57)
+.b = Parameter(0.110839, name='b', bounds=(-5,5))
+.m = Parameter(1.96986, name='m', bounds=(0,4))
+
+[chisq=1.76(57), nllf=3.51086]
