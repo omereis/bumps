@@ -1,7 +1,7 @@
 body{
-    background-color: rgb(76, 83, 63);
-    color:white;
-    border-color:white;
+    background-color: rgb(65, 204, 247);
+    color:black;
+    border-color:black;
 }
 table, th, td, tr, th {
     border: 1px solid black;

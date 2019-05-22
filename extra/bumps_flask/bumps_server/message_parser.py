@@ -124,3 +124,8 @@ class ClientMessage:
         self.problem_file_name = problem_file_name
         return problem_file_name
 #------------------------------------------------------------------------------
+def get_message_datetime_string (message_time):
+    datetime_str = '{}-{}-{} {}:{}:{}.{}'.format(message_time['year'], message_time['month'], message_time['date'],\
+                                    message_time['hour'], message_time['minutes'], message_time['seconds'], message_time['milliseconds'])
+    return datetime_str
+#------------------------------------------------------------------------------

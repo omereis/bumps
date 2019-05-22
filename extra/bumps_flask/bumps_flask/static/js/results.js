@@ -35,6 +35,19 @@ function getMessageStart() {
     return (message);
 }
 //-----------------------------------------------------------------------------
+function upload_multiprocessing() {
+    var mp = '';
+    if (document.getElementById('mp_none').checked)
+        mp = 'none';
+    else if (document.getElementById('mp_celery').checked)
+        mp = 'celery';
+    else if (document.getElementById('mp_slurm').checked)
+        mp = 'slurm';
+    else
+        mp = 'error';
+    return (mp);
+}
+//-----------------------------------------------------------------------------
 function composeJobSendMessage(txtProblem) {
     var message = getMessageStart();
 
@@ -42,7 +55,7 @@ function composeJobSendMessage(txtProblem) {
     message['fit_problem'] = txtProblem;
     message['problem_file'] = upload_problem_file();
     message['params'] = uploadFitParams();
-    message['multi_processing'] = 'none'
+    message['multi_processing'] = upload_multiprocessing();
     return (message);
 }
 //-----------------------------------------------------------------------------

@@ -12,8 +12,11 @@ from sqlalchemy import create_engine, MetaData
 from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
                             DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime, \
                             DB_Field_ProblemFile
+from FitJob import FitJob, MessageStatus
+from db_misc import get_next_job_id
 #------------------------------------------------------------------------------
-from message_parser import ClientMessage, MessageCommand
+#from message_parser import *
+from message_parser import ClientMessage, MessageCommand, extract_file_name, generate_key
 #------------------------------------------------------------------------------
 #host = 'localhost'
 host = 'NCNR-R9nano.campus.nist.gov'
@@ -85,6 +88,7 @@ def save_problem_file (results_dir, message):
     file.write(problem_text)
     file.close()
     return problem_file_name
+"""
 #------------------------------------------------------------------------------
 def get_next_job_id(connection):
     job_id = 0
@@ -103,6 +107,12 @@ def get_message_datetime_string (message_time):
     datetime_str = '{}-{}-{} {}:{}:{}.{}'.format(message_time['year'], message_time['month'], message_time['date'],\
                                     message_time['hour'], message_time['minutes'], message_time['seconds'], message_time['milliseconds'])
     return datetime_str
+"""
+#------------------------------------------------------------------------------
+def queue_manager(jobs_queue):
+    while True:
+        job = jobs_queue.get()
+
 #------------------------------------------------------------------------------
 def save_message_to_db (cm, connection):
     try:
@@ -122,9 +132,11 @@ def save_message_to_db (cm, connection):
 def StartFit (cm):
     cm.create_results_dir()
     cm.save_problem_file()
+    fit_job = FitJob (cm)
+    fit_job.status = MessageStatus.Parsed
     try:
         db_connection = database_engine.connect()
-        job_id = save_message_to_db (cm, db_connection)
+        job_id = fit_job.save_message_to_db (cm, db_connection)
     except:
         print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
         job_id = 0
@@ -214,29 +226,30 @@ async def bumps_server(websocket, path):
     print('bumps_server, return_params: {}'.format(return_params))
     await websocket.send(str(reply_message))
 #------------------------------------------------------------------------------
-print('Welcome to bumps WebSocket server')
-print('Host: {}'.format(host))
-print('Port: {}'.format(port))
+if __name__ == '__main__':
+    print('Welcome to bumps WebSocket server')
+    print('Host: {}'.format(host))
+    print('Port: {}'.format(port))
 
-try:
-    database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
-    connection = database_engine.connect()
-    print("Database connected")
-except Exception as e:
-    print("Error while connecting to database bumps_db in NCNR-R9nano.campus.nist.gov:3306:")
-    print("{}".format(e))
-    exit(1)
-finally:
-    if connection:
-        connection.close()
-        print("Database connection closed")
-    else:
-        print("Fatal error. Aborting :-(")
+    try:
+        database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
+        connection = database_engine.connect()
+        print("Database connected")
+    except Exception as e:
+        print("Error while connecting to database bumps_db in NCNR-R9nano.campus.nist.gov:3306:")
+        print("{}".format(e))
         exit(1)
-start_server = websockets.serve(bumps_server, host, port)
+    finally:
+        if connection:
+            connection.close()
+            print("Database connection closed")
+        else:
+            print("Fatal error. Aborting :-(")
+            exit(1)
+    start_server = websockets.serve(bumps_server, host, port)
 
-asyncio.get_event_loop().run_until_complete(start_server)
-asyncio.get_event_loop().run_forever()
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
 
 
 
