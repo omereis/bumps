@@ -14,6 +14,7 @@ from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_
                             DB_Field_ProblemFile
 from FitJob import FitJob, MessageStatus
 from db_misc import get_next_job_id
+from multiprocessing import Process, Queue
 #------------------------------------------------------------------------------
 #from message_parser import *
 from message_parser import ClientMessage, MessageCommand, extract_file_name, generate_key
@@ -25,6 +26,8 @@ base_results_dir = '/tmp/bumps_results/'
 host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
 database_engine = None
 connection = None
+qJobs = Queue() # reciever to manager queue 
+
 
 #------------------------------------------------------------------------------
 def save_message (message):
@@ -88,46 +91,10 @@ def save_problem_file (results_dir, message):
     file.write(problem_text)
     file.close()
     return problem_file_name
-"""
-#------------------------------------------------------------------------------
-def get_next_job_id(connection):
-    job_id = 0
-    try:
-        sql = 'select max({}) from {};'.format(DB_Field_JobID, DB_Table)
-        res = connection.execute(sql)
-        for row in res:
-            job_id = row.values()[0]
-    except Exception as e:
-        print("Error in get_next_job_id()")
-        print("{}".format(e))
-        job_id = None
-    return job_id
-#------------------------------------------------------------------------------
-def get_message_datetime_string (message_time):
-    datetime_str = '{}-{}-{} {}:{}:{}.{}'.format(message_time['year'], message_time['month'], message_time['date'],\
-                                    message_time['hour'], message_time['minutes'], message_time['seconds'], message_time['milliseconds'])
-    return datetime_str
-"""
 #------------------------------------------------------------------------------
 def queue_manager(jobs_queue):
     while True:
         job = jobs_queue.get()
-
-#------------------------------------------------------------------------------
-def save_message_to_db (cm, connection):
-    try:
-        job_id = get_next_job_id(connection)
-        message_date_time = get_message_datetime_string (cm.message_time)
-        if job_id:
-            job_id = job_id + 1
-            sql = 'insert into {} ({},{},{},{},{},{},{}) values ({},"{}","{}","{}","{}","{}","{}");'.format(\
-                        DB_Table,
-                        DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, DB_Field_Message, DB_Field_ResultsDir,DB_Field_ProblemFile,
-                        job_id, cm.host_ip, message_date_time, cm.tag, cm.message, cm.results_dir, cm.problem_file_name)
-            res = connection.execute(sql)
-    except Exception as e:
-        print ('bumps_ws_server, save_message_to_db, bug: {}'.format(e))
-    return job_id
 #------------------------------------------------------------------------------
 def StartFit (cm):
     cm.create_results_dir()
@@ -137,6 +104,7 @@ def StartFit (cm):
     try:
         db_connection = database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
+        qJobs.put(fit_job)
     except:
         print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
         job_id = 0
