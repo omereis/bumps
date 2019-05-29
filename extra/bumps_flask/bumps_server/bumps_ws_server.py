@@ -27,6 +27,7 @@ host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=876
 database_engine = None
 connection = None
 qJobs = Queue() # reciever to manager queue 
+semaphoreJobs = asyncio.Semaphore()
 
 
 #------------------------------------------------------------------------------
@@ -34,14 +35,6 @@ def save_message (message):
     file = open ("messages.txt", "a+")
     file.write (message + "\n")
     file.close()
-#------------------------------------------------------------------------------
-def generate_key (client_host):
-    strTime = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%-S")
-    key = client_host.replace('.','_')
-    if (len(key) < 1):
-        key='localhost'
-    key += '_' + strTime
-    return (key)
 #------------------------------------------------------------------------------
 def connect_to_db ():
     connect = mysql.connector.connect(host='localhost',
@@ -96,6 +89,13 @@ def queue_manager(jobs_queue):
     while True:
         job = jobs_queue.get()
 #------------------------------------------------------------------------------
+#async def add_job_to_queue(fit_job):
+def add_job_to_queue(fit_job):
+    #await semaphoreJobs.acquire()
+    qJobs.put(fit_job)
+    print('New job. Total jobs: {}'.format(qJobs.qsize()))
+    #semaphoreJobs.release()
+#------------------------------------------------------------------------------
 def StartFit (cm):
     cm.create_results_dir()
     cm.save_problem_file()
@@ -104,7 +104,7 @@ def StartFit (cm):
     try:
         db_connection = database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
-        qJobs.put(fit_job)
+        add_job_to_queue(fit_job)
     except:
         print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
         job_id = 0
@@ -151,6 +151,7 @@ def HandleDelete (cm):
     return return_params
 #------------------------------------------------------------------------------
 def handle_incoming_message (key, websocket, host_ip, message):
+    print('handle_incoming_message')
     return_params = {}
     cm = ClientMessage()
     if cm.parse_message(websocket, message):
@@ -173,7 +174,7 @@ async def bumps_server(websocket, path):
         jmsg={}
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     save_message(strTime + ':\n'+ message)
-    key = generate_key (websocket.remote_address[0])
+    key = generate_key (websocket.remote_address[0], strTime)
     return_params = handle_incoming_message (key, websocket, websocket.remote_address[0], json.loads(message))
     print ('\nReturn Params: {}\n'.format(return_params))
 
