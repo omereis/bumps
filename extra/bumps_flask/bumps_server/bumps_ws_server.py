@@ -15,6 +15,7 @@ from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_
 from FitJob import FitJob, MessageStatus
 from db_misc import get_next_job_id
 from multiprocessing import Process, Queue
+import nest_asyncio
 #------------------------------------------------------------------------------
 #from message_parser import *
 from message_parser import ClientMessage, MessageCommand, extract_file_name, generate_key
@@ -28,7 +29,7 @@ database_engine = None
 connection = None
 qJobs = Queue() # reciever to manager queue 
 semaphoreJobs = asyncio.Semaphore()
-
+nest_asyncio.apply()
 
 #------------------------------------------------------------------------------
 def save_message (message):
@@ -89,12 +90,12 @@ def queue_manager(jobs_queue):
     while True:
         job = jobs_queue.get()
 #------------------------------------------------------------------------------
-#async def add_job_to_queue(fit_job):
-def add_job_to_queue(fit_job):
-    #await semaphoreJobs.acquire()
+async def add_job_to_queue(fit_job):
+#def add_job_to_queue(fit_job):
+    await semaphoreJobs.acquire()
     qJobs.put(fit_job)
     print('New job. Total jobs: {}'.format(qJobs.qsize()))
-    #semaphoreJobs.release()
+    semaphoreJobs.release()
 #------------------------------------------------------------------------------
 def StartFit (cm):
     cm.create_results_dir()
@@ -104,7 +105,7 @@ def StartFit (cm):
     try:
         db_connection = database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
-        add_job_to_queue(fit_job)
+        asyncio.run(add_job_to_queue(fit_job))
     except:
         print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
         job_id = 0
@@ -158,7 +159,7 @@ def handle_incoming_message (key, websocket, host_ip, message):
         if cm.command == MessageCommand.StartFit:
             job_id = StartFit (cm)
             if job_id:
-                return_params[cm.row_id] = job_id
+                return_params[cm.row_id] = job_id # return job_id to client
         elif cm.command == MessageCommand.Delete:
             return_params = HandleDelete (cm)
 #        elif cm.command == MessageCommand.Status:
