@@ -32,7 +32,7 @@ RUN pip install websockets
 RUN pip install sqlalchemy
 RUN pip install pymysql
 RUN pip install mysql-connector-python
-RUN pip install bumps numpy scipy matplotlib
+RUN pip install bumps numpy scipy matplotlib nest_asyncio
 
 # Make the 8765 port available from outside the container
 EXPOSE 5678
