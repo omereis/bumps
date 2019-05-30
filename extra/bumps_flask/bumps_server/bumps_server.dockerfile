@@ -8,22 +8,31 @@ RUN apt -y upgrade
 #RUN apt install -y vim man
 RUN apt install -y vim
 RUN apt install -y tree curl
-RUN apt install -y python3.6
-RUN ln -s /usr/bin/python3.6 /usr/bin/python
+#RUN apt install -y python3.6
+#RUN ln -s /usr/bin/python3.6 /usr/bin/python
+RUN apt install -y python3.7
+RUN ln -s /usr/bin/python3.7 /usr/bin/python
 RUN apt install -y mysql-client
 
 RUN apt install -y python3-pip
 RUN ln -s /usr/bin/pip3 /usr/bin/pip
 RUN pip install --upgrade pip
+#RUN pip install websockets
+#RUN pip install sqlalchemy
+#RUN pip install pymysql
+#RUN pip install mysql-connector-python
+#RUN pip install bumps numpy scipy matplotlib
+
+WORKDIR /home/oe/
+ENV HOME=/home/oe/
+COPY ./ /home/oe
+
+RUN python /home/oe/get-pip.py
 RUN pip install websockets
 RUN pip install sqlalchemy
 RUN pip install pymysql
 RUN pip install mysql-connector-python
 RUN pip install bumps numpy scipy matplotlib
-
-WORKDIR /home/oe/
-ENV HOME=/home/oe/
-COPY ./ /home/oe
 
 # Make the 8765 port available from outside the container
 EXPOSE 5678
