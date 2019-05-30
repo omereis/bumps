@@ -29,6 +29,7 @@ database_engine = None
 connection = None
 qJobs = Queue() # reciever to manager queue 
 semaphoreJobs = asyncio.Semaphore()
+smprJobsList = asyncio.Semaphore()
 nest_asyncio.apply()
 
 #------------------------------------------------------------------------------
@@ -86,9 +87,18 @@ def save_problem_file (results_dir, message):
     file.close()
     return problem_file_name
 #------------------------------------------------------------------------------
-def queue_manager(jobs_queue):
+#-------- Process: Job Queue Manager ------------------------------------------
+async def queue_reader(jobs_queue):
     while True:
         job = jobs_queue.get()
+        print(f'read job: {job}')
+        await smprJobsList.acquire()
+        smprJobsList.release()
+        async.sleep(5)
+#------------------------------------------------------------------------------
+def jobs_q_manager(jobs_queue):
+    asyncio.run(queue_reader(jobs_queue))
+#------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 async def add_job_to_queue(fit_job):
 #def add_job_to_queue(fit_job):
@@ -151,8 +161,8 @@ def HandleDelete (cm):
             db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
-def handle_incoming_message (key, websocket, host_ip, message):
-    print('handle_incoming_message')
+def handle_incoming_message (key, websocket, host_ip, message, listJobs):
+    #print('handle_incoming_message')
     return_params = {}
     cm = ClientMessage()
     if cm.parse_message(websocket, message):
@@ -167,6 +177,7 @@ def handle_incoming_message (key, websocket, host_ip, message):
         print('parse_message error.')
     return return_params
 #------------------------------------------------------------------------------
+listJobs = []
 async def bumps_server(websocket, path):
     message = await websocket.recv()
     try:
@@ -174,9 +185,9 @@ async def bumps_server(websocket, path):
     except:
         jmsg={}
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    save_message(strTime + ':\n'+ message)
+    #save_message(strTime + ':\n'+ message)
     key = generate_key (websocket.remote_address[0], strTime)
-    return_params = handle_incoming_message (key, websocket, websocket.remote_address[0], json.loads(message))
+    return_params = handle_incoming_message (key, websocket, websocket.remote_address[0], json.loads(message), listJobs)
     print ('\nReturn Params: {}\n'.format(return_params))
 
     source = "{}:{}".format(websocket.host, websocket.port)
@@ -216,10 +227,16 @@ if __name__ == '__main__':
         else:
             print("Fatal error. Aborting :-(")
             exit(1)
-    start_server = websockets.serve(bumps_server, host, port)
+    try:
+        pReader = Process(name='jobs_reader', target=jobs_q_manager, args=(qJobs,))
+        pReader.start()
 
-    asyncio.get_event_loop().run_until_complete(start_server)
-    asyncio.get_event_loop().run_forever()
+        start_server = websockets.serve(bumps_server, host, port)
+
+        asyncio.get_event_loop().run_until_complete(start_server)
+        asyncio.get_event_loop().run_forever()
+    finally:
+        pReader.close()
 
 
 
