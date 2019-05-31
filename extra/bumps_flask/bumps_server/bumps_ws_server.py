@@ -121,6 +121,7 @@ def StartFit (cm):
     try:
         db_connection = database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
+        print(f'bumps_ws_server, StartFit, fit_job.job_id={fit_job.job_id}')
         asyncio.run(add_job_to_queue(fit_job))
     except:
         print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
