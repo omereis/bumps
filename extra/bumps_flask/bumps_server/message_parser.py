@@ -60,7 +60,8 @@ class ClientMessage:
     tag          = None
     message_time = None
     command      = None
-    results_dir  = None
+    job_dir      = None
+    results_dir  = './results'
     problem_text = None
     problem_file_name = None
     params       = None
@@ -81,15 +82,29 @@ class ClientMessage:
                 self.problem_text = getMessageField (message, MessageFitProblem)
                 self.params       = getMessageField (message, MessageParams)
                 self.row_id       = getMessageField (message, MessageRowID)
+                self.job_dir      = self.compose_job_directory_name () # just get the name, does not create directory
+                print (f'message_parser, parse_message, message params: {self.params}')
                 parse = True
         except Exception as e:
             print('message_parser.py, parse_message: {}'.format(e))
             parse = False
         return parse
 #------------------------------------------------------------------------------
+    def compose_job_directory_name (self):
+        try:
+            tmp_dir = results_dir = base_results_dir + self.host_ip + "/" + self.tag
+        except:
+            tmp_dir = results_dir = base_results_dir + '/results'
+        n = 1
+        while os.path.exists(results_dir):
+            results_dir = tmp_dir + '_' + str(n)
+            n = n + 1
+        return results_dir
+#------------------------------------------------------------------------------
     def create_results_dir (self):
-        tmp_dir = results_dir = base_results_dir + self.host_ip + "/" +self. tag
-        dir_len = len(results_dir)
+        if len(self.job_dir) == 0:
+            self.job_dir = self.compose_job_directory_name ()
+        results_dir = tmp_dir = self.job_dir + '/resuts'
         n = 1
         while os.path.exists(results_dir):
             results_dir = tmp_dir + '_' + str(n)
@@ -97,6 +112,22 @@ class ClientMessage:
         os.makedirs (results_dir, 0o7777)
         os.chmod(results_dir, 0o7777)
         self.results_dir = results_dir
+        return results_dir
+#------------------------------------------------------------------------------
+    def create_results_dir1 (self):
+        try:
+            tmp_dir = results_dir = base_results_dir + self.host_ip + "/" +self.tag
+            dir_len = len(results_dir)
+            n = 1
+            while os.path.exists(results_dir):
+                results_dir = tmp_dir + '_' + str(n)
+                n = n + 1
+            #results_dir += '/out'
+            os.makedirs (results_dir, 0o7777)
+            os.chmod(results_dir, 0o7777)
+            self.results_dir = results_dir
+        except:
+            results_dir = './results'
         return results_dir
 #------------------------------------------------------------------------------
     def get_problem_file_name (self):
@@ -114,6 +145,16 @@ class ClientMessage:
         return problem_file_name
 #------------------------------------------------------------------------------
     def save_problem_file (self):
+        if len(self.job_dir) == 0:
+            self.job_dir = self.compose_job_directory_name ()
+        problem_file_name = self.job_dir + "/" + self.get_problem_file_name ()
+        file = open(problem_file_name, "w+")
+        file.write(self.problem_text)
+        file.close()
+        self.problem_file_name = problem_file_name
+        return problem_file_name
+#------------------------------------------------------------------------------
+    def save_problem_file1 (self):
         if not(self.results_dir):
             self.results_dir = self.create_results_dir()
         problem_file_name = self.results_dir + "/" + self.get_problem_file_name ()
@@ -123,6 +164,22 @@ class ClientMessage:
         file.close()
         self.problem_file_name = problem_file_name
         return problem_file_name
+#------------------------------------------------------------------------------
+    def get_param_by_key(self, key, def_val):
+        n = None
+        try:
+            n = int(self.params[key])
+        except:
+            n = def_val
+            self.params[key] = n
+        return n
+#------------------------------------------------------------------------------
+    def get_steps(self):
+        return self.get_param_by_key('steps', 100)
+#------------------------------------------------------------------------------
+    def get_burn(self):
+        return self.get_param_by_key('burns', 100)
+#------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 def get_message_datetime_string (message_time):
     datetime_str = '{}-{}-{} {}:{}:{}.{}'.format(message_time['year'], message_time['month'], message_time['date'],\

@@ -31,6 +31,7 @@ qJobs = Queue() # reciever to manager queue
 semaphoreJobs = asyncio.Semaphore()
 smprJobsList = asyncio.Semaphore()
 nest_asyncio.apply()
+listJobs = []
 
 #------------------------------------------------------------------------------
 def save_message (message):
@@ -91,10 +92,15 @@ def save_problem_file (results_dir, message):
 async def queue_reader(jobs_queue):
     while True:
         job = jobs_queue.get()
-        print(f'read job: {job}')
+        #print(f'read job: {job}')
         await smprJobsList.acquire()
+        listJobs.append(job)
+        print(f'queue_reader, job {job.client_message.job_id} added, job status: {job.status}. Total of {len(listJobs)}')
+        job.prepare_params()
+        job.set_standby()
+        print(f'job params: {job.params}')
         smprJobsList.release()
-        async.sleep(5)
+        await asyncio.sleep(5)
 #------------------------------------------------------------------------------
 def jobs_q_manager(jobs_queue):
     asyncio.run(queue_reader(jobs_queue))
@@ -161,7 +167,7 @@ def HandleDelete (cm):
             db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
-def handle_incoming_message (key, websocket, host_ip, message, listJobs):
+def handle_incoming_message (websocket, host_ip, message, listJobs):
     #print('handle_incoming_message')
     return_params = {}
     cm = ClientMessage()
@@ -177,7 +183,6 @@ def handle_incoming_message (key, websocket, host_ip, message, listJobs):
         print('parse_message error.')
     return return_params
 #------------------------------------------------------------------------------
-listJobs = []
 async def bumps_server(websocket, path):
     message = await websocket.recv()
     try:
@@ -185,9 +190,9 @@ async def bumps_server(websocket, path):
     except:
         jmsg={}
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    #save_message(strTime + ':\n'+ message)
-    key = generate_key (websocket.remote_address[0], strTime)
-    return_params = handle_incoming_message (key, websocket, websocket.remote_address[0], json.loads(message), listJobs)
+    save_message(strTime + ':\n\n'+ message + '\n')
+    #key = generate_key (websocket.remote_address[0], strTime)
+    return_params = handle_incoming_message (websocket, websocket.remote_address[0], json.loads(message), listJobs)
     print ('\nReturn Params: {}\n'.format(return_params))
 
     source = "{}:{}".format(websocket.host, websocket.port)
