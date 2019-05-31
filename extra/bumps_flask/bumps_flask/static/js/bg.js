@@ -183,7 +183,7 @@ function getTag() {
 function uploadFitParams() {
     var fitParams = new Object;
 
-    fitParams['algorithm'] = 'rpg';
+    fitParams['algorithm'] = $('#algorithm').val();//'rpg';
     fitParams['steps'] = $('#fitting_steps').val();
     fitParams['burns'] = $('#fitting_burn').val();
     return (fitParams);
