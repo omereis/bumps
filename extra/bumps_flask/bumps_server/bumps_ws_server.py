@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, MetaData
 from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
                             DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime, \
                             DB_Field_ProblemFile
-from FitJob import FitJob, JobStatus
+from FitJob import FitJob, JobStatus, name_of_status
 from db_misc import get_next_job_id
 #from multiprocessing import Process, Queue
 import multiprocessing
@@ -29,7 +29,8 @@ host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=876
 database_engine = None
 connection = None
 qJobs = multiprocessing.Queue() # reciever to manager queue 
-semaphoreJobs = asyncio.Semaphore()
+qRunJobs = multiprocessing.Queue() # run fit job on local machine 
+smprJobRun = asyncio.Semaphore()
 smprJobsList = asyncio.Semaphore()
 nest_asyncio.apply()
 listJobs = []
@@ -96,10 +97,25 @@ def count_running_jobs (listJobs):
             n_running_jobs += 1
     return n_running_jobs
 #------------------------------------------------------------------------------
-def scan_jobs_list (listJobs):
+def scan_jobs_list (db_connection, listJobs):
     n_running_jobs = count_running_jobs(listJobs)
     n_cpus = multiprocessing.cpu_count()
     print(f'Number of CPUs: {n_cpus}, Number of running jobs: {n_running_jobs}')
+    print(f'number of jobs: {len(listJobs)}')
+    for n in range(len(listJobs)):
+        status = listJobs[n].status
+        print (f'job {n}, status: {FitJob.name_of_status(status)}')
+        if status == JobStatus.Parsed:
+            listJobs[n].set_standby(db_connection)
+        elif listJobs[n].status == JobStatus.StandBy:
+            if n_running_jobs < n_cpus:
+                listJobs[n].set_running(db_connection)
+
+#        elif status == JobStatus.Running:
+#        elif status == JobStatus.Completed:
+#        elif status == JobStatus.Error:
+#        elif status == JobStatus.StatusErr:
+        # start new fit job
 #------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
 async def queue_reader(jobs_queue):
@@ -109,11 +125,9 @@ async def queue_reader(jobs_queue):
         try:
             db_connection = database_engine.connect()
             job.set_standby(db_connection)
-            print(f'job params: {job.params}')
             await smprJobsList.acquire() # acquire semaphore before accessing jobs list
             listJobs.append(job)
-            print(f'queue_reader, job {job.job_id} added, job status: {job.status}. Total of {len(listJobs)}')
-            scan_jobs_list (listJobs)
+            scan_jobs_list (db_connection, listJobs)
             smprJobsList.release() # release semaphore at the end of work on jobs list
         finally:
             db_connection.close()
@@ -123,12 +137,24 @@ def jobs_q_manager(jobs_queue):
     asyncio.run(queue_reader(jobs_queue))
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
-async def add_job_to_queue(fit_job):
-#def add_job_to_queue(fit_job):
-    await semaphoreJobs.acquire()
-    qJobs.put(fit_job)
-    print('New job. Total jobs: {}'.format(qJobs.qsize()))
-    semaphoreJobs.release()
+#------------------------------------------------------------------------------
+#-------- Process: Job Fit Runner ---------------------------------------------
+async def queue_reader(jobs_queue):
+    while True:
+        job = jobs_queue.get()
+        job.prepare_params()
+        try:
+            db_connection = database_engine.connect()
+            job.set_standby(db_connection)
+            await smprJobsList.acquire() # acquire semaphore before accessing jobs list
+            listJobs.append(job)
+            scan_jobs_list (db_connection, listJobs)
+            smprJobsList.release() # release semaphore at the end of work on jobs list
+        finally:
+            db_connection.close()
+#------------------------------------------------------------------------------
+def jobs_q_manager(jobs_queue):
+    asyncio.run(queue_reader(jobs_queue))
 #------------------------------------------------------------------------------
 def StartFit (cm):
     cm.create_results_dir()
@@ -139,7 +165,7 @@ def StartFit (cm):
         db_connection = database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
         print(f'bumps_ws_server, StartFit, fit_job.job_id={fit_job.job_id}')
-        asyncio.run(add_job_to_queue(fit_job))
+        qJobs.put(fit_job)
     except:
         print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
         job_id = 0

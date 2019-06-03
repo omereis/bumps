@@ -3,6 +3,8 @@ from bumps_constants import *
 from db_misc import get_next_job_id
 from message_parser import get_message_datetime_string
 import datetime
+import asyncio, sys
+from bumps import cli
 #------------------------------------------------------------------------------
 class JobStatus (Enum):
     NoData    = 1
@@ -94,9 +96,21 @@ class FitJob:
         #for k in self.client_message.params.keys():
             #print(f'Key: {k}')
 #------------------------------------------------------------------------------
+    def run_bumps_fit(self, db_connection):
+        sys.argv = []
+        sys.argv.append('bumps')
+        for p in params:
+            sys.argv.append(p)
+        print(f'\n\nFitJob, run_bumps_fit\n{sys.argv}')
+    #------------------------------------------------------------------------------
+    def set_running(self, db_connection):
+        self.status = JobStatus.Running
+        self.update_status_in_db(db_connection)
+#------------------------------------------------------------------------------
     def set_standby(self, connection):
         self.status = JobStatus.StandBy
         self.update_status_in_db(connection)
+        asyncio.run
 #------------------------------------------------------------------------------
     def update_status_in_db(self, connection):
         #j = JobStatus.status_by_name.StandBy
