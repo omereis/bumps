@@ -2,19 +2,58 @@ from enum import Enum
 from bumps_constants import *
 from db_misc import get_next_job_id
 from message_parser import get_message_datetime_string
+import datetime
 #------------------------------------------------------------------------------
-class MessageStatus (Enum):
+class JobStatus (Enum):
     NoData    = 1
     Parsed    = 2
     StandBy   = 3
     Running   = 4
     Completed = 5
     Error     = 6
+    StatusErr = 7
+#------------------------------------------------------------------------------
+def name_of_status (status):
+    strName= ''
+    if status == JobStatus.NoData:
+        strName= 'NoData'
+    elif status == JobStatus.Parsed:
+        strName= 'Parsed'
+    elif status == JobStatus.StandBy:
+        strName= 'StandBy'
+    elif status == JobStatus.Running:
+        strName= 'Running'
+    elif status == JobStatus.Completed:
+        strName= 'Completed'
+    elif status == JobStatus.Error:
+        strName= 'Error'
+    else:
+        strName= 'Unknown Status'
+    return strName
+#------------------------------------------------------------------------------
+def status_by_name (strName):
+    status = None
+    if strName == 'NoData':
+        status = JobStatus.NoData
+    elif strName == 'Parsed':
+        status = JobStatus.Parsed
+    elif strName == 'StandBy':
+        status = JobStatus.StandBy
+    elif strName == 'Running':
+        status = JobStatus.Running
+    elif strName == 'Completed':
+        status = JobStatus.Completed
+    elif strName == 'Error':
+        status = JobStatus.Error
+    else:
+        status = JobStatus.StatusErr
+    return status
+#------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 class FitJob:
     client_message = None
     message_time   = None
-    status         = MessageStatus.NoData
+    status         = JobStatus.NoData
     FitType        = None
     params         = None
     job_id         = None
@@ -55,6 +94,17 @@ class FitJob:
         #for k in self.client_message.params.keys():
             #print(f'Key: {k}')
 #------------------------------------------------------------------------------
-    def set_standby(self):
-        self.status = MessageStatus.StandBy
-
+    def set_standby(self, connection):
+        self.status = JobStatus.StandBy
+        self.update_status_in_db(connection)
+#------------------------------------------------------------------------------
+    def update_status_in_db(self, connection):
+        #j = JobStatus.status_by_name.StandBy
+        #print (f'StandBy status: {j}')
+        sqlInsert = f'insert into {DB_StatusTable} {DB_Field_JobID,DB_Field_StatusTime,DB_Field_StatusName}'.replace("'","")
+        strSql = f'{sqlInsert} values {self.job_id, str(datetime.datetime.now()), name_of_status(self.status)};'
+        #strSql = f'insert into {DB_StatusTable} {DB_Field_JobID,DB_Field_StatusTime,DB_Field_StatusName} values {self.job_id, str(datetime.datetime.now()), status_by_name(self.status)};'
+        try:
+            connection.execute(strSql)
+        except Exception as e:
+            print (f'FitJob.py, update_status_in_db: bug ; {e}')

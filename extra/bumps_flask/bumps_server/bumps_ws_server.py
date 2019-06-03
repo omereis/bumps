@@ -12,9 +12,10 @@ from sqlalchemy import create_engine, MetaData
 from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
                             DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime, \
                             DB_Field_ProblemFile
-from FitJob import FitJob, MessageStatus
+from FitJob import FitJob, JobStatus
 from db_misc import get_next_job_id
-from multiprocessing import Process, Queue
+#from multiprocessing import Process, Queue
+import multiprocessing
 import nest_asyncio
 #------------------------------------------------------------------------------
 #from message_parser import *
@@ -27,7 +28,7 @@ base_results_dir = '/tmp/bumps_results/'
 host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
 database_engine = None
 connection = None
-qJobs = Queue() # reciever to manager queue 
+qJobs = multiprocessing.Queue() # reciever to manager queue 
 semaphoreJobs = asyncio.Semaphore()
 smprJobsList = asyncio.Semaphore()
 nest_asyncio.apply()
@@ -88,18 +89,34 @@ def save_problem_file (results_dir, message):
     file.close()
     return problem_file_name
 #------------------------------------------------------------------------------
+def count_running_jobs (listJobs):
+    n_running_jobs = 0
+    for job in listJobs:
+        if job.status == JobStatus.Running:
+            n_running_jobs += 1
+    return n_running_jobs
+#------------------------------------------------------------------------------
+def scan_jobs_list (listJobs):
+    n_running_jobs = count_running_jobs(listJobs)
+    n_cpus = multiprocessing.cpu_count()
+    print(f'Number of CPUs: {n_cpus}, Number of running jobs: {n_running_jobs}')
+#------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
 async def queue_reader(jobs_queue):
     while True:
         job = jobs_queue.get()
-        #print(f'read job: {job}')
-        await smprJobsList.acquire()
-        listJobs.append(job)
-        print(f'queue_reader, job {job.client_message.job_id} added, job status: {job.status}. Total of {len(listJobs)}')
         job.prepare_params()
-        job.set_standby()
-        print(f'job params: {job.params}')
-        smprJobsList.release()
+        try:
+            db_connection = database_engine.connect()
+            job.set_standby(db_connection)
+            print(f'job params: {job.params}')
+            await smprJobsList.acquire() # acquire semaphore before accessing jobs list
+            listJobs.append(job)
+            print(f'queue_reader, job {job.job_id} added, job status: {job.status}. Total of {len(listJobs)}')
+            scan_jobs_list (listJobs)
+            smprJobsList.release() # release semaphore at the end of work on jobs list
+        finally:
+            db_connection.close()
         await asyncio.sleep(5)
 #------------------------------------------------------------------------------
 def jobs_q_manager(jobs_queue):
@@ -117,7 +134,7 @@ def StartFit (cm):
     cm.create_results_dir()
     cm.save_problem_file()
     fit_job = FitJob (cm)
-    fit_job.status = MessageStatus.Parsed
+    fit_job.status = JobStatus.Parsed
     try:
         db_connection = database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
@@ -234,7 +251,7 @@ if __name__ == '__main__':
             print("Fatal error. Aborting :-(")
             exit(1)
     try:
-        pReader = Process(name='jobs_reader', target=jobs_q_manager, args=(qJobs,))
+        pReader = multiprocessing.Process(name='jobs_reader', target=jobs_q_manager, args=(qJobs,))
         pReader.start()
 
         start_server = websockets.serve(bumps_server, host, port)

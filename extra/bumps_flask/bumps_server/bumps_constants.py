@@ -8,3 +8,8 @@ DB_Field_ResultsDir  = 'results_dir'
 DB_Field_ProblemFile = 'problem_file'
 DB_Field_JobStatus   = 'job_status'
 DB_Field_EndTime     = 'end_time'
+
+DB_StatusTable      = 't_jobs_status'
+DB_Field_StatusTime = 'status_time'
+DB_Field_StatusName = 'status_name'
+
