@@ -385,7 +385,7 @@ function handle_reply(wsMsg) {
     else if (command == ServerCommands.GET_STATUS) {
         var params = jmsg['params'];
         console.log('GetStatus reply' + wsMsg)
-        UpdateJobsStatus (params);
+        updateJobsStatus (params);
     }
 }
 //-----------------------------------------------------------------------------
@@ -425,25 +425,21 @@ function deleteRowByDBID (db_id) {
     }
 }
 //-----------------------------------------------------------------------------
-function UpdateJobsStatus (params) {
-    var n;
+function updateJobsStatus (params) {
+    var n, tbl = document.getElementById('tblResults')
 
-    for (n=0 ; n < params.length ; n++) {
-        var job_id = paras[n].job_id;
-        var row = getRowByDBID (job_id);
-        var status = jmsg.params[n].job_status;
-        console.log('row: ' + row + ', status' + status);
+    try {
+        for (n=0 ; n < params.length ; n++) {
+            var job_id, row, status;
+            job_id = params[n].job_id;
+            row = getRowByDBID (job_id);
+            status = params[n].job_status;
+            tbl.rows[row].cells[3].innerText = status;
+            //console.log('row: ' + row + ', status' + status);
+        }
     }
-}
-//-----------------------------------------------------------------------------
-function UpdateJobsStatus (params) {
-    var n;
-
-    for (n=0 ; n < params.length ; n++) {
-        var job_id = paras[n].job_id;
-        var row = getRowByDBID (job_id);
-        var status = jmsg.params[n].job_status;
-        console.log('row: ' + row + ', status' + status);
+    catch (err) {
+        console.log ('Error in updateJobsStatus: ' + err.message);
     }
 }
 //-----------------------------------------------------------------------------
