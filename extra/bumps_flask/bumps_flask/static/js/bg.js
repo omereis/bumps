@@ -430,12 +430,10 @@ function updateJobsStatus (params) {
 
     try {
         for (n=0 ; n < params.length ; n++) {
-            var job_id, row, status;
+            var job_id, row;
             job_id = params[n].job_id;
             row = getRowByDBID (job_id);
-            status = params[n].job_status;
-            tbl.rows[row].cells[3].innerText = status;
-            //console.log('row: ' + row + ', status' + status);
+            tbl.rows[row].cells[3].innerText = params[n].job_status;
         }
     }
     catch (err) {

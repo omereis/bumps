@@ -9,6 +9,7 @@ import json, os
 from mysql.connector import Error
 from oe_debug import print_debug
 from sqlalchemy import create_engine, MetaData
+from bumps import cli
 from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
                             DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime, \
                             DB_Field_ProblemFile
@@ -29,8 +30,8 @@ base_results_dir = '/tmp/bumps_results/'
 host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
 database_engine = None
 connection = None
-qJobs = multiprocessing.Queue() # reciever to manager queue 
-qRunJobs = multiprocessing.Queue() # run fit job on local machine 
+queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
+queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
 smprJobRun = asyncio.Semaphore()
 smprJobsList = asyncio.Semaphore()
 nest_asyncio.apply()
@@ -68,31 +69,6 @@ def is_valid_message(message):
         return err
     return ''
 #------------------------------------------------------------------------------
-"""
-def get_problem_file_name (message):
-    problem_file_name = ''
-    tag = message['tag']
-    filename_ok = True
-    try:
-        problem_file_name = extract_file_name(message['problem_file'])
-        if len(problem_file_name.strip()) == 0:
-            filename_ok = False
-    except:
-        filename_ok = False
-    finally:
-        if not(filename_ok):
-            problem_file_name = tag + ".py"
-    return problem_file_name
-#------------------------------------------------------------------------------
-def save_problem_file (results_dir, message):
-    problem_file_name = results_dir + "/" + get_problem_file_name (message)
-    problem_text = message['fit_problem']
-    file = open(problem_file_name, "w+")
-    file.write(problem_text)
-    file.close()
-    return problem_file_name
-"""
-#------------------------------------------------------------------------------
 def count_running_jobs (listJobs):
     n_running_jobs = 0
     for job in listJobs:
@@ -123,26 +99,50 @@ def scan_jobs_list (db_connection, listJobs):
         elif listJobs[n].status == JobStatus.StandBy:
             if n_running_jobs < n_cpus:
                 listJobs[n].set_running(db_connection)
+                queueRunJobs.put(listJobs[n])
+                print('scan_jobs_list, added to queue')
     print_jobs(listJobs, title='after scan')
 #------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
-async def queue_reader(jobs_queue):
-    while True:
-        job = jobs_queue.get()
-        job.prepare_params()
+import bumps.cli
+def run_fit_job (fit_job, queueJobEnded):
+    try:
+        sys.argv = fit_job.params
+        print('Fit job started')
         try:
-            db_connection = database_engine.connect()
-            job.set_standby(db_connection)
-            await smprJobsList.acquire() # acquire semaphore before accessing jobs list
-            listJobs.append(job)
-            scan_jobs_list (db_connection, listJobs)
-            smprJobsList.release() # release semaphore at the end of work on jobs list
+            bumps.cli.main()
+            #cli.main()
         finally:
-            db_connection.close()
-        await asyncio.sleep(5)
+            print('\n\n\nFit job completed')
+            queueJobEnded.put(fit_job)
+    except Exception as e:
+        print (f'Error in run_fit_job: {e}')
 #------------------------------------------------------------------------------
-def jobs_q_manager(jobs_queue):
-    asyncio.run(queue_reader(jobs_queue))
+async def queue_reader(jobs_queue,queueJobEnded):
+    while True:
+        fit_job = jobs_queue.get()
+        try:
+            fit_job.prepare_params()
+            print (f'queue_reader, fit job params (after preparation): {fit_job.params}')
+            run_fit_job (fit_job, queueJobEnded)
+            #await smprJobsList.acquire() # acquire semaphore before accessing jobs list
+            #smprJobsList.release() # release semaphore at the end of work on jobs list
+        except Exception as e:
+            print(f'Error in queue_reader: {e}')
+#------------------------------------------------------------------------------
+def jobs_q_manager(jobs_queue,queueJobEnded):
+    print(f'started process with id {os.getpid()}')
+    asyncio.run(queue_reader(jobs_queue,queueJobEnded))
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+async def job_finalizer(queueJobEnded):
+    while True:
+        fit_job = queueJobEnded.get()
+        print(f'Job {fit_job.job_id} ended')
+#------------------------------------------------------------------------------
+def job_ending_manager(queueJobEnded):
+    print(f'"job_ending_manager", started process with id {os.getpid()}')
+    asyncio.run(job_finalizer(queueJobEnded))
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 def StartFit (cm):
@@ -237,7 +237,6 @@ def handle_incoming_message (websocket, host_ip, message, listJobs):
                 return_params = HandleDelete (cm)
             elif cm.command == MessageCommand.Status:
                 return_params = HandleStatus (cm)
-#        elif cm.command == MessageCommand.Status:
         else:
             print('parse_message error.')
     except Exception as e:
@@ -294,15 +293,22 @@ if __name__ == '__main__':
             print("Fatal error. Aborting :-(")
             exit(1)
     try:
-        pReader = multiprocessing.Process(name='jobs_reader', target=jobs_q_manager, args=(qJobs,))
-        pReader.start()
+        pRunner = multiprocessing.Process(name='jobs runner', target=jobs_q_manager, args=(queueRunJobs, queueJobEnded,))
+        pRunner.start()
+
+        pFinalizer = multiprocessing.Process(name='jobs finalizer', target=job_ending_manager, args=(queueJobEnded,))
+        pFinalizer.start()
 
         start_server = websockets.serve(bumps_server, host, port)
 
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
+    except Exception as e:
+        print("{}".format(e))
+        exit(1)
     finally:
-        pReader.close()
+        pRunner.terminate()
+        pFinalizer.terminate()
 
 
 
