@@ -26,6 +26,13 @@ function onResultsDisplayClick() {
 function onResultsLoadClick() {
 }
 //-----------------------------------------------------------------------------
+function onResultsStatusClick () {
+    var message = getMessageStart();
+
+    message['command'] = ServerCommands.GET_STATUS;
+    sendMessage (JSON.stringify(message));
+}
+//-----------------------------------------------------------------------------
 function getMessageStart() {
     var message = new Object;
 

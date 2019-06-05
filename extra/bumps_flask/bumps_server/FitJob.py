@@ -104,6 +104,7 @@ class FitJob:
         print(f'\n\nFitJob, run_bumps_fit\n{sys.argv}')
     #------------------------------------------------------------------------------
     def set_running(self, db_connection):
+        print('FitJob, set_running')
         self.status = JobStatus.Running
         self.update_status_in_db(db_connection)
 #------------------------------------------------------------------------------
@@ -122,3 +123,8 @@ class FitJob:
             connection.execute(strSql)
         except Exception as e:
             print (f'FitJob.py, update_status_in_db: bug ; {e}')
+#------------------------------------------------------------------------------
+    def get_tag(self):
+        return self.client_message.tag
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------

@@ -382,6 +382,28 @@ function handle_reply(wsMsg) {
             deleteRowByDBID (id);
         }
     }
+    else if (command == ServerCommands.GET_STATUS) {
+        var params = jmsg['params'];
+        console.log('GetStatus reply' + wsMsg)
+        UpdateJobsStatus (params);
+    }
+}
+//-----------------------------------------------------------------------------
+function getRowByDBID (db_id) {
+    var id, row, tbl = document.getElementById('tblResults'), rowSelected;
+
+    for (row=1, rowSelected=-1 ; (row < tbl.rows.length) && (rowSelected < 0) ; row++) {
+        try {
+            id = $(tbl.rows[row].cells[0].innerHTML).attr('db_id');
+        }
+        catch (err) {
+            id = null
+        }
+        if (id == db_id) {
+            rowSelected = row;
+        }
+    }
+    return (rowSelected);
 }
 //-----------------------------------------------------------------------------
 function deleteRowByDBID (db_id) {
@@ -401,6 +423,27 @@ function deleteRowByDBID (db_id) {
     if (rowToDel >= 0) {
         tbl.deleteRow (rowToDel);
     }
-        
+}
+//-----------------------------------------------------------------------------
+function UpdateJobsStatus (params) {
+    var n;
+
+    for (n=0 ; n < params.length ; n++) {
+        var job_id = paras[n].job_id;
+        var row = getRowByDBID (job_id);
+        var status = jmsg.params[n].job_status;
+        console.log('row: ' + row + ', status' + status);
+    }
+}
+//-----------------------------------------------------------------------------
+function UpdateJobsStatus (params) {
+    var n;
+
+    for (n=0 ; n < params.length ; n++) {
+        var job_id = paras[n].job_id;
+        var row = getRowByDBID (job_id);
+        var status = jmsg.params[n].job_status;
+        console.log('row: ' + row + ', status' + status);
+    }
 }
 //-----------------------------------------------------------------------------

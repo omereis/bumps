@@ -23,19 +23,23 @@ def generate_key (client_host, time_string):
     key = client_host.replace('.','_') + '_' + str(time_string)
     return key
 #------------------------------------------------------------------------------
-def extract_file_name(filename):
-    name = filename
-    if (name.find('\\') >= 0):
-        inv = name[::-1]
-        p = inv.find('\\')
-        inv = inv[0:p]
-        name = p[::-1]
+def extract_problem_file_name(filename):
+    try:
+        name = filename
+        if (name.find('\\') >= 0):
+            inv_name = name[::-1]
+            p = inv_name.find('\\')
+            inv_part = inv_name[0:p]
+            name = inv_part[::-1]
+    except Exception as e:
+        print(f'Error in extract_problem_file_name: {e}')
+        name = 'bumps_problem.py'
     return name
 #------------------------------------------------------------------------------
 def parse_command (message_command):
     if message_command == 'StartFit':
         command = MessageCommand.StartFit
-    elif message_command == 'status':
+    elif message_command == 'GetStatus':
         command = MessageCommand.Status
     elif message_command == 'Delete':
         command = MessageCommand.Delete
@@ -134,7 +138,7 @@ class ClientMessage:
         problem_file_name = ''
         filename_ok = True
         try:
-            problem_file_name = extract_file_name(self.message['problem_file'])
+            problem_file_name = extract_problem_file_name(self.message['problem_file'])
             if len(problem_file_name.strip()) == 0:
                 filename_ok = False
         except:

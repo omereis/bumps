@@ -19,7 +19,8 @@ import multiprocessing
 import nest_asyncio
 #------------------------------------------------------------------------------
 #from message_parser import *
-from message_parser import ClientMessage, MessageCommand, extract_file_name, generate_key
+from message_parser import ClientMessage, MessageCommand, generate_key
+#from message_parser import ClientMessage, MessageCommand, extract_file_name, generate_key
 #------------------------------------------------------------------------------
 #host = 'localhost'
 host = 'NCNR-R9nano.campus.nist.gov'
@@ -67,6 +68,7 @@ def is_valid_message(message):
         return err
     return ''
 #------------------------------------------------------------------------------
+"""
 def get_problem_file_name (message):
     problem_file_name = ''
     tag = message['tag']
@@ -89,6 +91,7 @@ def save_problem_file (results_dir, message):
     file.write(problem_text)
     file.close()
     return problem_file_name
+"""
 #------------------------------------------------------------------------------
 def count_running_jobs (listJobs):
     n_running_jobs = 0
@@ -97,25 +100,30 @@ def count_running_jobs (listJobs):
             n_running_jobs += 1
     return n_running_jobs
 #------------------------------------------------------------------------------
+def print_jobs(listJobs, title=''):
+    try: 
+        print(f'{title}: Curreent Jobs')
+        print('-----------------------')
+        for n in range(len(listJobs)):
+            print (f'job {n}, status: {name_of_status(listJobs[n].status)}')
+        print('-----------------------')
+    except Exception as e:
+        print(f'Error in print_job: "{e}"')
+#------------------------------------------------------------------------------
 def scan_jobs_list (db_connection, listJobs):
     n_running_jobs = count_running_jobs(listJobs)
     n_cpus = multiprocessing.cpu_count()
     print(f'Number of CPUs: {n_cpus}, Number of running jobs: {n_running_jobs}')
     print(f'number of jobs: {len(listJobs)}')
+    print_jobs(listJobs, title='before scan')
     for n in range(len(listJobs)):
         status = listJobs[n].status
-        print (f'job {n}, status: {FitJob.name_of_status(status)}')
         if status == JobStatus.Parsed:
             listJobs[n].set_standby(db_connection)
         elif listJobs[n].status == JobStatus.StandBy:
             if n_running_jobs < n_cpus:
                 listJobs[n].set_running(db_connection)
-
-#        elif status == JobStatus.Running:
-#        elif status == JobStatus.Completed:
-#        elif status == JobStatus.Error:
-#        elif status == JobStatus.StatusErr:
-        # start new fit job
+    print_jobs(listJobs, title='after scan')
 #------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
 async def queue_reader(jobs_queue):
@@ -137,35 +145,22 @@ def jobs_q_manager(jobs_queue):
     asyncio.run(queue_reader(jobs_queue))
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-#-------- Process: Job Fit Runner ---------------------------------------------
-async def queue_reader(jobs_queue):
-    while True:
-        job = jobs_queue.get()
-        job.prepare_params()
-        try:
-            db_connection = database_engine.connect()
-            job.set_standby(db_connection)
-            await smprJobsList.acquire() # acquire semaphore before accessing jobs list
-            listJobs.append(job)
-            scan_jobs_list (db_connection, listJobs)
-            smprJobsList.release() # release semaphore at the end of work on jobs list
-        finally:
-            db_connection.close()
-#------------------------------------------------------------------------------
-def jobs_q_manager(jobs_queue):
-    asyncio.run(queue_reader(jobs_queue))
-#------------------------------------------------------------------------------
 def StartFit (cm):
+    print('StartFit')
     cm.create_results_dir()
+    print('StartFit, results directory created')
     cm.save_problem_file()
+    print('StartFit, problem file saved')
     fit_job = FitJob (cm)
-    fit_job.status = JobStatus.Parsed
+    #fit_job.status = JobStatus.Parsed
     try:
         db_connection = database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
+        fit_job.set_standby(db_connection)
         print(f'bumps_ws_server, StartFit, fit_job.job_id={fit_job.job_id}')
-        qJobs.put(fit_job)
+        listJobs.append(fit_job)
+        scan_jobs_list (db_connection, listJobs)
+        #qJobs.put(fit_job)
     except:
         print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
         job_id = 0
@@ -210,21 +205,43 @@ def HandleDelete (cm):
         if db_connection:
             db_connection.close()
     return return_params
-#------------------------------------------------------------------------------
+ #------------------------------------------------------------------------------
+def HandleStatus (cm):
+    return_params = []
+    #await smprJobsList.acquire() # acquire semaphore before accessing jobs list
+    print_jobs(listJobs, title='HandleStatus')
+    print(f'HandleStatus, message tag: {cm.tag}')
+    for job in listJobs:
+        print(f'HandleStatus, job_id: {job.job_id}, tag: "{job.get_tag()}"')
+        if job.get_tag() == cm.tag:
+            if job.job_id == None:
+                job_id = -1
+            else:
+                job_id = job.job_id
+            item = {'job_id': job_id, 'job_status': name_of_status(job.status)}
+            return_params.append(item)
+    return return_params
+ #------------------------------------------------------------------------------
 def handle_incoming_message (websocket, host_ip, message, listJobs):
     #print('handle_incoming_message')
     return_params = {}
     cm = ClientMessage()
-    if cm.parse_message(websocket, message):
-        if cm.command == MessageCommand.StartFit:
-            job_id = StartFit (cm)
-            if job_id:
-                return_params[cm.row_id] = job_id # return job_id to client
-        elif cm.command == MessageCommand.Delete:
-            return_params = HandleDelete (cm)
+    try:
+        if cm.parse_message(websocket, message):
+            print('handle_incoming_message, message parsed ok')
+            if cm.command == MessageCommand.StartFit:
+                job_id = StartFit (cm)
+                if job_id:
+                    return_params[cm.row_id] = job_id # return job_id to client
+            elif cm.command == MessageCommand.Delete:
+                return_params = HandleDelete (cm)
+            elif cm.command == MessageCommand.Status:
+                return_params = HandleStatus (cm)
 #        elif cm.command == MessageCommand.Status:
-    else:
-        print('parse_message error.')
+        else:
+            print('parse_message error.')
+    except Exception as e:
+        print(f'handle_incomming_message, error: {e}')
     return return_params
 #------------------------------------------------------------------------------
 async def bumps_server(websocket, path):
@@ -245,7 +262,7 @@ async def bumps_server(websocket, path):
         remote_client = websocket.remote_address[0]
         print ("    client in {}".format(source))
     except Exception as e:
-        print('Oops: {}'.format(e))
+        print(f'Error in bumps_server: {e}')
     reply_message = {}
     reply_message['sender_ip'] = remote_client
     reply_message['command'] = jmsg['command']
