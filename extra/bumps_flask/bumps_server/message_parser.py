@@ -108,7 +108,7 @@ class ClientMessage:
     def create_results_dir (self):
         if len(self.job_dir) == 0:
             self.job_dir = self.compose_job_directory_name ()
-        results_dir = tmp_dir = self.job_dir + '/resuts'
+        results_dir = tmp_dir = self.job_dir + '/results'
         n = 1
         while os.path.exists(results_dir):
             results_dir = tmp_dir + '_' + str(n)

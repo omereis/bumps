@@ -181,43 +181,31 @@ def get_orred_ids (params):
     else:
         strWhere = astrWhere[0]
     return strWhere
-import shutil
 #------------------------------------------------------------------------------
-def delete_results_dir(db_connection, sqlWhere):
-    sql = 'select ' + DB_Field_ResultsDir + ' from ' +  DB_Table + ' where ' + sqlWhere + ";"
-    res = db_connection.execute(sql)
-    for row in res:
-        try:
-            shutil.rmtree(row[0])
-        except Exception as e:
-            print ('delete_results_dir, error: {}'.format(e))
-        
+def remove_from_list_by_id (listJobs, strlstIDs, db_connection):
+    n = 0
+    try:
+        while n < len(listJobs):
+            if str(listJobs[n].job_id) in strlstIDs:
+                job = listJobs.pop(n)
+                job.delete_from_db(db_connection)
+                job.delete_job_directory()
+            else:
+                n += 1
+    except Exception as e:
+        print ('bumps_ws_server.py, remove_from_list_by_id, bug: {}'.format(e))
 #------------------------------------------------------------------------------
 async def HandleDelete (cm, listJobs, smprJobsList):
     return_params = cm.params
+    db_connection = None
     try:
         db_connection = database_engine.connect()
-        sqlBase = 'delete from ' + DB_Table + ' where '
-        sqlWhere = get_orred_ids (cm.params)
-        delete_results_dir(db_connection, sqlWhere)
-        sql = sqlBase + sqlWhere
-        db_connection.execute(sql)
         await smprJobsList.acquire()
-        print_jobs(listJobs, title='before delete')
-        print(f'HandleDelete, message parameters: {cm.params}')
-        idxDel = []
-        for n in range(len(listJobs)):
-            for i in range(len(cm.params)):
-                if listJobs[n].job_id == int(cm.params[i]):
-                    idxDel.append(n)
-        print(f'Indices to delete: {idxDel}')
-        for n in range(len(idxDel)):
-            listJobs.pop(n)
-        print_jobs(listJobs, title='after delete')
-        smprJobsList.release()
+        remove_from_list_by_id (listJobs, cm.params, db_connection)
     except Exception as e:
         print ('bumps_ws_server.py, HandleDelete, bug: {}'.format(e))
     finally:
+        smprJobsList.release()
         if db_connection:
             db_connection.close()
     return return_params

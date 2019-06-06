@@ -5,6 +5,7 @@ from message_parser import get_message_datetime_string
 import datetime
 import asyncio, sys
 from bumps import cli
+from shutil import rmtree
 #------------------------------------------------------------------------------
 class JobStatus (Enum):
     NoData    = 1
@@ -126,5 +127,24 @@ class FitJob:
 #------------------------------------------------------------------------------
     def get_tag(self):
         return self.client_message.tag
+#------------------------------------------------------------------------------
+    def delete_from_db(self, connection):
+        strSql = f'delete from {DB_Table} where {DB_Field_JobID}={self.job_id};'
+        try:
+            connection.execute(strSql)
+        except Exception as e:
+            print (f'FitJob.py, delete_from_db: bug : {e}')
+#------------------------------------------------------------------------------
+    def get_results_dir(self):
+        return self.client_message.results_dir
+#------------------------------------------------------------------------------
+    def get_job_dir(self):
+        return self.client_message.job_dir
+#------------------------------------------------------------------------------
+    def delete_job_directory(self):
+        try:
+            rmtree (self.get_job_dir())
+        except Exception as e:
+            print (f'Could not delete directory: {e}')
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
