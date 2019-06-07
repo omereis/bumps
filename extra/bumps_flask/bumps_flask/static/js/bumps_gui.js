@@ -1,6 +1,7 @@
 /* Bumps GUI middleware */
 //-----------------------------------------------------------------------------
 var g_socket = null;
+var g_flagNetBusy = false;
 //-----------------------------------------------------------------------------
 function load_bumps_problem () {
     try {
@@ -315,11 +316,25 @@ function openWSConnection(protocol, hostname, port, endpoint) {
 	return (webSocket);
 }
 //-----------------------------------------------------------------------------
+// source: http://jsfiddle.net/HrJku/1/
+function sleep(milliseconds) {
+    var start = new Date().getTime();
+    for (var i = 0; i < 1e7; i++) {
+        if ((new Date().getTime() - start) > milliseconds){
+            break;
+        }
+    }
+}
+//-----------------------------------------------------------------------------
 function webSocketSendMessage(protocol, hostname, port, endpoint, message) {
     var webSocketURL = null;
     webSocketURL = protocol + "://" + hostname + ":" + port + endpoint;
     console.log("openWSConnection::Connecting to: " + webSocketURL);
     try {
+        while (g_flagNetBusy) {
+            sleep (10);
+        }
+        g_flagNetBusy = true;
         webSocket = new WebSocket(webSocketURL);
         webSocket.addEventListener('error', (event) => {
             console.log('in addEventListener');
@@ -353,6 +368,9 @@ function webSocketSendMessage(protocol, hostname, port, endpoint, message) {
         };
     } catch (exception) {
         console.error(exception);
+    }
+    finally {
+        g_flagNetBusy = false;
     }
 	return (webSocket);
 }

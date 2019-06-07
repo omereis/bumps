@@ -26,11 +26,29 @@ function onResultsDisplayClick() {
 function onResultsLoadClick() {
 }
 //-----------------------------------------------------------------------------
-function onResultsStatusClick () {
+function getStatusCommandMessage() {
     var message = getMessageStart();
 
     message['command'] = ServerCommands.GET_STATUS;
-    sendMessage (JSON.stringify(message));
+    return (message);
+}
+//-----------------------------------------------------------------------------
+function sendStatusMessage() {
+    var message = getMessageStart();
+
+    message['command'] = ServerCommands.GET_STATUS;
+    sendMessage (JSON.stringify(getStatusCommandMessage()));
+    //sendMessage (JSON.stringify(message));
+}
+//-----------------------------------------------------------------------------
+function onResultsStatusClick () {
+    sendStatusMessage();
+}
+//-----------------------------------------------------------------------------
+function onStatusTimerTick () {
+    var cbox = document.getElementById('cboxStatusPoll');
+    if (cbox.checked)
+        sendStatusMessage();
 }
 //-----------------------------------------------------------------------------
 function getMessageStart() {

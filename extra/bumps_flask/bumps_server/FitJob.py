@@ -6,6 +6,7 @@ import datetime
 import asyncio, sys
 from bumps import cli
 from shutil import rmtree
+import os
 #------------------------------------------------------------------------------
 class JobStatus (Enum):
     NoData    = 1
@@ -112,7 +113,10 @@ class FitJob:
     def set_standby(self, connection):
         self.status = JobStatus.StandBy
         self.update_status_in_db(connection)
-        asyncio.run
+#------------------------------------------------------------------------------
+    def set_completed(self, db_connection):
+        self.status = JobStatus.Completed
+        self.update_status_in_db(db_connection)
 #------------------------------------------------------------------------------
     def update_status_in_db(self, connection):
         #j = JobStatus.status_by_name.StandBy
@@ -143,8 +147,16 @@ class FitJob:
 #------------------------------------------------------------------------------
     def delete_job_directory(self):
         try:
-            rmtree (self.get_job_dir())
+            if os.path.isdir (self.get_job_dir()):
+                rmtree (self.get_job_dir())
         except Exception as e:
             print (f'Could not delete directory: {e}')
 #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+class ServerParams():
+    queueJobEnded = None
+    queueRunJobs = None
+    smprJobRun = None
+    smprJobsList = None
+    listAllJobs = None
 #------------------------------------------------------------------------------
