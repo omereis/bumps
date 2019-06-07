@@ -245,25 +245,29 @@ def remove_from_list_by_id (listJobs, strlstIDs, db_connection):
     except Exception as e:
         print ('bumps_ws_server.py, remove_from_list_by_id, bug: {}'.format(e))
 #------------------------------------------------------------------------------
-async def HandleDelete (cm, listJobs, smprJobsList):
+async def HandleDelete (cm, server_params):
+#async def HandleDelete (cm, listJobs, smprJobsList):
     return_params = cm.params
     db_connection = None
     try:
         db_connection = database_engine.connect()
-        await smprJobsList.acquire()
-        remove_from_list_by_id (listJobs, cm.params, db_connection)
+        #await smprJobsList.acquire()
+        remove_from_list_by_id (server_params.listAllJobs, cm.params, db_connection)
+        #remove_from_list_by_id (listJobs, cm.params, db_connection)
     except Exception as e:
         print ('bumps_ws_server.py, HandleDelete, bug: {}'.format(e))
     finally:
-        smprJobsList.release()
+        #smprJobsList.release()
         if db_connection:
             db_connection.close()
     return return_params
  #------------------------------------------------------------------------------
-async def HandleStatus (cm, listJobs, smprJobsList):
+async def HandleStatus (cm, server_params):
+#async def HandleStatus (cm, listJobs, smprJobsList):
     return_params = []
-    await smprJobsList.acquire()
-    for job in listJobs:
+    #await smprJobsList.acquire()
+    for job in server_params.listAllJobs:
+    #for job in listJobs:
         if job.get_tag() == cm.tag:
             if job.job_id == None:
                 job_id = -1
