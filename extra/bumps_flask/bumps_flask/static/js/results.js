@@ -41,6 +41,13 @@ function sendStatusMessage() {
     //sendMessage (JSON.stringify(message));
 }
 //-----------------------------------------------------------------------------
+function sendPrintStatus() {
+    var message = getMessageStart();
+
+    message['command'] = ServerCommands.PRINT_STATUS;
+    sendMessage (JSON.stringify(message));
+}
+//-----------------------------------------------------------------------------
 function onResultsStatusClick () {
     sendStatusMessage();
 }

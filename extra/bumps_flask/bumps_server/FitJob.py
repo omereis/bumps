@@ -9,13 +9,13 @@ from shutil import rmtree
 import os
 #------------------------------------------------------------------------------
 class JobStatus (Enum):
-    NoData    = 1
-    Parsed    = 2
-    StandBy   = 3
-    Running   = 4
-    Completed = 5
-    Error     = 6
-    StatusErr = 7
+    NoData    = 10
+    Parsed    = 20
+    StandBy   = 30
+    Running   = 40
+    Completed = 50
+    Error     = 60
+    StatusErr = 70
 #------------------------------------------------------------------------------
 def name_of_status (status):
     strName= ''
@@ -106,7 +106,6 @@ class FitJob:
         print(f'\n\nFitJob, run_bumps_fit\n{sys.argv}')
     #------------------------------------------------------------------------------
     def set_running(self, db_connection):
-        print('FitJob, set_running')
         self.status = JobStatus.Running
         self.update_status_in_db(db_connection)
 #------------------------------------------------------------------------------
@@ -159,4 +158,31 @@ class ServerParams():
     smprJobRun = None
     smprJobsList = None
     listAllJobs = None
+    db_connection = None
+    database_engine = None
+#------------------------------------------------------------------------------
+    def __init__ (self, db_engine):
+        self.database_engine = db_engine
+#------------------------------------------------------------------------------
+    def run_job (self, idx, db_connection):
+        if (idx >= 0) & (idx < len(self.listAllJobs)):
+            job = self.listAllJobs[idx]
+            job.set_running(db_connection)
+            self.listAllJobs[idx] = job
+#------------------------------------------------------------------------------
+    def get_connection(self):
+        try:
+            if self.database_engine:
+                connection = self.database_engine.connect()
+        except:
+            connection = None
+        finally:
+            self.db_connection = connection
+        return connection
+#------------------------------------------------------------------------------
+    def close_connection(self):
+        if self.db_connection:
+            self.db_connection.close()
+            self.db_connection = None
+#------------------------------------------------------------------------------
 #------------------------------------------------------------------------------

@@ -82,68 +82,63 @@ def print_jobs(listJobs, title=''):
         print(f'Error in print_job: "{e}"')
 #------------------------------------------------------------------------------
 def scan_jobs_list (db_connection, server_params):
-#def scan_jobs_list (db_connection, listJobs, queueRunJobs):
     n_running_jobs = count_running_jobs(server_params.listAllJobs)
-    #n_running_jobs = count_running_jobs(listJobs)
     n_cpus = multiprocessing.cpu_count()
-    print(f'Number of CPUs: {n_cpus}, Number of running jobs: {n_running_jobs}')
-    print(f'number of jobs: {len(server_params.listAllJobs)}')
-    #print(f'number of jobs: {len(listJobs)}')
-    print_jobs(server_params.listAllJobs, title='before scan')
-    #print_jobs(listJobs, title='before scan')
+    #print_jobs(server_params.listAllJobs, title='before scan')
     for n in range(len(server_params.listAllJobs)):
-    #for n in range(len(listJobs)):
-        #status = server_params.listAllJobs[n].status
-        #status = listJobs[n].status
         if server_params.listAllJobs[n].status == JobStatus.Parsed:
-        #if status == JobStatus.Parsed:
             server_params.listAllJobs[n].status[n].set_standby(db_connection)
-            #listJobs[n].set_standby(db_connection)
         elif server_params.listAllJobs[n].status == JobStatus.StandBy:
-        #elif listJobs[n].status == JobStatus.StandBy:
-            server_params.listAllJobs[n].set_running(db_connection)
-            #queueRunJobs.put(listJobs[n])
-            server_params.queueRunJobs.put(server_params.listAllJobs[n])
-            print('scan_jobs_list, added to queue')
-    print_jobs(server_params.listAllJobs, title='after scan')
-    #print_jobs(listJobs, title='after scan')
+            if n_running_jobs < n_cpus:
+                print(f'"scan_jobs_list", before putting job in "queueRunJobs", process ID {os.getpid()}')
+                server_params.queueRunJobs.put(server_params.listAllJobs[n])
+                #server_params.run_job (n, db_connection)
+                #run_fit_job (server_params.listAllJobs[n], server_params)
+    #print_jobs(server_params.listAllJobs, title='after scan')
 #------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
 import bumps.cli
 def run_fit_job (fit_job, server_params):
-#def run_fit_job (fit_job, queueJobEnded):
     try:
         sys.argv = fit_job.params
         print('Fit job started')
         try:
             bumps.cli.main()
-            #cli.main()
         finally:
             print('\n\n\nFit job completed')
             server_params.queueJobEnded.put(fit_job)
     except Exception as e:
         print (f'Error in run_fit_job: {e}')
 #------------------------------------------------------------------------------
-async def queue_reader(server_params):
+async def job_runner(server_params):
 #async def queue_reader(jobs_queue,queueJobEnded,listAllJobs,smprJobsList):
     while True:
+        print(f'"job_runner", waiting on queueRunJobs')
+        sys.stdout.flush()
         fit_job = server_params.queueRunJobs.get()
-        #fit_job = jobs_queue.get()
+        print(f'"job_runner", new job from queueRunJobs')
+        sys.stdout.flush()
         try:
             fit_job.prepare_params()
-            print (f'queue_reader, fit job params (after preparation): {fit_job.params}')
+            fit_job.set_running(server_params.get_connection())
+            idx = find_job_by_id (server_params.listAllJobs, fit_job.job_id)
+            if idx >= 0:
+                print(f'"job_runner", job {fit_job.job_id} status changed to "{name_of_status(fit_job.status)}')
+                print(f'"job_runner", connection closed, {len(server_params.listAllJobs)} jobs')
+                server_params.listAllJobs[idx] = fit_job
+                print(f'"job_runner", job {fit_job.job_id} status changed to "{name_of_status(server_params.listAllJobs[idx].status)}')
+            print (f'"job_runner", process id : {os.getpid()}, fit job params (after preparation): {fit_job.params}')
             run_fit_job (fit_job, server_params)
-            #run_fit_job (fit_job, queueJobEnded)
-            #await smprJobsList.acquire() # acquire semaphore before accessing jobs list
-            #smprJobsList.release() # release semaphore at the end of work on jobs list
         except Exception as e:
-            print(f'Error in queue_reader: {e}')
+            print(f'Error in job_runner: {e}')
+        finally:
+            server_params.close_connection()
+            print(f'"job_runner", connection closed, {len(server_params.listAllJobs)} jobs')
+            sys.stdout.flush()
 #------------------------------------------------------------------------------
-def jobs_q_manager(server_params):
-#def jobs_q_manager(jobs_queue,queueJobEnded,listAllJobs,smprJobsList):
-    print(f'started process with id {os.getpid()}')
-    asyncio.run(queue_reader(server_params))
-#    asyncio.run(queue_reader(jobs_queue,queueJobEnded,listAllJobs,smprJobsList))
+def jobs_runner_process(server_params):
+    print(f'"jobs_q_manager", started process with id {os.getpid()}, number of jobs: {len(server_params.listAllJobs)}')
+    asyncio.run(job_runner(server_params))
 #------------------------------------------------------------------------------
 def find_job_by_id (listJobs, job_id):
     iFound = -1
@@ -155,41 +150,26 @@ def find_job_by_id (listJobs, job_id):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 async def job_finalizer(server_params):
-#async def job_finalizer(queueJobEnded,listJobs,smprJobsList):
     while True:
         fit_job = server_params.queueJobEnded.get()
         try:
             db_connection = database_engine.connect()
-            #await smprJobsList.acquire()
             idx = find_job_by_id(server_params.listAllJobs, fit_job.job_id)
-            #idx = find_job_by_id(listJobs, fit_job.job_id)
             if idx >= 0:
-                server_params.listAllJobs[idx].set_completed(db_connection)
-                print(f'job_finalizer, job {fit_job.job_id} set to completed: {server_params.listAllJobs[idx].status}')
-                #print(f'job_finalizer, job {fit_job.job_id} set to completed: {listJobs[idx].status}')
+                job = server_params.listAllJobs[idx]
+                job.set_completed(db_connection)
+                server_params.listAllJobs[idx] = job
             else:
-                # job not in list, but could be in db
                 fit_job.set_completed(db_connection)
-            print(f'job_finalizer, job {fit_job.job_id} completed, remaining jobs: {len(server_params.listAllJobs)}')
-            #print(f'job_finalizer, job {fit_job.job_id} completed, remaining jobs: {len(listJobs)}')
+            print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} complted')
             sys.stdout.flush()
             scan_jobs_list (db_connection, server_params)
-            #scan_jobs_list (db_connection, listJobs, None)
-            print(f'job_finalizer, called scan_jobs_list')
-            sys.stdout.flush()
         finally:
-            #smprJobsList.release()
             db_connection.close()
-            print(f'job_finalizer, semaphore acquired and released, for fit job {fit_job.job_id}')
-            sys.stdout.flush()
 #------------------------------------------------------------------------------
 def job_ending_manager(server_params):
-#def job_ending_manager(queueJobEnded,listJobs,smprJobsList):
-    print(f'job_ending_manager, length(listJobs): {len(server_params.listAllJobs)}')
-    #print(f'job_ending_manager, length(listJobs): {len(listJobs)}')
-    print(f'"job_ending_manager", started process with id {os.getpid()}')
+    print(f'"job_ending_manager", started process with id {os.getpid()}, length(listJobs): {len(server_params.listAllJobs)}')
     asyncio.run(job_finalizer(server_params))
-    #asyncio.run(job_finalizer(queueJobEnded,listJobs,smprJobsList))
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 async def add_job_to_queue (fit_job, listJobs, smprJobsList):
@@ -197,25 +177,20 @@ async def add_job_to_queue (fit_job, listJobs, smprJobsList):
     listJobs.append(fit_job)
     smprJobsList.release()
 #------------------------------------------------------------------------------
-def StartFit (cm, server_params):
-#def StartFit (cm, listJobs, smprJobsList):
+def HandleFitMessage (cm, server_params):
     cm.create_results_dir()
     cm.save_problem_file()
     fit_job = FitJob (cm)
-    #fit_job.status = JobStatus.Parsed
     try:
         db_connection = database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
         fit_job.set_standby(db_connection)
-        print(f'bumps_ws_server, StartFit, fit_job.job_id={fit_job.job_id}')
-        server_params.queueRunJobs.put(fit_job)
-        #asyncio.run (add_job_to_queue (fit_job, listJobs, smprJobsList))
-        #listJobs.append(fit_job)
+        print(f'bumps_ws_server, HandleFitMessage, fit_job.job_id={fit_job.job_id}')
+        #server_params.queueRunJobs.put(fit_job)
+        server_params.listAllJobs.append(fit_job)
         scan_jobs_list (db_connection, server_params)
-        #scan_jobs_list (db_connection, listJobs)
-        #qJobs.put(fit_job)
     except:
-        print ('bumps_ws_server.py, StartFit, bug: {}'.format(e))
+        print ('bumps_ws_server.py, HandleFitMessage, bug: {}'.format(e))
         job_id = 0
     finally:
         if db_connection:
@@ -246,28 +221,21 @@ def remove_from_list_by_id (listJobs, strlstIDs, db_connection):
         print ('bumps_ws_server.py, remove_from_list_by_id, bug: {}'.format(e))
 #------------------------------------------------------------------------------
 async def HandleDelete (cm, server_params):
-#async def HandleDelete (cm, listJobs, smprJobsList):
     return_params = cm.params
     db_connection = None
     try:
         db_connection = database_engine.connect()
-        #await smprJobsList.acquire()
         remove_from_list_by_id (server_params.listAllJobs, cm.params, db_connection)
-        #remove_from_list_by_id (listJobs, cm.params, db_connection)
     except Exception as e:
         print ('bumps_ws_server.py, HandleDelete, bug: {}'.format(e))
     finally:
-        #smprJobsList.release()
         if db_connection:
             db_connection.close()
     return return_params
  #------------------------------------------------------------------------------
 async def HandleStatus (cm, server_params):
-#async def HandleStatus (cm, listJobs, smprJobsList):
     return_params = []
-    #await smprJobsList.acquire()
     for job in server_params.listAllJobs:
-    #for job in listJobs:
         if job.get_tag() == cm.tag:
             if job.job_id == None:
                 job_id = -1
@@ -275,29 +243,25 @@ async def HandleStatus (cm, server_params):
                 job_id = job.job_id
             item = {'job_id': job_id, 'job_status': name_of_status(job.status)}
             return_params.append(item)
-    smprJobsList.release()
     return return_params
  #------------------------------------------------------------------------------
 def handle_incoming_message (websocket, message, server_params):
-#def handle_incoming_message (websocket, message, listJobs, smprJobsList):
     return_params = {}
     cm = ClientMessage()
-    print(f'handle_incoming_message, length(listJobs): {len(server_params.listAllJobs)}')
-    #print(f'handle_incoming_message, length(listJobs): {len(listJobs)}')
     try:
         if cm.parse_message(websocket, message):
             if cm.command == MessageCommand.StartFit:
-                #job_id = StartFit (cm, listJobs, smprJobsList)
-                job_id = StartFit (cm, server_params)
+                print(f'"handle_incoming_message", in process {os.getpid()}, before calling StartFit')
+                job_id = HandleFitMessage (cm, server_params)
+                print(f'"handle_incoming_message", fit job with id of {job_id} in process {os.getpid()}')
                 if job_id:
                     return_params[cm.row_id] = job_id # return job_id to client
             elif cm.command == MessageCommand.Delete:
                 return_params = asyncio.run(HandleDelete (cm, server_params))
-                #return_params = asyncio.run(HandleDelete (cm, listJobs, smprJobsList))
             elif cm.command == MessageCommand.Status:
-                print('handle_incoming_message, status command')
                 return_params = asyncio.run(HandleStatus (cm, server_params))
-                #return_params = asyncio.run(HandleStatus (cm, listJobs, smprJobsList))
+            elif  cm.command == MessageCommand.PrintStatus:
+                print_jobs(server_params.listAllJobs, title='current_status')
         else:
             print('parse_message error.')
     except Exception as err:
@@ -309,7 +273,7 @@ import functools
 async def bumps_server(websocket, path, server_params):
 #async def bumps_server(websocket, path, lstJobs, ):
 #async def bumps_server(websocket, path):
-    print(f'type of "websocket": {type(websocket)}')
+    #print(f'type of "websocket": {type(websocket)}')
     message = await websocket.recv()
     try:
         jmsg = json.loads(message)
@@ -343,18 +307,16 @@ if __name__ == '__main__':
     print('Host: {}'.format(host))
     print('Port: {}'.format(port))
 
-    server_params = ServerParams()
-    server_params.queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
-    server_params.queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
-    server_params.smprJobRun = asyncio.Semaphore()
-    server_params.smprJobsList = asyncio.Semaphore()
-    server_params.listAllJobs = multiprocessing.Manager().list()
-    #listAllJobs = []
-
-
     try:
         database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
         connection = database_engine.connect()
+
+        server_params = ServerParams(database_engine)
+        server_params.queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
+        server_params.queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
+        server_params.smprJobRun = asyncio.Semaphore()
+        server_params.smprJobsList = asyncio.Semaphore()
+        server_params.listAllJobs = multiprocessing.Manager().list()
         print("Database connected")
     except Exception as e:
         print("Error while connecting to database bumps_db in NCNR-R9nano.campus.nist.gov:3306:")
@@ -368,8 +330,7 @@ if __name__ == '__main__':
             print("Fatal error. Aborting :-(")
             exit(1)
     try:
-        pRunner = multiprocessing.Process(name='jobs runner', target=jobs_q_manager, args=(server_params,))
-#        pRunner = multiprocessing.Process(name='jobs runner', target=jobs_q_manager, args=(queueRunJobs, queueJobEnded,listAllJobs,smprJobsList,))
+        pRunner = multiprocessing.Process(name='jobs runner', target=jobs_runner_process, args=(server_params,))
         pRunner.start()
 
         pFinalizer = multiprocessing.Process(name='jobs finalizer', target=job_ending_manager, args=(server_params,))

@@ -10,6 +10,7 @@ class MessageCommand (Enum):
     Status   = 2
     Delete   = 3
     GetData  = 4
+    PrintStatus = 5
 #------------------------------------------------------------------------------
 MessageTag         = 'tag'
 MessageTime        = 'message_time'
@@ -45,6 +46,8 @@ def parse_command (message_command):
         command = MessageCommand.Delete
     elif message_command == 'get_data':
         command = MessageCommand.GetData
+    elif message_command == 'print_status':
+        command = MessageCommand.PrintStatus
     else:
         command = MessageCommand.Error
     return command

@@ -1,5 +1,5 @@
 body{
-    background-color: rgb(186, 233, 202);
+    background-color: rgb(186, 232, 233);
     color:black;
     border-color:black;
 }
@@ -8,7 +8,7 @@ table, th, td, tr, th {
 }
 th {
     text-align: center;
-    background-color: rgb(70, 185, 70);
+    background-color: rgb(100, 131, 216);
 }
 .no_border {
     border: 0px;
