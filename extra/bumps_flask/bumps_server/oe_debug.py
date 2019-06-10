@@ -2,11 +2,12 @@ import datetime
 #-------------------------------------------------------------------------------
 def print_debug(strMessage):
     try:
-        f = open ("oe_debug.txt", "a+")
+        f = open ("debug_oe.txt", "a+")
         f.write("\n--------------------------------------------------\n")
         f.write(str(datetime.datetime.now()) + "\n")
         f.write("Message: " + strMessage + "\n")
         f.write("--------------------------------------------------\n")
+        f.flush()
         f.close()
     finally:
         f.close()
@@ -14,7 +15,7 @@ def print_debug(strMessage):
 def print_stack():
     try:
         import traceback
-        f = open ("oe_debug.txt", "a+")
+        f = open ("debug_oe.txt", "a+")
         f.write("-----------------------------\n")
         f.write("Printing Stack:\n")
         stack = traceback.extract_stack ()
