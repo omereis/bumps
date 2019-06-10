@@ -54,6 +54,15 @@ def status_by_name (strName):
         status = JobStatus.StatusErr
     return status
 #------------------------------------------------------------------------------
+def find_job_by_id (listJobs, job_id):
+    iFound = -1
+    n = 0
+    while (n < len(listJobs)) & (iFound < 0):
+        if listJobs[n].job_id == job_id:
+            iFound = n
+        n += 1
+    return iFound
+#------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 class FitJob:
     client_message = None
@@ -95,9 +104,6 @@ class FitJob:
             elif k == 'steps':
                 self.params.append(f'--steps={self.client_message.get_steps()}')
         self.params.append(f'--store={self.client_message.results_dir}')
-        #print(f'prepare_params, client message params: {self.client_message.params}')
-        #for k in self.client_message.params.keys():
-            #print(f'Key: {k}')
 #------------------------------------------------------------------------------
     def run_bumps_fit(self, db_connection):
         sys.argv = []
@@ -193,5 +199,17 @@ class ServerParams():
             print(f'\tFitJob, "close_connection", process {os.getpid()}, connection closed')
         except Exception as e:
             print(f'\tFitJob, "close_connection", process {os.getpid()}, error\n{e}')
+#------------------------------------------------------------------------------
+    def jobs_count(self):
+        return len(self.listAllJobs)
+#------------------------------------------------------------------------------
+    def append_job (self, fit_job):
+        idx = find_job_by_id (self.listAllJobs, fit_job.job_id)
+        if idx >= 0:
+            self.listAllJobs[idx] = fit_job
+        else:
+            self.listAllJobs.append(fit_job)
+            print_debug(f'append_job, process {os.getpid()}, appended job {fit_job.job_id}, list contains {self.jobs_count()} jobs')
+        #server_params.listAllJobs.append(fit_job)
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------

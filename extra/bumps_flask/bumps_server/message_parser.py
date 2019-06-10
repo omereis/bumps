@@ -53,11 +53,9 @@ def parse_command (message_command):
     return command
 #------------------------------------------------------------------------------
 def getMessageField (message, key):
-    print_debug('getMessageField, key: {}'.format(key))
     val = None
     if key in message.keys():
         val = message[key]
-        print_debug('getMessageField, key: {}'.format(message[key]))
     return val
 #------------------------------------------------------------------------------
 class ClientMessage:
