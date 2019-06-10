@@ -7,7 +7,7 @@ import asyncio, sys
 from bumps import cli
 from shutil import rmtree
 import os
-from oe_debug import print_debug
+from oe_debug import print_debug, print_stack
 #------------------------------------------------------------------------------
 class JobStatus (Enum):
     NoData    = 10
@@ -136,7 +136,8 @@ class FitJob:
         try:
             connection.execute(strSql)
         except Exception as e:
-            print (f'FitJob.py, update_status_in_db: bug ; {e}')
+            print (f'FitJob.py, update_status_in_db: bug ; {e}\nSQL: "{strSql}"')
+            print_stack ()
 #------------------------------------------------------------------------------
     def get_tag(self):
         return self.client_message.tag
@@ -191,12 +192,10 @@ class ServerParams():
         return connection
 #------------------------------------------------------------------------------
     def close_connection(self):
-        print(f'\tFitJob, "close_connection", process {os.getpid()}')
         try:
             if self.db_connection:
                 self.db_connection.close()
                 self.db_connection = None
-            print(f'\tFitJob, "close_connection", process {os.getpid()}, connection closed')
         except Exception as e:
             print(f'\tFitJob, "close_connection", process {os.getpid()}, error\n{e}')
 #------------------------------------------------------------------------------
@@ -209,7 +208,7 @@ class ServerParams():
             self.listAllJobs[idx] = fit_job
         else:
             self.listAllJobs.append(fit_job)
-            print_debug(f'append_job, process {os.getpid()}, appended job {fit_job.job_id}, list contains {self.jobs_count()} jobs')
+            #print_debug(f'append_job, process {os.getpid()}, appended job {fit_job.job_id}, list contains {self.jobs_count()} jobs')
         #server_params.listAllJobs.append(fit_job)
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------

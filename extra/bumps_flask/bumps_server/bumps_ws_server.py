@@ -71,18 +71,9 @@ def count_running_jobs (listJobs):
             n_running_jobs += 1
     return n_running_jobs
 #------------------------------------------------------------------------------
-def get_jobs_strings(listJobs):
-    strings = []
-    strings.append('\n-----------------------\n')
-    for n in range(len(listJobs)):
-        strings.append (f'job {n}, job_id: {listJobs[n].job_id}, status: {name_of_status(listJobs[n].status)}\n')
-    strings.append('-----------------------\n')
-    return strings
-#------------------------------------------------------------------------------
 def print_jobs(listJobs, title=''):
     try: 
         print(f'{title}: Current Jobs')
-        #print(get_jobs_strings(listJobs))
         print('-----------------------')
         for n in range(len(listJobs)):
             print (f'job {n}, job_id: {listJobs[n].job_id}, status: {name_of_status(listJobs[n].status)}')
@@ -91,25 +82,22 @@ def print_jobs(listJobs, title=''):
         print(f'Error in print_job: "{e}"')
 #------------------------------------------------------------------------------
 def scan_jobs_list (server_params):
-#def scan_jobs_list (db_connection, server_params):
     n_cpus = multiprocessing.cpu_count()
-    #print_jobs(server_params.listAllJobs, title='before scan')
     for n in range(len(server_params.listAllJobs)):
-#    for fit_job in server_params.listAllJobs:
         n_running_jobs = count_running_jobs(server_params.listAllJobs)
         fit_job = server_params.listAllJobs[n]
         if fit_job.status == JobStatus.Parsed:
             fit_job.set_standby(server_params.db_connection)
-            print_debug(f'"scan_jobs_list", process ID {os.getpid()}, writing job {fit_job.job_id} to queueRunJobs, , list contains {server_params.jobs_count()} jobs')
+            #print_debug(f'"scan_jobs_list", process ID {os.getpid()}, writing job {fit_job.job_id} to queueRunJobs, , list contains {server_params.jobs_count()} jobs')
         elif fit_job.status == JobStatus.StandBy:
             if n_running_jobs < n_cpus:
-                print_debug(f'"scan_jobs_list", process ID {os.getpid()}, writing job {fit_job.job_id} to queueRunJobs, , list contains {server_params.jobs_count()} jobs')
+                #print_debug(f'"scan_jobs_list", process ID {os.getpid()}, writing job {fit_job.job_id} to queueRunJobs, , list contains {server_params.jobs_count()} jobs')
                 fit_job.prepare_params()
                 fit_job.set_running(server_params.get_connection())
                 server_params.listAllJobs[n] = fit_job
                 server_params.queueRunJobs.put(fit_job)
-                print_debug(f'"scan_jobs_list", process ID {os.getpid()}, job {fit_job.job_id} written to queueRunJobs, current status {name_of_status(fit_job.status)} list contains {server_params.jobs_count()} jobs')
-                print_jobs (server_params.listAllJobs, "scan_jobs_list")
+                #print_debug(f'"scan_jobs_list", process ID {os.getpid()}, job {fit_job.job_id} written to queueRunJobs, current status {name_of_status(fit_job.status)} list contains {server_params.jobs_count()} jobs')
+                #print_jobs (server_params.listAllJobs, "scan_jobs_list")
 #------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
 import bumps.cli
@@ -117,12 +105,12 @@ def run_fit_job (fit_job, server_params):
     try:
         sys.argv = fit_job.params
         try:
-            print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} running')
+            #print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} running')
             bumps.cli.main()
         finally:
-            print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} ended')
+            #rint_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} ended')
             server_params.queueJobEnded.put(fit_job)
-            print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} added to queueJobEnded')
+            #print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} added to queueJobEnded')
     except Exception as e:
         print (f'Error in run_fit_job: {e}')
 #------------------------------------------------------------------------------
@@ -130,7 +118,7 @@ async def job_runner(server_params):
     while True:
         fit_job = server_params.queueRunJobs.get()
         try:
-            print_debug(f"'job_runner', job id {fit_job.job_id}, status {name_of_status(fit_job.status)}")
+            #print_debug(f"'job_runner', job id {fit_job.job_id}, status {name_of_status(fit_job.status)}")
             #fit_job.prepare_params()
             #fit_job.set_running(server_params.get_connection())
             run_fit_job (fit_job, server_params)
@@ -146,7 +134,7 @@ async def job_finalizer(server_params):
     while True:
         #print(f'"job_finalizer", process {os.getpid()}, waiting for a fit job to end')
         fit_job = server_params.queueJobEnded.get()
-        print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
+        #print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
         sys.stdout.flush()
         if fit_job.status == JobStatus.Running:
             try:
@@ -154,31 +142,28 @@ async def job_finalizer(server_params):
                 idx = find_job_by_id(server_params.listAllJobs, fit_job.job_id)
                 if idx >= 0:
                     job = server_params.listAllJobs[idx]
-                    job.set_completed(server_params.db_connection)
+                    #job.set_completed(server_params.db_connection)
+                    job.set_completed(server_params.get_connection())
                     server_params.listAllJobs[idx] = job
                 else:
                     print(f'job_finalizer, process {os.getpid()}, job {fit_job.job_id} not on list')
                     #fit_job.set_completed(db_connection)
-                print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended and completed')
-                print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended and completed')
-                sys.stdout.flush()
+                #print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended and completed')
+                #print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended and completed')
+                #sys.stdout.flush()
                 #scan_jobs_list (db_connection, server_params)
-                print_jobs(server_params.listAllJobs, "job_finalizer")
+                #print_jobs(server_params.listAllJobs, "job_finalizer")
                 scan_jobs_list (server_params)
             except Exception as e:
                 print_debug(f'"job_finalizer", process {os.getpid()}, error"{e}"')
-            #finally:
+            finally:
+                server_params.close_connection()
                 #db_connection.close()
 #------------------------------------------------------------------------------
 def job_ending_manager(server_params):
     print(f'"job_ending_manager", started process with id {os.getpid()}, length(listJobs): {len(server_params.listAllJobs)}')
     asyncio.run(job_finalizer(server_params))
 #------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-#async def add_job_to_queue (fit_job, listJobs, smprJobsList):
-#    await smprJobsList.acquire()
-#    listJobs.append(fit_job)
-#    smprJobsList.release()
 #------------------------------------------------------------------------------
 def HandleFitMessage (cm, server_params):
     cm.create_results_dir()
@@ -188,17 +173,11 @@ def HandleFitMessage (cm, server_params):
         db_connection = database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
         fit_job.set_standby(db_connection)
-        print(f'bumps_ws_server, HandleFitMessage, fit_job.job_id={fit_job.job_id}')
         server_params.append_job (fit_job)
-        #server_params.listAllJobs.append(fit_job)
         scan_jobs_list (server_params)
-        #scan_jobs_list (db_connection, server_params)
     except Exception as e:
         print (f'bumps_ws_server.py, HandleFitMessage, bug: {e}')
         job_id = 0
-    #finally:
-        #if db_connection:
-            #db_connection.close()
     return job_id
 #------------------------------------------------------------------------------
 def get_orred_ids (params):
@@ -255,9 +234,7 @@ def handle_incoming_message (websocket, message, server_params):
     try:
         if cm.parse_message(websocket, message):
             if cm.command == MessageCommand.StartFit:
-                print(f'"handle_incoming_message", in process {os.getpid()}, before calling StartFit')
                 job_id = HandleFitMessage (cm, server_params)
-                print(f'"handle_incoming_message", fit job with id of {job_id} in process {os.getpid()}')
                 if job_id:
                     return_params[cm.row_id] = job_id # return job_id to client
             elif cm.command == MessageCommand.Delete:
@@ -286,13 +263,13 @@ async def bumps_server(websocket, path, server_params):
     save_message(strTime + ':\n\n'+ message + '\n')
     #return_params = handle_incoming_message (websocket, json.loads(message), lstJobs, smprJobsList)
     return_params = handle_incoming_message (websocket, json.loads(message), server_params)
-    print (f'Return Params: {return_params}')
+    #print (f'Return Params: {return_params}')
 
     source = "{}:{}".format(websocket.host, websocket.port)
-    print ("Just got a message from...")
+    #print ("Just got a message from...")
     try:
         remote_client = websocket.remote_address[0]
-        print ("    client in {}".format(source))
+        #print ("    client in {}".format(source))
     except Exception as e:
         print(f'Error in bumps_server: {e}')
     reply_message = {}
@@ -302,7 +279,7 @@ async def bumps_server(websocket, path, server_params):
         return_params = "None"
     reply_message['params'] = return_params
     #sleep(0.1)
-    print(f'bumps_server, return_params: {return_params}')
+    #print(f'bumps_server, return_params: {return_params}')
     await websocket.send(str(reply_message))
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
@@ -351,6 +328,3 @@ if __name__ == '__main__':
     finally:
         pRunner.terminate()
         pFinalizer.terminate()
-
-
-

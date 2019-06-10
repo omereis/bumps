@@ -88,7 +88,6 @@ class ClientMessage:
                 self.params       = getMessageField (message, MessageParams)
                 self.row_id       = getMessageField (message, MessageRowID)
                 self.job_dir      = self.compose_job_directory_name () # just get the name, does not create directory
-                print (f'message_parser, parse_message, message params: {self.params}')
                 parse = True
         except Exception as e:
             print('message_parser.py, parse_message: {}'.format(e))
