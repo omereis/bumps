@@ -101,39 +101,30 @@ import bumps.cli
 def run_fit_job (fit_job, server_params):
     try:
         sys.argv = fit_job.params
-        print('Fit job started')
         try:
             bumps.cli.main()
         finally:
-            print('\n\n\nFit job completed')
             server_params.queueJobEnded.put(fit_job)
     except Exception as e:
         print (f'Error in run_fit_job: {e}')
 #------------------------------------------------------------------------------
 async def job_runner(server_params):
-#async def queue_reader(jobs_queue,queueJobEnded,listAllJobs,smprJobsList):
     while True:
-        print(f'"job_runner", waiting on queueRunJobs')
-        sys.stdout.flush()
         fit_job = server_params.queueRunJobs.get()
-        print(f'"job_runner", new job from queueRunJobs')
-        sys.stdout.flush()
         try:
             fit_job.prepare_params()
             fit_job.set_running(server_params.get_connection())
             idx = find_job_by_id (server_params.listAllJobs, fit_job.job_id)
             if idx >= 0:
-                print(f'"job_runner", job {fit_job.job_id} status changed to "{name_of_status(fit_job.status)}')
-                print(f'"job_runner", connection closed, {len(server_params.listAllJobs)} jobs')
                 server_params.listAllJobs[idx] = fit_job
-                print(f'"job_runner", job {fit_job.job_id} status changed to "{name_of_status(server_params.listAllJobs[idx].status)}')
-            print (f'"job_runner", process id : {os.getpid()}, fit job params (after preparation): {fit_job.params}')
             run_fit_job (fit_job, server_params)
         except Exception as e:
             print(f'Error in job_runner: {e}')
-        finally:
+#        finally:
+        try:
             server_params.close_connection()
-            print(f'"job_runner", connection closed, {len(server_params.listAllJobs)} jobs')
+        except Exception as e:
+            print(f'"job_runner", error in close connection: {e}')
             sys.stdout.flush()
 #------------------------------------------------------------------------------
 def jobs_runner_process(server_params):
@@ -146,12 +137,15 @@ def find_job_by_id (listJobs, job_id):
     while (n < len(listJobs)) & (iFound < 0):
         if listJobs[n].job_id == job_id:
             iFound = n
+        n += 1
     return iFound
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 async def job_finalizer(server_params):
     while True:
+        print(f'"job_finalizer", process {os.getpid()}, waiting for a fit job to end')
         fit_job = server_params.queueJobEnded.get()
+        print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
         try:
             db_connection = database_engine.connect()
             idx = find_job_by_id(server_params.listAllJobs, fit_job.job_id)

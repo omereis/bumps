@@ -7,6 +7,7 @@ import asyncio, sys
 from bumps import cli
 from shutil import rmtree
 import os
+from oe_debug import print_debug
 #------------------------------------------------------------------------------
 class JobStatus (Enum):
     NoData    = 10
@@ -106,8 +107,11 @@ class FitJob:
         print(f'\n\nFitJob, run_bumps_fit\n{sys.argv}')
     #------------------------------------------------------------------------------
     def set_running(self, db_connection):
-        self.status = JobStatus.Running
-        self.update_status_in_db(db_connection)
+        try:
+            self.status = JobStatus.Running
+            self.update_status_in_db(db_connection)
+        except Exception as e:
+            print(f'Process {os.getpid()}, FitJob, "set_running", job #{self.job_id}, error {e}')
 #------------------------------------------------------------------------------
     def set_standby(self, connection):
         self.status = JobStatus.StandBy
@@ -181,8 +185,13 @@ class ServerParams():
         return connection
 #------------------------------------------------------------------------------
     def close_connection(self):
-        if self.db_connection:
-            self.db_connection.close()
-            self.db_connection = None
+        print(f'\tFitJob, "close_connection", process {os.getpid()}')
+        try:
+            if self.db_connection:
+                self.db_connection.close()
+                self.db_connection = None
+            print(f'\tFitJob, "close_connection", process {os.getpid()}, connection closed')
+        except Exception as e:
+            print(f'\tFitJob, "close_connection", process {os.getpid()}, error\n{e}')
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
