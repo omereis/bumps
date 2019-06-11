@@ -162,6 +162,19 @@ function insertResultsCell (row, idx) {
     cell.innerText = '---';
 }
 //-----------------------------------------------------------------------------
+function addServerCells(row)
+{
+    var cell = row.insertCell(5);
+    cell.innerText = $('#remote_server').val();
+    cell.style.display="none";
+    cell = row.insertCell(6);
+    cell.innerText = $('#remote_port').val();
+    cell.style.display="none";
+    cell = row.insertCell(7);
+    cell.innerText = $('#remote_tag').val();
+    cell.style.display="none";
+}
+//-----------------------------------------------------------------------------
 function addResultRow (tag)
 {
     var table = document.getElementById('tblResults');
@@ -171,6 +184,7 @@ function addResultRow (tag)
     insertTagCell (row, tag, 2)
     insertStatusCell (row, 3);
     insertResultsCell (row, 4);
+    addServerCells(row);
     return (cell_id);
 }
 //-----------------------------------------------------------------------------
@@ -254,6 +268,9 @@ function disconnectServer() {
 function socketErrorHandler (socket, eventError) {
     if (webSocket.readyState == 3) {
         alert('Communication faule:\nDestination not ready');
+        var cbox = document.getElementById('cboxStatusPoll');
+        if (cbox.checked) 
+            cbox.checked = false;
     }
 }
 //-----------------------------------------------------------------------------
@@ -451,7 +468,10 @@ function updateJobsStatus (params) {
             var job_id, row;
             job_id = params[n].job_id;
             row = getRowByDBID (job_id);
-            tbl.rows[row].cells[3].innerText = params[n].job_status;
+            if (row >= 0) {
+                tbl.rows[row].cells[3].innerText = params[n].job_status;
+                tbl.rows[row].cells[4].innerHTML = '<a href="/" target="_blank">Show</a>';
+            }
         }
     }
     catch (err) {

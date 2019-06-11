@@ -105,6 +105,7 @@ def run_fit_job (fit_job, server_params):
     try:
         sys.argv = fit_job.params
         try:
+            #print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} running, params: {fit_job.params}')
             #print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} running')
             bumps.cli.main()
         finally:
@@ -142,12 +143,10 @@ async def job_finalizer(server_params):
                 idx = find_job_by_id(server_params.listAllJobs, fit_job.job_id)
                 if idx >= 0:
                     job = server_params.listAllJobs[idx]
-                    #job.set_completed(server_params.db_connection)
                     job.set_completed(server_params.get_connection())
                     server_params.listAllJobs[idx] = job
                 else:
                     print(f'job_finalizer, process {os.getpid()}, job {fit_job.job_id} not on list')
-                    #fit_job.set_completed(db_connection)
                 #print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended and completed')
                 #print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended and completed')
                 #sys.stdout.flush()

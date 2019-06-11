@@ -13,6 +13,9 @@
             <title>bumps distribution Server</title>
     <body onload="init_app()">
             <h3><b>bumps</b> Multi Processing User Interface</h3>
+            <!--<a href="{{ url_for ('static', filename='ncnr01.jpg') }}">picture 1</a><br>
+            <a href="{{ url_for ('static', filename='ncnr02.jpg') }}">picture 2</a>
+            <a href="[[ url_for ('celery_bumps', filename='app.py') ]]">app.py</a>-->
 			<table>
 				<tr>
 					<th>
@@ -146,6 +149,9 @@
                 </tr>
                 <tr>
                     <td colspan="3">
+                        <div id=status_header>
+                            <input type="button" value="Clear Status" onclick="clearStatus()">
+                        </div>
                         <div id="status_line"> status line </div>
                     </td>
                 </tr>
@@ -155,11 +161,14 @@
         </div>
     </body>
     <script>
+        function clearStatus() {
+            document.getElementById('status_line').innerText='';
+        }
         document.getElementById("problemFile").onchange = load_bumps_problem;
         document.getElementById("clear_file").onclick = clear_file;
         document.getElementById("save_problem_file").onclick = save_model;
         document.getElementById("btnSendJob").onclick = onSendJobClick;
-        
+
         setInterval(onStatusTimerTick, 500);
         
         var alg=document.getElementById("algorithm");
