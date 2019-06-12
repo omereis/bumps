@@ -135,7 +135,8 @@ async def job_finalizer(server_params):
     while True:
         #print(f'"job_finalizer", process {os.getpid()}, waiting for a fit job to end')
         fit_job = server_params.queueJobEnded.get()
-        #print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
+        print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
+        print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
         sys.stdout.flush()
         if fit_job.status == JobStatus.Running:
             try:

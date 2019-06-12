@@ -462,7 +462,10 @@ function deleteRowByDBID (db_id) {
 //-----------------------------------------------------------------------------
 function showFitResults (job_id) {
     var res_div = document.getElementById('fit_results')
-    res_div.innerHTML = res_div.innerHTML + 'more results from ' + job_id.toString() + '<br>';
+    
+    res_div.innerHTML = res_div.innerHTML + '<br>' + '<img src=""{{ url_for("static",filename="ncnr01.jpg") }}">';//</img>'<img src="http://urbanologia.tau.ac.il/wp-content/uploads/2015/06/20141212-RAHAT-ARAD-262.jpg" width="100" height="100">'
+    $.post("dashboard");
+    //res_div.innerHTML + 'more results from ' + job_id.toString() + '<br>';
 }
 //-----------------------------------------------------------------------------
 function updateJobsStatus (params) {
