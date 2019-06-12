@@ -460,6 +460,11 @@ function deleteRowByDBID (db_id) {
     }
 }
 //-----------------------------------------------------------------------------
+function showFitResults (job_id) {
+    var res_div = document.getElementById('fit_results')
+    res_div.innerHTML = res_div.innerHTML + 'more results from ' + job_id.toString() + '<br>';
+}
+//-----------------------------------------------------------------------------
 function updateJobsStatus (params) {
     var n, tbl = document.getElementById('tblResults')
 
@@ -469,8 +474,15 @@ function updateJobsStatus (params) {
             job_id = params[n].job_id;
             row = getRowByDBID (job_id);
             if (row >= 0) {
-                tbl.rows[row].cells[3].innerText = params[n].job_status;
-                tbl.rows[row].cells[4].innerHTML = '<a href="/" target="_blank">Show</a>';
+                if (tbl.rows[row].cells[3].innerText != params[n].job_status) {
+                    tbl.rows[row].cells[3].innerText = params[n].job_status;
+                    if (params[n].job_status == 'Completed') {
+                        var btnID = 'btnResultsBtn' + job_id.toString(10);
+                        tbl.rows[row].cells[4].innerHTML = '<input type="button" id="' + btnID + '" value="Show" onclick="showFitResults(this.id)">';
+                    }
+                }
+                
+                
             }
         }
     }

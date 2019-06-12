@@ -32,7 +32,7 @@
                     </th>
 				</tr>
                 <tr>
-                    <td>
+                    <td style="vertical-align: top;">
                         <table class="no_border" width="100%">
                             <tr style="vertical-align: top;">
                                 <td class="no_border"><input type="button" id="clear_file"  value="Clear"></td>
@@ -40,7 +40,8 @@
                                 <td class="no_border"><input type="button" id="save_problem_file"  value="Save As..."></td>
                             </tr>
                         </table>
-                        <label style="text-align:center;" for="problem_text">Problem code</label><br>
+                        Problem code
+                        <!--<label style="text-align:center;" for="problem_text">Problem code</label><br>-->
                         <textarea cols="50" rows="20" id="problem_text" width="100%" wrap="soft"></textarea>
                     </td>
                     <td valign="top">
@@ -74,14 +75,16 @@
                         <input id="btnSendPrintStatus" type="button" value="Print Status" onclick="sendPrintStatus()">
                     </td>
                     <td valign="top" style="border: 2px solid blue;">
-                        Remote Server:<br>
-                        <input type="text" id="remote_server" size="35" value="NCNR-R9nano.campus.nist.gov">
-                        <p style="text-align:center;">Remote Port: <input type="text" size="3" id="remote_port" value="8765"></p>
-<!--
-
-                        <input type="text" id="remote_server" size="35" value="localhost">
-                        <p style="text-align:center;">Remote Port: <input type="text" size="3" id="remote_port" value="7654"></p>
--->
+                        <table>
+                            <tr>
+                                <td width="80%" style="text-align: center;">Server</td>
+                                <td width="20%">Port</td>
+                            </tr>
+                            <tr>
+                                <td width="80%"><input type="text" id="remote_server" size="25" value="localhost"></td>
+                                <td width="20%"><input type="text" id="remote_port" size="3" value="5678"></td>
+                            </tr>
+                        </table>
                         <p style="text-align:center;">
                         Tag: <input type="text" id="remote_tag" size="15" > <input type="button" value="Generate" onclick="generateTag()">
                         <hr>
@@ -148,11 +151,16 @@
                     </td>
                 </tr>
                 <tr>
-                    <td colspan="3">
+                    <td colspan="1">
                         <div id=status_header>
                             <input type="button" value="Clear Status" onclick="clearStatus()">
                         </div>
                         <div id="status_line"> status line </div>
+                    </td>
+                    <td colspan="3">
+                        <div id="fit_results" style="vertical-align: top;">
+                            Results here
+                        </div>
                     </td>
                 </tr>
             </table>
