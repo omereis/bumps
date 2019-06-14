@@ -14,14 +14,13 @@ RUN apt install -y tree
 
 #RUN apt-get install vim
 # Create the home directory for the new app user.
-RUN mkdir -p /home/app_user/bumps_flask
+RUN mkdir -p /home/app_user
 
 # Set the home directory to our app user's home.
 ENV HOME=/home/app_user
 
 # Set the directory for relative file paths
-#WORKDIR /home/app_user/bumps_flask/bumps_flask
-WORKDIR /home/app_user/bumps_flask
+WORKDIR /home/app_user/bumps_flask/bumps_flask
 
 # Create the folder for the html templates and static assets
 RUN mkdir templates/ && mkdir static/
@@ -29,7 +28,7 @@ RUN mkdir templates/ && mkdir static/
 # Install the app dependencies using pip
 RUN pip install -U pip
 RUN pip install --upgrade pip
-#COPY requirements.txt /home/app_user/bumps_flask/
+COPY requirements.txt /home/app_user/bumps_flask/
 ###############
 #RUN pip install --no-cache-dir -r ../requirements.txt
 ###############
@@ -47,19 +46,22 @@ ENV PATH="$PATH:/home/app_user/miniconda/bin/"
 # RUN conda init bash
 #RUN conda init bash && conda install python=3.7 anaconda=custom -y && conda create -n bumps_server numpy scipy pandas scikit-learn notebook -y
 
-RUN apt install -y python3.7
-RUN rm /usr/bin/python
-RUN ln -s /usr/bin/python3.7 /usr/bin/python
-COPY get-pip.py /tmp
-RUN apt install -y python3-distutils
-RUN python /tmp/get-pip.py
+RUN conda install python=3.7 anaconda=custom -y
+RUN conda update conda -y
+RUN conda env list
+RUN conda create -y -n bumps_server pip && /bin/bash -c "source activate bumps_server" && python --version
+RUN conda env list && python --version
 
-#RUN conda install python=3.7 anaconda=custom -y
-#RUN conda update conda -y
-#RUN conda env list
-#RUN conda create -y -n bumps_server pip && /bin/bash -c "source activate bumps_server" && python --version
-#RUN conda env list && python --version
-
+#RUN conda update conda -y \
+#   && conda env list \
+#	&& conda install python=3.7 anaconda=custom -y && conda create -n bumps_server numpy scipy pandas \
+#	&& conda activate bumps_server \
+#	&& pip install websockets sqlalchemy pymysql mysql-connector-python bumps numpy scipy matplotlib nest_asyncio \
+#    && /bin/bash -c "source activate bumps_server" \
+#    && conda env list
+#RUN /bin/bash -c "conda init bash" && bash && exit && bash && python --version > /tmp/p.txt
+#RUN pip --version /tmp/pi.txt
+# && pip install websockets sqlalchemy pymysql mysql-connector-python bumps numpy scipy matplotlib nest_asyncio
 #RUN bash && /bin/bash -c "conda activate bumps_server" && pip install websockets sqlalchemy pymysql mysql-connector-python bumps numpy scipy matplotlib nest_asyncio
 
 #RUN pip install websockets
@@ -80,17 +82,7 @@ EXPOSE 4000
 # RUN groupadd -r app_user && useradd --no-log-init -r -g app_user app_user
 
 # Install the application locally
-RUN touch rachel.inbar
-#RUN pip install --no-cache-dir -r ../requirements.txt
-RUN pip install -r requirements1.txt
-##############################################################
-##############################################################
-
-RUN pip install websockets
-RUN pip install sqlalchemy
-RUN pip install pymysql
-RUN pip install mysql-connector-python
-RUN pip install bumps numpy scipy matplotlib nest_asyncio
+# RUN pip install --no-cache-dir -e ..
 
 # Log in with 'app_user' for the rest of the process
 # USER app_user

@@ -1,5 +1,5 @@
 # Using the latest long-term-support Ubuntu OS
-FROM ubuntu:18.04
+FROM ubuntu:16.04
 
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y \
@@ -8,11 +8,8 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     git        \
     python-dev \
-    python-pip \
-    vim
-RUN apt install -y tree
+    python-pip
 
-#RUN apt-get install vim
 # Create the home directory for the new app user.
 RUN mkdir -p /home/app_user
 
@@ -27,10 +24,8 @@ RUN mkdir templates/ && mkdir static/
 
 # Install the app dependencies using pip
 RUN pip install -U pip
-RUN pip install --upgrade pip
 COPY requirements.txt /home/app_user/bumps_flask/
-# RUN pip install --no-cache-dir -r ../requirements.txt
-RUN pip install flask-socketio
+RUN pip install --no-cache-dir -r ../requirements.txt
 RUN pip install git+https://github.com/omereis/bumps.git
 
 # Include mod_wsgi to run Flask behind Apache in this container
@@ -38,11 +33,9 @@ RUN pip install git+https://github.com/omereis/bumps.git
 
 # Copy app files to the container
 COPY ./ /home/app_user/bumps_flask
-COPY ./vimrc /etc/vim/vimrc
 
-#RUN chmod a+x flask_run
-# Make the 4000 port available from outside the container
-EXPOSE 4000
+# Make the 5000 port available from outside the container
+EXPOSE 5000
 
 # Create a new user called 'app_user' and set it up on the OS
 RUN groupadd -r app_user && useradd --no-log-init -r -g app_user app_user
@@ -59,4 +52,4 @@ ENV FLASK_APP=bumps_flask
 
 # Launch the app
 # CMD ["mod_wsgi-express", "start-server", "--host", "0.0.0.0", "--port", "5000", "bumps_flask.wsgi"]
-# CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
