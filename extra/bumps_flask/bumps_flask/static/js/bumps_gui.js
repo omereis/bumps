@@ -422,9 +422,52 @@ function handle_reply(wsMsg) {
         console.log('GetStatus reply' + wsMsg)
         updateJobsStatus (params);
     }
+    else if (command == ServerCommands.GET_RESULTS) {
+        showFitResults (jmsg);
+    }
+}
+//-----------------------------------------------------------------------------
+function showFitResults (jmsg) {
+    var res_div = document.getElementById('fit_results');
+
+    if (res_div) {
+        alert ('showing results');
+    }
+}
+//-----------------------------------------------------------------------------
+function get_db_id_from_row (row, tbl=null) {
+    var id;
+    
+    if (tbl == null)
+        tbl = document.getElementById('tblResults');
+    try {
+        id = $(tbl.rows[row].cells[0].innerHTML).attr('db_id');
+    }
+    catch {
+        id = -1;
+    }
+    return (id);
 }
 //-----------------------------------------------------------------------------
 function getRowByDBID (db_id) {
+    var id, row, tbl = document.getElementById('tblResults'), rowSelected;
+
+    for (row=1, rowSelected=-1 ; (row < tbl.rows.length) && (rowSelected < 0) ; row++) {
+        try {
+            //id = $(tbl.rows[row].cells[0].innerHTML).attr('db_id');
+            id = get_db_id_from_row (row);
+            }
+        catch (err) {
+            id = null
+        }
+        if (id == db_id) {
+            rowSelected = row;
+        }
+    }
+    return (rowSelected);
+}
+//-----------------------------------------------------------------------------
+function getRowByBtnShowID (db_id) {
     var id, row, tbl = document.getElementById('tblResults'), rowSelected;
 
     for (row=1, rowSelected=-1 ; (row < tbl.rows.length) && (rowSelected < 0) ; row++) {
@@ -441,7 +484,7 @@ function getRowByDBID (db_id) {
     return (rowSelected);
 }
 //-----------------------------------------------------------------------------
-function deleteRowByDBID (db_id) {
+function deleteRowByDBID (btn_id) {
     var id, row, tbl = document.getElementById('tblResults'), rowToDel;
 
     for (row=1, rowToDel=-1 ; (row < tbl.rows.length) && (rowToDel < 0) ; row++) {
@@ -451,7 +494,7 @@ function deleteRowByDBID (db_id) {
         catch (err) {
             id = null
         }
-        if (id == db_id) {
+        if (id == btn_id) {
             rowToDel = row;
         }
     }
@@ -460,10 +503,21 @@ function deleteRowByDBID (db_id) {
     }
 }
 //-----------------------------------------------------------------------------
-function showFitResults (job_id) {
+function sendForFitResults (job_id) {
     var res_div = document.getElementById('fit_results')
-    
-    res_div.innerHTML = res_div.innerHTML + '<br>' + '<img src=""{{ url_for("static",filename="ncnr01.jpg") }}">';//</img>'<img src="http://urbanologia.tau.ac.il/wp-content/uploads/2015/06/20141212-RAHAT-ARAD-262.jpg" width="100" height="100">'
+    var row = getRowByBtnShowID (job_id)
+    if (row >= 0)
+        id = get_db_id_from_row (row);
+    else
+        id = -1;
+    var message = getMessageStart();
+    message['command'] = ServerCommands.GET_RESULTS;
+    message['param'] = job_id.toString();
+    sendMessage (JSON.stringify(message));
+    var s = '<img src="/static/ncnr01.jpg">';
+    res_div.innerHTML = res_div.innerHTML + '<br>' + s + '<hr>';
+    //res_div.innerHTML = res_div.innerHTML + '<table><tr><td>' + job_id.toString() + '</td></tr></table><br><hr><img src="/static/ncnr01.jpg>';
+    //</img>'<img src="http://urbanologia.tau.ac.il/wp-content/uploads/2015/06/20141212-RAHAT-ARAD-262.jpg" width="100" height="100">'
     $.post("dashboard");
     //res_div.innerHTML + 'more results from ' + job_id.toString() + '<br>';
 }
@@ -481,7 +535,7 @@ function updateJobsStatus (params) {
                     tbl.rows[row].cells[3].innerText = params[n].job_status;
                     if (params[n].job_status == 'Completed') {
                         var btnID = 'btnResultsBtn' + job_id.toString(10);
-                        tbl.rows[row].cells[4].innerHTML = '<input type="button" id="' + btnID + '" value="Show" onclick="showFitResults(this.id)">';
+                        tbl.rows[row].cells[4].innerHTML = '<input type="button" id="' + btnID + '" value="Show" onclick="sendForFitResults(this.id)">';
                     }
                 }
                 
@@ -493,4 +547,121 @@ function updateJobsStatus (params) {
         console.log ('Error in updateJobsStatus: ' + err.message);
     }
 }
+//-----------------------------------------------------------------------------
+function onResultsDeleteClick() {
+    var n, tbl = document.getElementById('tblResults'), aLinesToDel = [], idx = 0;
+
+    for (n=1 ; n < tbl.rows.length ; n++) {
+        var id=$(tbl.rows[n].cells[0].innerHTML).attr('id');
+        var chk=document.getElementById(id).checked;
+        if (chk)
+            //tbl.deleteRow(n);
+            aLinesToDel[idx++] = $(tbl.rows[n].cells[0].innerHTML).attr('db_id');
+    }
+    composeSendDeleteMessage (aLinesToDel);
+}
+//-----------------------------------------------------------------------------
+function composeSendDeleteMessage (aLinesToDel) {
+    var message = getMessageStart();
+    message['command'] = ServerCommands.DELETE;
+    message['params'] = aLinesToDel;
+    sendMessage (JSON.stringify(message));
+//    g_socket.send (JSON.stringify(message));
+}
+//-----------------------------------------------------------------------------
+function onResultsDisplayClick() {
+}
+//-----------------------------------------------------------------------------
+function onResultsLoadClick() {
+}
+//-----------------------------------------------------------------------------
+function getStatusCommandMessage() {
+    var message = getMessageStart();
+
+    message['command'] = ServerCommands.GET_STATUS;
+    return (message);
+}
+//-----------------------------------------------------------------------------
+function sendStatusMessage() {
+    var message = getMessageStart();
+
+    message['command'] = ServerCommands.GET_STATUS;
+    sendMessage (JSON.stringify(getStatusCommandMessage()));
+    //sendMessage (JSON.stringify(message));
+}
+//-----------------------------------------------------------------------------
+function sendPrintStatus() {
+    var message = getMessageStart();
+
+    message['command'] = ServerCommands.PRINT_STATUS;
+    sendMessage (JSON.stringify(message));
+}
+//-----------------------------------------------------------------------------
+function onResultsStatusClick () {
+    sendStatusMessage();
+}
+//-----------------------------------------------------------------------------
+function onStatusTimerTick () {
+    var cbox = document.getElementById('cboxStatusPoll');
+    if (cbox.checked)
+        sendStatusMessage();
+}
+//-----------------------------------------------------------------------------
+function getMessageStart() {
+    var message = new Object;
+
+    message['header'] = 'bumps client';
+    message['tag']    = getTag();
+    message['message_time'] = getMessageTime();
+    return (message);
+}
+//-----------------------------------------------------------------------------
+function upload_multiprocessing() {
+    var mp = '';
+    if (document.getElementById('mp_none').checked)
+        mp = 'none';
+    else if (document.getElementById('mp_celery').checked)
+        mp = 'celery';
+    else if (document.getElementById('mp_slurm').checked)
+        mp = 'slurm';
+    else
+        mp = 'error';
+    return (mp);
+}
+//-----------------------------------------------------------------------------
+function composeJobSendMessage(txtProblem) {
+    var message = getMessageStart();
+
+    message['command'] = ServerCommands.START_FIT;
+    message['fit_problem'] = txtProblem;
+    message['problem_file'] = upload_problem_file();
+    message['params'] = uploadFitParams();
+    message['multi_processing'] = upload_multiprocessing();
+    return (message);
+}
+//-----------------------------------------------------------------------------
+function onSendJobClick() {
+    var txtProblem = $('#problem_text').val().trim();
+
+    if (txtProblem.length > 0) {
+        var message = composeJobSendMessage(txtProblem);
+        var tag = message['tag'];
+        var row_id = addResultRow (tag);
+        message['row_id'] = row_id;
+        //g_socket = openWSConnection("ws", remoteServer, remotePort, "");
+        sendMessage (JSON.stringify(message));
+        //webSocketSendMessage ("ws", remoteServer, remotePort, "", JSON.stringify(message));
+//        g_socket.send (JSON.stringify(message));
+    }
+    else
+        alert ('Missing problem definition');
+}
+//-----------------------------------------------------------------------------
+function sendMessage (message) {
+    var remoteServer = $('#remote_server').val();
+    var remotePort   = $('#remote_port').val();
+
+    webSocketSendMessage ("ws", remoteServer, remotePort, "", message);
+}
+//-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

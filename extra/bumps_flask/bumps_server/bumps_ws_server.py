@@ -227,7 +227,12 @@ async def HandleStatus (cm, server_params):
             item = {'job_id': job_id, 'job_status': name_of_status(job.status)}
             return_params.append(item)
     return return_params
- #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+def get_results (cm):
+    print(f'getting results for job {cm.params}')
+    return_params = {'id': cm.params}
+    return return_params
+#------------------------------------------------------------------------------
 def handle_incoming_message (websocket, message, server_params):
     return_params = {}
     cm = ClientMessage()
@@ -243,6 +248,8 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = asyncio.run(HandleStatus (cm, server_params))
             elif  cm.command == MessageCommand.PrintStatus:
                 print_jobs(server_params.listAllJobs, title='current_status')
+            elif cm.command == MessageCommand.GetResults:
+                return_params = get_results (cm)
         else:
             print('parse_message error.')
     except Exception as err:

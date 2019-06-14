@@ -82,7 +82,8 @@ EXPOSE 4000
 # Install the application locally
 RUN touch rachel.inbar
 #RUN pip install --no-cache-dir -r ../requirements.txt
-RUN pip install -r requirements1.txt
+RUN touch req.txt
+RUN pip install -r requirements.txt
 ##############################################################
 ##############################################################
 
