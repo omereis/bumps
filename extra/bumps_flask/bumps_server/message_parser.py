@@ -1,8 +1,9 @@
 from oe_debug import print_debug
 from enum import Enum
 import os, json
+from misc import get_results_dir
 
-base_results_dir = '/tmp/bumps_results/'
+#base_results_dir = '/tmp/bumps_results/'
 #------------------------------------------------------------------------------
 class MessageCommand (Enum):
     Error    = -1
@@ -99,6 +100,7 @@ class ClientMessage:
 #------------------------------------------------------------------------------
     def compose_job_directory_name (self):
         try:
+            base_results_dir = get_results_dir()
             tmp_dir = results_dir = base_results_dir + self.host_ip + "/" + self.tag
         except:
             tmp_dir = results_dir = base_results_dir + '/results'

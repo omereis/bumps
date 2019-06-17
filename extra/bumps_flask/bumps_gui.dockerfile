@@ -99,7 +99,7 @@ RUN pip install bumps numpy scipy matplotlib nest_asyncio
 # Set the environment variables for Flask
 ENV FLASK_APP=bumps_flask
 ENV FIT_RESULTS_DIR=/home/app_user/bumps_flask/bumps_flask/static/fit_results
-
+ENV FLASK_HOME=/home/app_user/bumps_flask
 
 # Launch the app
 # CMD ["mod_wsgi-express", "start-server", "--host", "0.0.0.0", "--port", "5000", "bumps_flask.wsgi"]

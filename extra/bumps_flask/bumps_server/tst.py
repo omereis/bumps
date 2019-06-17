@@ -5,6 +5,23 @@ import asyncio
 import websockets
 from multiprocessing import Process, Pipe
 import functools
+from sqlalchemy import create_engine, MetaData
+from bumps_constants import *
+
+
+database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
+connection = database_engine.connect()
+job_id = 358
+strSql = f'select {DB_Field_ResultsDir} from {DB_Table} where {DB_Field_JobID}={job_id};'
+try:
+    res = connection.execute(strSql)
+    for row in res:
+        print(f'{row[0]}')
+except Exception as e:
+    print(f'Error {e}')
+finally:
+    connection.close()
+exit(0)
 
 async def hello(websocket, path, parent_conn):
     name = await websocket.recv()

@@ -427,11 +427,45 @@ function handle_reply(wsMsg) {
     }
 }
 //-----------------------------------------------------------------------------
+function getFileExtension (file_name) {
+    return (file_name.split('.').pop());
+}
+//-----------------------------------------------------------------------------
+function resFileLink (name) {
+    html = '<a href="' + name + '">' + name.split('/').pop() + '</a>';
+    return (html);
+}
+//-----------------------------------------------------------------------------
+function resFileImageLink (name) {
+    html = '<img src="' + name + '">';
+    return (html);
+}
+//-----------------------------------------------------------------------------
+function isPicture(ext) {
+    var lstrPicExtension = ['jpg', 'jpeg','png', 'gif']
+    var pos = lstrPicExtension.indexOf(ext.toLowerCase());
+    return (pos >= 0);
+}
+//-----------------------------------------------------------------------------
 function showFitResults (jmsg) {
     var res_div = document.getElementById('fit_results');
+    var n, name, ext, source = window.location.hostname + ":" + window.location.port
 
     if (res_div) {
-        alert ('showing results');
+        strHtml = '<hr>';
+        for (n=0 ; n < jmsg['params'].files.length ; n++) {
+            name = source + jmsg['params'].files[n];
+            ext = getFileExtension (name);
+            //if (isPicture(ext))
+                //strHtml += resFileImageLink (name);
+            //else
+                strHtml += resFileLink (name);
+            strHtml += '<br>'
+        }
+        strHtml += '<hr>'
+        res_div.innerHTML = res_div.innerText + strHtml;//'\n' + jmsg['params'].files;
+        //res_div.innerText = jmsg;
+        //alert ('showing results');
     }
 }
 //-----------------------------------------------------------------------------

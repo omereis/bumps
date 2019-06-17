@@ -10,11 +10,12 @@ from mysql.connector import Error
 from oe_debug import print_debug
 from sqlalchemy import create_engine, MetaData
 from bumps import cli
-from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
-                            DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime, \
-                            DB_Field_ProblemFile
+from bumps_constants import *
+#from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
+#                            DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime, \
+#                            DB_Field_ProblemFile
 from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
-from db_misc import get_next_job_id
+from db_misc import get_next_job_id, results_dir_for_job
 #from multiprocessing import Process, Queue
 import multiprocessing
 import nest_asyncio
@@ -31,16 +32,6 @@ database_engine = None
 connection = None
 nest_asyncio.apply()
 
-#------------------------------------------------------------------------------
-def get_results_dir ():
-    try:
-        results_dir = os.environ['FIT_RESULTS_DIR']
-    except Exception as e:
-        print ('Environment variable not found. Using default')
-        results_dir = '/home/app_user/bumps_flask/bumps_flask/static/fit_results'
-    return results_dir
-#------------------------------------------------------------------------------
-base_results_dir = get_results_dir()
 #------------------------------------------------------------------------------
 def save_message (message):
     file = open ("messages.txt", "a+")
@@ -237,9 +228,33 @@ async def HandleStatus (cm, server_params):
             return_params.append(item)
     return return_params
 #------------------------------------------------------------------------------
-def get_results (cm):
+import os
+def get_results (cm, database_engine):
     print(f'getting results for job {cm.params}')
-    return_params = {'id': cm.params}
+    try:
+        results_dir = results_dir_for_job (database_engine, cm.params)
+        web_dir = get_web_results_dir()
+        pos = results_dir.find(web_dir)
+        if pos >= 0:
+            final_dir = results_dir[pos:]
+        else:
+            final_dir = 'not found'
+        print('-------------------------')
+        print('-------Directories-------')
+        print(f'results: "{results_dir}"')
+        print(f'web results: "{web_dir}"')
+        print(f'final dir: "{final_dir}"')
+        files_list = os.listdir(results_dir)
+        files = []
+        for file in files_list:
+            file = final_dir + '/' + file
+            files.append(file)
+        for file in files:
+            print (f'file: {file}')
+    except Exception as e:
+        print(f'Error in "get_results": {e}')
+        files = {e}
+    return_params = {'id': cm.params, 'files' : files}
     return return_params
 #------------------------------------------------------------------------------
 def handle_incoming_message (websocket, message, server_params):
@@ -258,7 +273,7 @@ def handle_incoming_message (websocket, message, server_params):
             elif  cm.command == MessageCommand.PrintStatus:
                 print_jobs(server_params.listAllJobs, title='current_status')
             elif cm.command == MessageCommand.GetResults:
-                return_params = get_results (cm)
+                return_params = get_results (cm, server_params.database_engine)
         else:
             print('parse_message error.')
     except Exception as err:
@@ -298,11 +313,13 @@ async def bumps_server(websocket, path, server_params):
     #print(f'bumps_server, return_params: {return_params}')
     await websocket.send(str(reply_message))
 #------------------------------------------------------------------------------
+from misc import get_results_dir, get_web_results_dir
 if __name__ == '__main__':
     print('Welcome to bumps WebSocket server')
     print('Host: {}'.format(host))
     print('Port: {}'.format(port))
-    print(f'Results directory: "{base_results_dir}"')
+    print(f'Results directory: "{get_results_dir()}"')
+    print(f'Current directory: "{os.getcwd()}"')
 
     try:
         database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
