@@ -467,12 +467,25 @@ function getRowByDBID (db_id) {
     return (rowSelected);
 }
 //-----------------------------------------------------------------------------
+function getBtnIdFromHTML (btnID, lstrHTML) {
+    var lstr, n, id=-1;
+
+	lstr = lstrHTML.split(' ');
+    for (n=0 ; (n < lstr.length) && (id < 0) ; n++) {
+        var desc = lstr[n].split('=');
+        if (desc[0] == "id")
+            id = desc[1].toString().replace(/\"/g,'');
+    }
+    return (id);
+}
+//-----------------------------------------------------------------------------
 function getRowByBtnShowID (db_id) {
     var id, row, tbl = document.getElementById('tblResults'), rowSelected;
 
     for (row=1, rowSelected=-1 ; (row < tbl.rows.length) && (rowSelected < 0) ; row++) {
         try {
-            id = $(tbl.rows[row].cells[0].innerHTML).attr('db_id');
+            //id = $(tbl.rows[row].cells[0].innerHTML).attr('db_id');
+            id = getBtnIdFromHTML (db_id, tbl.rows[row].cells[4].innerHTML);
         }
         catch (err) {
             id = null
@@ -512,7 +525,7 @@ function sendForFitResults (job_id) {
         id = -1;
     var message = getMessageStart();
     message['command'] = ServerCommands.GET_RESULTS;
-    message['param'] = job_id.toString();
+    message['params'] = id;
     sendMessage (JSON.stringify(message));
     var s = '<img src="/static/ncnr01.jpg">';
     res_div.innerHTML = res_div.innerHTML + '<br>' + s + '<hr>';

@@ -26,12 +26,21 @@ from message_parser import ClientMessage, MessageCommand, generate_key
 #host = 'localhost'
 host = 'NCNR-R9nano.campus.nist.gov'
 port = 8765
-base_results_dir = '/tmp/bumps_results/'
 host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
 database_engine = None
 connection = None
 nest_asyncio.apply()
 
+#------------------------------------------------------------------------------
+def get_results_dir ():
+    try:
+        results_dir = os.environ['FIT_RESULTS_DIR']
+    except Exception as e:
+        print ('Environment variable not found. Using default')
+        results_dir = '/home/app_user/bumps_flask/bumps_flask/static/fit_results'
+    return results_dir
+#------------------------------------------------------------------------------
+base_results_dir = get_results_dir()
 #------------------------------------------------------------------------------
 def save_message (message):
     file = open ("messages.txt", "a+")
@@ -293,6 +302,7 @@ if __name__ == '__main__':
     print('Welcome to bumps WebSocket server')
     print('Host: {}'.format(host))
     print('Port: {}'.format(port))
+    print(f'Results directory: "{base_results_dir}"')
 
     try:
         database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
