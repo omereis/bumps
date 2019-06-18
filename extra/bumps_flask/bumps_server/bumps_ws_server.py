@@ -1,30 +1,24 @@
 import asyncio
 import websockets
 import getopt, sys
-from time import sleep
 import datetime
-from get_host_port import get_host_port
 import mysql.connector
 import json, os
+import multiprocessing
+import nest_asyncio
 from mysql.connector import Error
 from oe_debug import print_debug
 from sqlalchemy import create_engine, MetaData
 from bumps import cli
 from bumps_constants import *
-#from bumps_constants import DB_Table, DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, \
-#                            DB_Field_Message, DB_Field_ResultsDir,DB_Field_JobStatus, DB_Field_EndTime, \
-#                            DB_Field_ProblemFile
+from misc import get_results_dir, get_web_results_dir
 from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
 from db_misc import get_next_job_id, results_dir_for_job
-#from multiprocessing import Process, Queue
-import multiprocessing
-import nest_asyncio
-#------------------------------------------------------------------------------
-#from message_parser import *
 from message_parser import ClientMessage, MessageCommand, generate_key
-#from message_parser import ClientMessage, MessageCommand, extract_file_name, generate_key
+from time import sleep
+from get_host_port import get_host_port
 #------------------------------------------------------------------------------
-#host = 'localhost'
+#------------------------------------------------------------------------------
 host = 'NCNR-R9nano.campus.nist.gov'
 port = 8765
 host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
@@ -282,9 +276,6 @@ def handle_incoming_message (websocket, message, server_params):
 #------------------------------------------------------------------------------
 import functools
 async def bumps_server(websocket, path, server_params):
-#async def bumps_server(websocket, path, lstJobs, ):
-#async def bumps_server(websocket, path):
-    #print(f'type of "websocket": {type(websocket)}')
     message = await websocket.recv()
     try:
         jmsg = json.loads(message)
@@ -292,15 +283,11 @@ async def bumps_server(websocket, path, server_params):
         jmsg={}
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     save_message(strTime + ':\n\n'+ message + '\n')
-    #return_params = handle_incoming_message (websocket, json.loads(message), lstJobs, smprJobsList)
     return_params = handle_incoming_message (websocket, json.loads(message), server_params)
-    #print (f'Return Params: {return_params}')
 
     source = "{}:{}".format(websocket.host, websocket.port)
-    #print ("Just got a message from...")
     try:
         remote_client = websocket.remote_address[0]
-        #print ("    client in {}".format(source))
     except Exception as e:
         print(f'Error in bumps_server: {e}')
     reply_message = {}
@@ -309,11 +296,8 @@ async def bumps_server(websocket, path, server_params):
     if not(return_params):
         return_params = "None"
     reply_message['params'] = return_params
-    #sleep(0.1)
-    #print(f'bumps_server, return_params: {return_params}')
     await websocket.send(str(reply_message))
 #------------------------------------------------------------------------------
-from misc import get_results_dir, get_web_results_dir
 if __name__ == '__main__':
     print('Welcome to bumps WebSocket server')
     print('Host: {}'.format(host))
@@ -328,8 +312,6 @@ if __name__ == '__main__':
         server_params = ServerParams(database_engine)
         server_params.queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
         server_params.queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
-        server_params.smprJobRun = asyncio.Semaphore()
-        server_params.smprJobsList = asyncio.Semaphore()
         server_params.listAllJobs = multiprocessing.Manager().list()
         print("Database connected")
     except Exception as e:
@@ -356,9 +338,14 @@ if __name__ == '__main__':
 
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
+    except KeyboardInterrupt:
+        pass
     except Exception as e:
         print("{}".format(e))
         exit(1)
     finally:
+        loop = asyncio.get_event_loop()
+        loop.close()
+        print('loop closed')
         pRunner.terminate()
         pFinalizer.terminate()

@@ -166,8 +166,6 @@ class FitJob:
 class ServerParams():
     queueJobEnded = None
     queueRunJobs = None
-    smprJobRun = None
-    smprJobsList = None
     listAllJobs = None
     db_connection = None
     database_engine = None
