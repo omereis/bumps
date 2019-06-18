@@ -434,7 +434,7 @@ function getFileExtension (file_name) {
 }
 //-----------------------------------------------------------------------------
 function resFileLink (name) {
-    html = '<a href="' + name + '">' + name.split('/').pop() + '</a>';
+    html = '<a href="' + name + '" target="_blank">' + name.split('/').pop() + '</a>';
     return (html);
 }
 //-----------------------------------------------------------------------------
@@ -467,34 +467,29 @@ function getDifference(a, b)
 }
 //-----------------------------------------------------------------------------
 function showFitResults (jmsg) {
-    var res_div = document.getElementById('fit_results');
-    var n, strHtml='', name, ext;//, source = window.location.hostname + ":" + window.location.port;
+    var divResults = document.getElementById('fit_results');
+    var n, strHtml='', name, ext, id;
 
-    if (res_div) {
-/*
-        var f, s;
-        f = '/static/fit_results/172.17.0.1/speed/results/speed-model.png';
-        s = '<img src="' + f + '">';
-        strHTML += '<img src="/static/fit_results/172.17.0.1/speed/results/speed-model.png">';//'<img src="/static/ncnr01.png">';
-        console.log(getDifference(strHTML, s));
-        res_div.innerHTML = res_div.innerText + strHTML;
-*/
-//        res_div.innerHTML = res_div.innerText + strHtml;//'\n' + jmsg['params'].files;
-        strHtml = '<hr>';
+    if (divResults) {
+        id = jmsg['params'].id;
+        var strFitResults = 'fit_results_' + id.toString();
+        var divJobRslt = document.getElementById(strFitResults);
+        if (divJobRslt == null) {
+            divJobRslt = document.createElement('div');
+            divJobRslt.setAttribute('id',strFitResults);
+            divResults.appendChild(divJobRslt);
+        }
+        divJobRslt.innerHTML = 'Results for job #' + id.toString() + '<br>';
         for (n=0 ; n < jmsg['params'].files.length ; n++) {
             name = jmsg['params'].files[n];
             ext = getFileExtension (name);
             if (isPicture(ext))
-                strHtml += resFileImageLink (name);
+                strHtml += '<br>' + resFileImageLink (name) + '<br>';
             else
-                strHtml += resFileLink (name);
-            strHtml += '<br>'
+                strHtml += resFileLink (name) + ", ";
         }
         strHtml += '<hr>';
-        //strHTML += '<img src="/static/ncnr01.png">';
-        res_div.innerHTML = res_div.innerText + strHtml;
-/*
-*/
+        divJobRslt.innerHTML = divJobRslt.innerHTML + strHtml;
     }
 }
 //-----------------------------------------------------------------------------
@@ -590,7 +585,7 @@ function sendForFitResults (job_id) {
     message['command'] = ServerCommands.GET_RESULTS;
     message['params'] = id;
     sendMessage (JSON.stringify(message));
-    var s = '<img src="/static/ncnr01.jpg">';
+    //var s = '<img src="/static/ncnr01.jpg">';
     res_div.innerHTML = res_div.innerHTML + '<br>' + s + '<hr>';
     //res_div.innerHTML = res_div.innerHTML + '<table><tr><td>' + job_id.toString() + '</td></tr></table><br><hr><img src="/static/ncnr01.jpg>';
     //</img>'<img src="http://urbanologia.tau.ac.il/wp-content/uploads/2015/06/20141212-RAHAT-ARAD-262.jpg" width="100" height="100">'

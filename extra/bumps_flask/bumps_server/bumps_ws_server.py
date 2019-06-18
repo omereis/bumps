@@ -7,21 +7,20 @@ import json, os
 import multiprocessing
 import nest_asyncio
 from mysql.connector import Error
-from oe_debug import print_debug
+from .oe_debug import print_debug
 from sqlalchemy import create_engine, MetaData
 from bumps import cli
-from bumps_constants import *
-from misc import get_results_dir, get_web_results_dir
-from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
-from db_misc import get_next_job_id, results_dir_for_job
-from message_parser import ClientMessage, MessageCommand, generate_key
+from .bumps_constants import *
+from .misc import get_results_dir, get_web_results_dir
+from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
+from .db_misc import get_next_job_id, results_dir_for_job
+from .message_parser import ClientMessage, MessageCommand, generate_key
 from time import sleep
-from get_host_port import get_host_port
+from .get_host_port import get_host_port
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 host = 'NCNR-R9nano.campus.nist.gov'
 port = 8765
-host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
 database_engine = None
 connection = None
 nest_asyncio.apply()
@@ -164,7 +163,7 @@ def HandleFitMessage (cm, server_params):
     cm.save_problem_file()
     fit_job = FitJob (cm)
     try:
-        db_connection = database_engine.connect()
+        db_connection = server_params.database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
         fit_job.set_standby(db_connection)
         server_params.append_job (fit_job)
@@ -172,6 +171,8 @@ def HandleFitMessage (cm, server_params):
     except Exception as e:
         print (f'bumps_ws_server.py, HandleFitMessage, bug: {e}')
         job_id = 0
+    finally:
+        db_connection.close()
     return job_id
 #------------------------------------------------------------------------------
 def get_orred_ids (params):
@@ -298,21 +299,25 @@ async def bumps_server(websocket, path, server_params):
     reply_message['params'] = return_params
     await websocket.send(str(reply_message))
 #------------------------------------------------------------------------------
-if __name__ == '__main__':
+def print_intro():
     print('Welcome to bumps WebSocket server')
-    print('Host: {}'.format(host))
     print('Port: {}'.format(port))
     print(f'Results directory: "{get_results_dir()}"')
     print(f'Current directory: "{os.getcwd()}"')
-
+#------------------------------------------------------------------------------
+def set_server_params(database_engine):
+    server_params = ServerParams(database_engine)
+    server_params.queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
+    server_params.queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
+    server_params.listAllJobs = multiprocessing.Manager().list()
+    return server_params
+#------------------------------------------------------------------------------
+def main(serverHost='0.0.0.0', serverPort='4567'):
+    print_intro()
     try:
         database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
+        server_params = set_server_params(database_engine)
         connection = database_engine.connect()
-
-        server_params = ServerParams(database_engine)
-        server_params.queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
-        server_params.queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
-        server_params.listAllJobs = multiprocessing.Manager().list()
         print("Database connected")
     except Exception as e:
         print("Error while connecting to database bumps_db in NCNR-R9nano.campus.nist.gov:3306:")
@@ -330,11 +335,9 @@ if __name__ == '__main__':
         pRunner.start()
 
         pFinalizer = multiprocessing.Process(name='jobs finalizer', target=job_ending_manager, args=(server_params,))
-#        pFinalizer = multiprocessing.Process(name='jobs finalizer', target=job_ending_manager, args=(queueJobEnded,listAllJobs,smprJobsList,))
         pFinalizer.start()
 
-        start_server = websockets.serve(functools.partial(bumps_server, server_params=server_params), host, port)
-        #start_server = websockets.serve(functools.partial(bumps_server, lstJobs=listAllJobs), host, port)
+        start_server = websockets.serve(functools.partial(bumps_server, server_params=server_params), serverHost, serverPort)
 
         asyncio.get_event_loop().run_until_complete(start_server)
         asyncio.get_event_loop().run_forever()
@@ -349,3 +352,7 @@ if __name__ == '__main__':
         print('loop closed')
         pRunner.terminate()
         pFinalizer.terminate()
+#------------------------------------------------------------------------------
+if __name__ == '__main__':
+    host, port = get_host_port (def_host='NCNR-R9nano.campus.nist.gov', def_port=8765)
+    main()

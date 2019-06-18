@@ -17,7 +17,7 @@ RUN apt install -y tree
 RUN mkdir -p /home/app_user/bumps_flask
 
 # Set the home directory to our app user's home.
-ENV HOME=/home/app_user
+ENV HOME=/home/app_user/bumps_flask
 
 # Set the directory for relative file paths
 #WORKDIR /home/app_user/bumps_flask/bumps_flask
@@ -100,7 +100,8 @@ RUN pip install bumps numpy scipy matplotlib nest_asyncio
 ENV FLASK_APP=bumps_flask
 ENV FIT_RESULTS_DIR=/home/app_user/bumps_flask/bumps_flask/static/fit_results
 ENV FLASK_HOME=/home/app_user/bumps_flask
-
+ENV FLASK_PORT=4000
+ENV WEBSOCKET_PORT=4567
 # Launch the app
 # CMD ["mod_wsgi-express", "start-server", "--host", "0.0.0.0", "--port", "5000", "bumps_flask.wsgi"]
 # CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]

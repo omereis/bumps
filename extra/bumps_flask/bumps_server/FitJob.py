@@ -1,13 +1,13 @@
 from enum import Enum
-from bumps_constants import *
-from db_misc import get_next_job_id
-from message_parser import get_message_datetime_string
+from .bumps_constants import *
+from .db_misc import get_next_job_id
+from .message_parser import get_message_datetime_string
 import datetime
 import asyncio, sys
 from bumps import cli
 from shutil import rmtree
 import os
-from oe_debug import print_debug, print_stack
+from .oe_debug import print_debug, print_stack
 #------------------------------------------------------------------------------
 class JobStatus (Enum):
     NoData    = 10

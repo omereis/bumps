@@ -1,7 +1,7 @@
-from oe_debug import print_debug
+from .oe_debug import print_debug
 from enum import Enum
 import os, json
-from misc import get_results_dir
+from .misc import get_results_dir
 
 #base_results_dir = '/tmp/bumps_results/'
 #------------------------------------------------------------------------------
