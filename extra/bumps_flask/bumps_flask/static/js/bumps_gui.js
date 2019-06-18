@@ -408,6 +408,8 @@ function handle_reply(wsMsg) {
         var db_id = params[row_id];
         var cbox = document.getElementById(row_id);
         cbox.setAttribute('db_id', db_id);
+        var cell = cbox.parentElement;
+        cell.innerHTML += db_id.toString();
     }
     else if (command == ServerCommands.DELETE) {
         var params = jmsg['params'];
@@ -447,25 +449,52 @@ function isPicture(ext) {
     return (pos >= 0);
 }
 //-----------------------------------------------------------------------------
+function getDifference(a, b)
+{
+    var i = 0;
+    var j = 0;
+    var result = "";
+
+    while (j < b.length)
+    {
+        if (a[i] != b[j] || i == a.length)
+            result += b[j];
+        else
+            i++;
+        j++;
+    }
+    return result;
+}
+//-----------------------------------------------------------------------------
 function showFitResults (jmsg) {
     var res_div = document.getElementById('fit_results');
-    var n, name, ext, source = window.location.hostname + ":" + window.location.port
+    var n, strHtml='', name, ext;//, source = window.location.hostname + ":" + window.location.port;
 
     if (res_div) {
+/*
+        var f, s;
+        f = '/static/fit_results/172.17.0.1/speed/results/speed-model.png';
+        s = '<img src="' + f + '">';
+        strHTML += '<img src="/static/fit_results/172.17.0.1/speed/results/speed-model.png">';//'<img src="/static/ncnr01.png">';
+        console.log(getDifference(strHTML, s));
+        res_div.innerHTML = res_div.innerText + strHTML;
+*/
+//        res_div.innerHTML = res_div.innerText + strHtml;//'\n' + jmsg['params'].files;
         strHtml = '<hr>';
         for (n=0 ; n < jmsg['params'].files.length ; n++) {
-            name = source + jmsg['params'].files[n];
+            name = jmsg['params'].files[n];
             ext = getFileExtension (name);
-            //if (isPicture(ext))
-                //strHtml += resFileImageLink (name);
-            //else
+            if (isPicture(ext))
+                strHtml += resFileImageLink (name);
+            else
                 strHtml += resFileLink (name);
             strHtml += '<br>'
         }
-        strHtml += '<hr>'
-        res_div.innerHTML = res_div.innerText + strHtml;//'\n' + jmsg['params'].files;
-        //res_div.innerText = jmsg;
-        //alert ('showing results');
+        strHtml += '<hr>';
+        //strHTML += '<img src="/static/ncnr01.png">';
+        res_div.innerHTML = res_div.innerText + strHtml;
+/*
+*/
     }
 }
 //-----------------------------------------------------------------------------

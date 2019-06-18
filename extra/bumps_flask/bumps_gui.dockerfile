@@ -36,7 +36,7 @@ RUN pip install --upgrade pip
 RUN pip install flask-socketio
 RUN pip install git+https://github.com/omereis/bumps.git
 
-RUN cd /tmp && touch inbar.txt
+#RUN cd /tmp && touch inbar.txt
 RUN apt install -y wget
 # miniconda installation
 # source: https://docs.anaconda.com/anaconda/install/silent-mode/
@@ -80,9 +80,9 @@ EXPOSE 4000
 # RUN groupadd -r app_user && useradd --no-log-init -r -g app_user app_user
 
 # Install the application locally
-RUN touch rachel.inbar
+#RUN touch rachel.inbar
 #RUN pip install --no-cache-dir -r ../requirements.txt
-RUN touch req.txt
+#RUN touch req.txt
 RUN pip install -r requirements.txt
 ##############################################################
 ##############################################################

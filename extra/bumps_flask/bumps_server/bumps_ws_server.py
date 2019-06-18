@@ -239,18 +239,18 @@ def get_results (cm, database_engine):
             final_dir = results_dir[pos:]
         else:
             final_dir = 'not found'
-        print('-------------------------')
-        print('-------Directories-------')
-        print(f'results: "{results_dir}"')
-        print(f'web results: "{web_dir}"')
-        print(f'final dir: "{final_dir}"')
+#        print('-------------------------')
+#        print('-------Directories-------')
+#        print(f'results: "{results_dir}"')
+#        print(f'web results: "{web_dir}"')
+#        print(f'final dir: "{final_dir}"')
         files_list = os.listdir(results_dir)
         files = []
         for file in files_list:
             file = final_dir + '/' + file
             files.append(file)
-        for file in files:
-            print (f'file: {file}')
+#        for file in files:
+#            print (f'file: {file}')
     except Exception as e:
         print(f'Error in "get_results": {e}')
         files = {e}
