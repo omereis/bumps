@@ -7,16 +7,25 @@ import json, os
 import multiprocessing
 import nest_asyncio
 from mysql.connector import Error
-from .oe_debug import print_debug
 from sqlalchemy import create_engine, MetaData
 from bumps import cli
-from .bumps_constants import *
-from .misc import get_results_dir, get_web_results_dir
-from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
-from .db_misc import get_next_job_id, results_dir_for_job
-from .message_parser import ClientMessage, MessageCommand, generate_key
 from time import sleep
-from .get_host_port import get_host_port
+try:
+    from .oe_debug import print_debug
+    from .bumps_constants import *
+    from .misc import get_results_dir, get_web_results_dir
+    from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
+    from .db_misc import get_next_job_id, results_dir_for_job
+    from .message_parser import ClientMessage, MessageCommand, generate_key
+    from .get_host_port import get_host_port
+except:
+    from oe_debug import print_debug
+    from bumps_constants import *
+    from misc import get_results_dir, get_web_results_dir
+    from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
+    from db_misc import get_next_job_id, results_dir_for_job
+    from message_parser import ClientMessage, MessageCommand, generate_key
+    from get_host_port import get_host_port
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 host = 'NCNR-R9nano.campus.nist.gov'
@@ -130,6 +139,7 @@ async def job_finalizer(server_params):
         fit_job = server_params.queueJobEnded.get()
         print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
         print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
+        fit_job.save_params()
         sys.stdout.flush()
         if fit_job.status == JobStatus.Running:
             try:
@@ -159,7 +169,7 @@ def job_ending_manager(server_params):
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 def HandleFitMessage (cm, server_params):
-    cm.create_results_dir()
+    cm.create_results_dir(server_params)
     cm.save_problem_file()
     fit_job = FitJob (cm)
     try:
@@ -224,21 +234,21 @@ async def HandleStatus (cm, server_params):
     return return_params
 #------------------------------------------------------------------------------
 import os
-def get_results (cm, database_engine):
+def get_results (cm, server_params):
     print(f'getting results for job {cm.params}')
     try:
-        results_dir = results_dir_for_job (database_engine, cm.params)
-        web_dir = get_web_results_dir()
-        pos = results_dir.find(web_dir)
-        if pos >= 0:
-            final_dir = results_dir[pos:]
-        else:
-            final_dir = 'not found'
+        results_dir = results_dir_for_job (server_params.database_engine, cm.params)
+        flask_dir = server_params.flask_dir
+        final_dir = results_dir[len(flask_dir) - 1 : ]
+
 #        print('-------------------------')
 #        print('-------Directories-------')
 #        print(f'results: "{results_dir}"')
 #        print(f'web results: "{web_dir}"')
 #        print(f'final dir: "{final_dir}"')
+#        print(f'flask dir: "{server_params.flask_dir}"')
+#        print(f'Results dir: "{server_params.results_dir}"')
+        
         files_list = os.listdir(results_dir)
         files = []
         for file in files_list:
@@ -256,7 +266,7 @@ def handle_incoming_message (websocket, message, server_params):
     return_params = {}
     cm = ClientMessage()
     try:
-        if cm.parse_message(websocket, message):
+        if cm.parse_message(websocket, message, server_params):
             if cm.command == MessageCommand.StartFit:
                 job_id = HandleFitMessage (cm, server_params)
                 if job_id:
@@ -268,7 +278,7 @@ def handle_incoming_message (websocket, message, server_params):
             elif  cm.command == MessageCommand.PrintStatus:
                 print_jobs(server_params.listAllJobs, title='current_status')
             elif cm.command == MessageCommand.GetResults:
-                return_params = get_results (cm, server_params.database_engine)
+                return_params = get_results (cm, server_params)
         else:
             print('parse_message error.')
     except Exception as err:
@@ -305,18 +315,24 @@ def print_intro():
     print(f'Results directory: "{get_results_dir()}"')
     print(f'Current directory: "{os.getcwd()}"')
 #------------------------------------------------------------------------------
-def set_server_params(database_engine):
+def set_server_params(database_engine, flask_dir):
     server_params = ServerParams(database_engine)
     server_params.queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
     server_params.queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
     server_params.listAllJobs = multiprocessing.Manager().list()
+    server_params.flask_dir = flask_dir
+    server_params.results_dir = flask_dir + 'static/'
+
     return server_params
 #------------------------------------------------------------------------------
-def main(serverHost='0.0.0.0', serverPort='4567'):
+def main(serverHost='0.0.0.0', serverPort='4567', flask_dir='/home/app_user/bumps_flask/bumps_flask'):
     print_intro()
     try:
+        connection = None
+        if flask_dir[len(flask_dir) - 1] != '/':
+            flask_dir += '/'
         database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
-        server_params = set_server_params(database_engine)
+        server_params = set_server_params(database_engine, flask_dir)
         connection = database_engine.connect()
         print("Database connected")
     except Exception as e:

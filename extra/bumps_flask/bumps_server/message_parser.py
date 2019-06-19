@@ -1,7 +1,11 @@
-from .oe_debug import print_debug
 from enum import Enum
 import os, json
-from .misc import get_results_dir
+try:
+    from .oe_debug import print_debug
+    from .misc import get_results_dir
+except:
+    from oe_debug import print_debug
+    from misc import get_results_dir
 
 #base_results_dir = '/tmp/bumps_results/'
 #------------------------------------------------------------------------------
@@ -76,7 +80,7 @@ class ClientMessage:
     params       = None
     row_id       = None
 #------------------------------------------------------------------------------
-    def parse_message(self, websocket, message):
+    def parse_message(self, websocket, message, server_params):
         try:
             parse = False
             header = message['header']
@@ -91,16 +95,17 @@ class ClientMessage:
                 self.problem_text = getMessageField (message, MessageFitProblem)
                 self.params       = getMessageField (message, MessageParams)
                 self.row_id       = getMessageField (message, MessageRowID)
-                self.job_dir      = self.compose_job_directory_name () # just get the name, does not create directory
+                self.job_dir      = self.compose_job_directory_name (server_params) # just get the name, does not create directory
                 parse = True
         except Exception as e:
             print('message_parser.py, parse_message: {}'.format(e))
             parse = False
         return parse
 #------------------------------------------------------------------------------
-    def compose_job_directory_name (self):
+    def compose_job_directory_name (self, server_params):
         try:
-            base_results_dir = get_results_dir()
+            #base_results_dir = get_results_dir()
+            base_results_dir = server_params.results_dir
             tmp_dir = results_dir = base_results_dir + self.host_ip + "/" + self.tag
         except:
             tmp_dir = results_dir = base_results_dir + '/results'
@@ -110,9 +115,9 @@ class ClientMessage:
             n = n + 1
         return results_dir
 #------------------------------------------------------------------------------
-    def create_results_dir (self):
+    def create_results_dir (self, server_params):
         if len(self.job_dir) == 0:
-            self.job_dir = self.compose_job_directory_name ()
+            self.job_dir = self.compose_job_directory_name (server_params)
         results_dir = tmp_dir = self.job_dir + '/results'
         n = 1
         while os.path.exists(results_dir):

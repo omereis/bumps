@@ -29,5 +29,10 @@ redis = FlaskRedis(app)
 rdb = Database(redis)
 print("rdb created: " + str(rdb))
 
+import os
+results_dir = f'Results directory: "{os.getcwd()}/{os.environ["FLASK_APP"]}/static"'
+#print(f'Results directory: "{os.getcwd()}/{os.environ["FLASK_APP"]}/static"')
+print(f'Results directory: {results_dir}')
+
 # Import the Flask views after instancing the app
 import bumps_flask.views

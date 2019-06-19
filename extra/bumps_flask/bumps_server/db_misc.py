@@ -1,4 +1,7 @@
-from .bumps_constants import *
+try:
+    from .bumps_constants import *
+except:
+    from bumps_constants import *
 ##------------------------------------------------------------------------------
 def get_next_job_id(connection):
     job_id = 0

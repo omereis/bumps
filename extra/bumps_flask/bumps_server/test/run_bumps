@@ -1,2 +1,0 @@
-# ['/usr/local/bin/bumps', '/home/oe/examples/test/curve.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/oe/examples/test/results', '--fit=dream']
-bumps /home/oe/examples/test/curve.py, --batch, --stepmon, --burn=100, --steps=100, --store=/home/oe/examples/test/results, --fit=dream

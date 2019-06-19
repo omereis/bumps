@@ -1,13 +1,19 @@
 from enum import Enum
-from .bumps_constants import *
-from .db_misc import get_next_job_id
-from .message_parser import get_message_datetime_string
 import datetime
 import asyncio, sys
 from bumps import cli
 from shutil import rmtree
 import os
-from .oe_debug import print_debug, print_stack
+try:
+    from .bumps_constants import *
+    from .db_misc import get_next_job_id
+    from .message_parser import get_message_datetime_string
+    from .oe_debug import print_debug, print_stack
+except:
+    from bumps_constants import *
+    from db_misc import get_next_job_id
+    from message_parser import get_message_datetime_string
+    from oe_debug import print_debug, print_stack
 #------------------------------------------------------------------------------
 class JobStatus (Enum):
     NoData    = 10
@@ -162,13 +168,25 @@ class FitJob:
         except Exception as e:
             print (f'Could not delete directory: {e}')
 #------------------------------------------------------------------------------
+    def save_params(self):
+        try:
+            file_name = self.get_job_dir() + "/runjob.sh"
+            file = open(file_name, "w+")
+            params = ' '.join(self.params)
+            file.write(params)
+            file.flush()
+        finally:
+            file.close()
+#------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 class ServerParams():
-    queueJobEnded = None
-    queueRunJobs = None
-    listAllJobs = None
-    db_connection = None
+    queueJobEnded   = None
+    queueRunJobs    = None
+    listAllJobs     = None
+    db_connection   = None
     database_engine = None
+    results_dir     = None
+    flask_dir       = None
 #------------------------------------------------------------------------------
     def __init__ (self, db_engine):
         self.database_engine = db_engine
