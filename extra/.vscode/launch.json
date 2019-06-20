@@ -20,6 +20,21 @@
             ]
         },
         {
+            "name": "Python bumps cli",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": true,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            "args" : ["--port", "5678","--host", "localhost", "--ws_port", "4554"],
+            "debugOptions": [
+                "RedirectOutput"
+            ]
+        },
+        {
             "name": "Python",
             "type": "python",
             "request": "launch",

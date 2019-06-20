@@ -40,20 +40,6 @@ COPY get-pip.py /tmp
 RUN apt install -y python3-distutils
 RUN python /tmp/get-pip.py
 
-#RUN conda install python=3.7 anaconda=custom -y
-#RUN conda update conda -y
-#RUN conda env list
-#RUN conda create -y -n bumps_server pip && /bin/bash -c "source activate bumps_server" && python --version
-#RUN conda env list && python --version
-
-#RUN bash && /bin/bash -c "conda activate bumps_server" && pip install websockets sqlalchemy pymysql mysql-connector-python bumps numpy scipy matplotlib nest_asyncio
-
-#RUN pip install websockets
-#RUN pip install sqlalchemy
-#RUN pip install pymysql
-#RUN pip install mysql-connector-python
-#RUN pip install bumps numpy scipy matplotlib nest_asyncio
-
 # Copy app files to the container
 COPY ./ /home/app_user/bumps_flask
 COPY ./vimrc /etc/vim/vimrc
@@ -65,13 +51,7 @@ EXPOSE 4000
 # Create a new user called 'app_user' and set it up on the OS
 # RUN groupadd -r app_user && useradd --no-log-init -r -g app_user app_user
 
-# Install the application locally
-#RUN touch rachel.inbar
-#RUN pip install --no-cache-dir -r ../requirements.txt
-#RUN touch req.txt
 RUN pip install -r requirements.txt
-##############################################################
-##############################################################
 
 RUN pip install websockets
 RUN pip install sqlalchemy
@@ -91,4 +71,5 @@ ENV WEBSOCKET_PORT=4567
 # Launch the app
 # CMD ["mod_wsgi-express", "start-server", "--host", "0.0.0.0", "--port", "5000", "bumps_flask.wsgi"]
 # CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
+
 
