@@ -3,13 +3,8 @@ FROM ubuntu:18.04
 
 RUN apt -y update
 RUN apt -y upgrade
-# RUN apt install -y software-properties-common
-# RUN add-apt-repository -y ppa:deadsnakes/ppa
-#RUN apt install -y vim man
 RUN apt install -y vim
 RUN apt install -y tree curl
-#RUN apt install -y python3.6
-#RUN ln -s /usr/bin/python3.6 /usr/bin/python
 RUN apt install -y python3.7
 RUN ln -s /usr/bin/python3.7 /usr/bin/python
 RUN apt install -y mysql-client
@@ -17,11 +12,6 @@ RUN apt install -y mysql-client
 RUN apt install -y python3-pip
 RUN ln -s /usr/bin/pip3 /usr/bin/pip
 RUN pip install --upgrade pip
-#RUN pip install websockets
-#RUN pip install sqlalchemy
-#RUN pip install pymysql
-#RUN pip install mysql-connector-python
-#RUN pip install bumps numpy scipy matplotlib
 
 WORKDIR /home/oe/
 ENV HOME=/home/oe/

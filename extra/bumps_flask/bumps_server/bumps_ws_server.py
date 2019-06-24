@@ -16,8 +16,9 @@ try:
     from .misc import get_results_dir, get_web_results_dir
     from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
     from .db_misc import get_next_job_id, results_dir_for_job
-    from .message_parser import ClientMessage, MessageCommand, generate_key
+    from .message_parser import ClientMessage, generate_key
     from .get_host_port import get_host_port
+    from .MessageCommand import MessageCommand
 except:
     from oe_debug import print_debug
     from bumps_constants import *
@@ -26,6 +27,7 @@ except:
     from db_misc import get_next_job_id, results_dir_for_job
     from message_parser import ClientMessage, MessageCommand, generate_key
     from get_host_port import get_host_port
+    from MessageCommand import MessageCommand
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 host = 'NCNR-R9nano.campus.nist.gov'
@@ -267,6 +269,7 @@ def handle_incoming_message (websocket, message, server_params):
     cm = ClientMessage()
     try:
         if cm.parse_message(websocket, message, server_params):
+            print(f'Message command: {cm.command}')
             if cm.command == MessageCommand.StartFit:
                 job_id = HandleFitMessage (cm, server_params)
                 if job_id:

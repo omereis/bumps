@@ -1,4 +1,5 @@
 from enum import Enum
+from MessageCommand import MessageCommand
 import os, json
 try:
     from .oe_debug import print_debug
@@ -9,14 +10,14 @@ except:
 
 #base_results_dir = '/tmp/bumps_results/'
 #------------------------------------------------------------------------------
-class MessageCommand (Enum):
-    Error    = -1
-    StartFit = 1
-    Status   = 2
-    Delete   = 3
-    GetData  = 4
-    PrintStatus = 5
-    GetResults  = 6
+#class MessageCommand (Enum):
+#    Error    = -1
+#    StartFit = 1
+#    Status   = 2
+#    Delete   = 3
+#    GetData  = 4
+#    PrintStatus = 5
+#    GetResults  = 6
 #------------------------------------------------------------------------------
 MessageTag         = 'tag'
 MessageTime        = 'message_time'

@@ -1,7 +1,10 @@
 import asyncio
 import websockets
 import sys, getopt
+import readchar
 from random_word import RandomWords
+import datetime
+from MessageCommand import MessageCommand
 #------------------------------------------------------------------------------
 def name_of_algorithm(algorithm):
     if algorithm:
@@ -28,6 +31,15 @@ def name_of_algorithm(algorithm):
         alg_name = "unknown"
     return alg_name
 #------------------------------------------------------------------------------
+def read_y_n():
+    byte = readchar.readchar()
+    if (type(byte) is str) == False:
+        c = byte.decode('utf-8')
+    else:
+        c = byte
+    ret = not (c == 'n')
+    return ret
+#------------------------------------------------------------------------------
 class MessageParams:
     server      = 'localhost'
     port        = 5678
@@ -37,6 +49,8 @@ class MessageParams:
     tag         = None
     files_names = []
     problem     = None
+    check_params = True
+    is_help      = False
 #------------------------------------------------------------------------------
     def __init__(self):
         r = RandomWords()
@@ -58,9 +72,39 @@ class MessageParams:
         print(f'tag: {self.tag}')
         print(f'file_name: {self.files_names}')
         print(f'problem: {self.problem}')
+        print(f'Check parameters: {self.check_params}')
 #------------------------------------------------------------------------------
     def add_files(self, new_files):
         self.files_names += new_files
+#------------------------------------------------------------------------------
+    def params_ok(self):
+        self.print_params()
+        print('Are you ok with the parameters ([y]/n)?', end=' ')
+        sys.stdout.flush()
+        return read_y_n()
+#------------------------------------------------------------------------------
+    def read_problem_file(self):
+        problem = ''
+        f = None
+        try:
+            f = open(self.files_names[0], 'r')
+            problem = f.read()
+        except Exception as e:
+            print(f'Error reading problem file: "{e}"')
+        finally:
+            if f:
+                f.close()
+        return problem
+#------------------------------------------------------------------------------
+    def compose_params(self):
+        params = {}
+        try:
+            params['algorithm'] = self.algorithm
+            params['steps']     = self.steps
+            params['burn']      = self.burn
+        except Exception as e:
+            print(f'Error in compose_params: "{e}"')
+        return params
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 class BumpsMessage:
@@ -70,14 +114,29 @@ class BumpsMessage:
     def __init__(self):
         params = MessageParams()
 #------------------------------------------------------------------------------
-    def compose_from_command_line(self):
-        pass
+    def compose_message(self, message_params):
+        message = {}
+        message['header'] = self.header
+        message['tag']    = message_params.tag
+        return message
 #------------------------------------------------------------------------------
 async def test():
    async with websockets.connect('ws://0.0.0.0:5678') as websocket:
         await websocket.send("hello")
         response = await websocket.recv()
         print(response)
+#------------------------------------------------------------------------------
+async def send_fit_command(message, message_params):
+    try:
+        remote_address = f'ws://{message_params.server}:{message_params:port}'
+        print(f'sending to address "{remote_address}"')
+        async with websockets.connect(remote_address) as websocket:
+    #async with websockets.connect('ws://0.0.0.0:5678') as websocket:
+        await websocket.send("hello")
+        response = await websocket.recv()
+        print(response)
+    except Exception as e:
+        print(f'"Error in send_fit_command": {e}')
 #------------------------------------------------------------------------------
 def get_cli_name():
     file_name = None
@@ -106,14 +165,23 @@ def read_file(file_name):
 def is_help_params(sys_argv):
     is_help = False
     try:
-        options, remainder = getopt.getopt(sys_argv,
-            'h',
-            ['help'])
+            options, remainder = getopt.getopt(sys.argv[1:],
+                's:p:a:t:yh',
+                ['server=',
+                 'port=',
+                 'tag=',
+                 'steps=',
+                 'burn=',
+                 'help',
+                 'algorithm='])
+#        options = getopt.getopt(sys_argv,
+#            'h?',
+#            ['help'])
     except getopt.GetoptError as err:
         print(err) 
-        #exit(1)
+        exit(1)
     for opt, arg in options:
-        if opt in ('-h', '--help'):
+        if opt in ('-h', '?', '--help'):
             is_help = True
     return is_help
 #------------------------------------------------------------------------------
@@ -151,41 +219,84 @@ def print_usage():
 #------------------------------------------------------------------------------
 def params_from_command_line():
     message_params = MessageParams()
-    if (len(sys.argv) == 1) or (is_help_params(sys.argv)):
-        print_usage()
-    else: # start parsing
-        try:
-            options, remainder = getopt.getopt(sys.argv[1:],
-                's:p:a:',
-                ['server=',
-                 'port=',
-                 'steps=',
-                 'burn=',
-                 'algorithm='])
-        except getopt.GetoptError as err:
-            print(err) 
-            exit(1)
-        for opt, arg in options:
-            if opt in ('-s', '--server'):
-                message_params.server = arg.strip()
-            elif opt in ('-p', '--port'):
-                message_params.port = int(arg.strip())
-            elif opt in ('-a', '--algorithm'):
-                message_params.set_algorithm (arg.strip())
-            elif opt in ('--steps'):
-                message_params.step = int(arg.strip())
-            elif opt in ('--burn'):
-                message_params.burn = int(arg.strip())
-        message_params.add_files(remainder)
+    try:
+        options, remainder = getopt.getopt(sys.argv[1:],
+            's:p:a:t:yh?',
+            ['server=',
+                'port=',
+                'tag=',
+                'steps=',
+                'burn=',
+                'help',
+                'algorithm='])
+    except getopt.GetoptError as err:
+        print(err) 
+        exit(1)
+    for opt, arg in options:
+        if opt in ('-s', '--server'):
+            message_params.server = arg.strip()
+        elif opt in ('-p', '--port'):
+            message_params.port = int(arg.strip())
+        elif opt in ('-a', '--algorithm'):
+            message_params.set_algorithm (arg.strip())
+        elif opt in ('--steps'):
+            message_params.step = int(arg.strip())
+        elif opt in ('--burn'):
+            message_params.burn = int(arg.strip())
+        elif opt in ('-t','--tag'):
+            message_params.tag = arg.strip()
+        elif opt in ('-y'):
+            message_params.check_params = False
+        elif opt in ('-h', '--help'):
+            message_params.is_help = True
+    message_params.add_files(remainder)
     return message_params
 #------------------------------------------------------------------------------
+import datetime
+def get_message_time():
+    try:
+        now = datetime.datetime.utcnow()
+        message_time = {}
+        message_time['year'] =        now.strftime('%Y')
+        message_time['month']        = now.strftime('%m')
+        message_time['date']         = now.strftime('%d')
+        message_time['hour']         = now.strftime('%H')
+        message_time['minutes']      = now.strftime('%M')
+        message_time['seconds']      = now.strftime('%S')
+        message_time['milliseconds'] = now.strftime('%f')
+    except Exception as e:
+        print(f'Error in get_message_time: {e}')
+        message_time = {}
+    return message_time
+#------------------------------------------------------------------------------
+def compose_fit_message(message_params):
+    message = {}
+    message['header'] = 'bumps client'
+    message['tag']    = message_params.tag
+    message['message_time'] = get_message_time()
+    message['command'] = str(MessageCommand.StartFit)
+    message['fit_problem'] = message_params.read_problem_file()
+    message['problem_file'] = message_params.files_names[0]
+    message['params'] = message_params.compose_params()
+    return message
+#------------------------------------------------------------------------------
 def main():
-    print(f'command line: "{sys.argv}"')
-    bumps_message = BumpsMessage()
     message_params = params_from_command_line()
-    message_params.print_params()
-    print('BumpsMessage created')
+    if message_params.is_help:
+        print_usage()
+        exit(0)
+    if message_params.check_params:
+        if not message_params.params_ok():
+            print('Problem with parameters. Aborting')
+            exit(0)
+    print('\nsending fit job')
+    sys.stdout.flush()
+    message = compose_fit_message(message_params)
+    print(f'Message:\n{message}')
+    asyncio.run(send_fit_command(message, message_params))
+
     exit(0)
+#------------------------------------------------------------------------------
 if __name__ == '__main__':
     main()
     file_name = get_cli_name()
