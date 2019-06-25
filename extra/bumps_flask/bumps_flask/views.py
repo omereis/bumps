@@ -1,3 +1,4 @@
+from flask import Flask, render_template, request
 import os
 import json
 import datetime
@@ -22,15 +23,22 @@ from .forms import TokenForm, OptimizerForm, UploadForm, FitForm
 from .file_handler import setup_files, update_job_info, search_results, zip_files
 
 from .oe_debug import print_debug
-
+#------------------------------------------------------------------------------
 @app.route('/', methods=['GET', 'POST'])
 def index():
     '''
     '''
     return render_template('bumps_mp_gui.html')
-
+#------------------------------------------------------------------------------
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     print_debug("views.py, dashboard")
     return render_template('dashboard.html',id=17)
-
+#------------------------------------------------------------------------------
+@app.route('/onsendfitjob')
+def on_send_fit_job():
+    res = {}
+    res['message'] = request.args.get('message')
+    print(f'message:\n{res}\n')
+    return json.dumps(res)
+#------------------------------------------------------------------------------

@@ -132,9 +132,9 @@ async def send_fit_command(message, message_params):
         print(f'sending to address "{remote_address}"')
         async with websockets.connect(remote_address) as websocket:
     #async with websockets.connect('ws://0.0.0.0:5678') as websocket:
-        await websocket.send("hello")
-        response = await websocket.recv()
-        print(response)
+            await websocket.send("hello")
+            response = await websocket.recv()
+            print(response)
     except Exception as e:
         print(f'"Error in send_fit_command": {e}')
 #------------------------------------------------------------------------------

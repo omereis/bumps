@@ -728,6 +728,31 @@ function onSendJobClick() {
         alert ('Missing problem definition');
 }
 //-----------------------------------------------------------------------------
+function onSendFitJobClick() {
+    var txtProblem = $('#problem_text').val().trim();
+
+    if (txtProblem.length > 0) {
+        var message = composeJobSendMessage(txtProblem);
+        var tag = message['tag'];
+        var row_id = addResultRow (tag);
+        message['row_id'] = row_id;
+        $.ajax({
+            url: "/onsendfitjob",
+            type: "get",
+            data: {algorithm: "newton", steps: 111, burn : 222},
+            success: function(response) {
+              var reply = JSON.parse(response);
+              console.log(JSON.stringify(reply));
+            },
+            error: function(xhr) {
+              //Do Something to handle error
+            }
+          });
+          }
+    else
+        alert ('Missing problem definition');
+}
+//-----------------------------------------------------------------------------
 function sendMessage (message) {
     var remoteServer = $('#remote_server').val();
     var remotePort   = $('#remote_port').val();

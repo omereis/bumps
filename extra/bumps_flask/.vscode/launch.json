@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python BumpsServer",
+            "name": "Python Bumps Alpha",
             "type": "python",
             "request": "launch",
             "stopOnEntry": true,
@@ -14,7 +14,7 @@
             "cwd": "${workspaceFolder}",
             "env": {},
             "envFile": "${workspaceFolder}/.env",
-            "args" : ["-y", "curv_fit.py"],
+            "args" : ["-y", "--server", "0.0.0.0", "--port", "4567", "curv_fit.py"],
             "debugOptions": [
                 "RedirectOutput"
             ]

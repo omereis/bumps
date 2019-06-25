@@ -49,6 +49,8 @@
                             Submit a new job...<br>
                             <!-- <input id="btnSendJob" type="button" value="Send Job" disabled = "disabled" onclick="sendJob()"> -->
                             <input id="btnSendJob" type="button" value="Send Job" onclick="sendJob()">
+                            <br>
+                            <input id="btnSendFitJob" type="button" value="Send Fit Job" onclick="sendJob()">
                         </div>
                         <p></p>Fitting Algorithm<br>
                         <select id="algorithm" selected="newton">
@@ -175,6 +177,7 @@
         document.getElementById("clear_file").onclick = clear_file;
         document.getElementById("save_problem_file").onclick = save_model;
         document.getElementById("btnSendJob").onclick = onSendJobClick;
+        document.getElementById("btnSendFitJob").onclick = onSendFitJobClick;
 
         setInterval(onStatusTimerTick, 500);
         
