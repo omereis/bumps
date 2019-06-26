@@ -1,7 +1,5 @@
 from flask import Flask, render_template, request
-import os
-import json
-import datetime
+import os, json, datetime
 
 from flask import (
     url_for, render_template, redirect,
@@ -38,7 +36,16 @@ def dashboard():
 @app.route('/onsendfitjob')
 def on_send_fit_job():
     res = {}
-    res['message'] = request.args.get('message')
-    print(f'message:\n{res}\n')
+    try:
+        res = request.args['message']
+        print(f'res:\n---------------\n{res}\n-------------------\n')
+        print(f'type(res): {type(res)}')
+        cm = json.loads(res)
+        print(f'cm = {cm}')
+        print(f'type(cm): {type(cm)}')
+        for key in cm.keys():
+            print(f'\t{key}:\t{cm[key]}')
+    except Exception as e:
+        print (f'run time error in on_send_fit_job: {e}')
     return json.dumps(res)
 #------------------------------------------------------------------------------

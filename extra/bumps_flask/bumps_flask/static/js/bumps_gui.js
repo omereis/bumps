@@ -739,7 +739,7 @@ function onSendFitJobClick() {
         $.ajax({
             url: "/onsendfitjob",
             type: "get",
-            data: {algorithm: "newton", steps: 111, burn : 222},
+            data: {message: JSON.stringify(message)},
             success: function(response) {
               var reply = JSON.parse(response);
               console.log(JSON.stringify(reply));
