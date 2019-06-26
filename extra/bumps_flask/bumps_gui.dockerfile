@@ -68,6 +68,8 @@ ENV FIT_RESULTS_DIR=/home/app_user/bumps_flask/bumps_flask/static/fit_results
 ENV FLASK_HOME=/home/app_user/bumps_flask
 ENV FLASK_PORT=4000
 ENV WEBSOCKET_PORT=4567
+export FLASK_ENV=development
+
 # Launch the app
 # CMD ["mod_wsgi-express", "start-server", "--host", "0.0.0.0", "--port", "5000", "bumps_flask.wsgi"]
 # CMD ["gunicorn", "--bind", "0.0.0.0:5000", "bumps_flask:app"]
