@@ -1,0 +1,19 @@
+body{
+    background-color: rgb(141, 119, 241);
+    color:black;
+    border-color:black;
+}
+table, th, td, tr, th {
+    border: 1px solid black;
+}
+th {
+    text-align: center;
+    background-color: rgb(100, 131, 216);
+}
+.no_border {
+    border: 0px;
+}
+h3 {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}

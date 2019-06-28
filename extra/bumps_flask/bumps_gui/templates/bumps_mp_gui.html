@@ -1,0 +1,188 @@
+<!doctype html>
+<html>
+    <head>
+        <!-- Constatnts and Globals. MUST be first -->
+            <script src="{{ url_for ('static', filename='js/const.js') }}" charset="utf-8"></script>
+            <script src="{{ url_for ('static', filename='js/bumps_gui.js') }}" charset="utf-8"></script>
+        <script src="{{ url_for ('static', filename='js/random_words.js') }}" charset="utf-8"></script>
+        <!--<script src="{{ url_for ('static', filename='js/results.js') }}" charset="utf-8"></script>-->
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+        <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_gui.css') }}"/>
+        <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_portal.css') }}"/>
+    </head>
+            <title>bumps distribution Server</title>
+    <body onload="init_app()">
+            <h3><b>bumps</b> Multi Processing User Interface</h3>
+            <!--<a href="{{ url_for ('static', filename='ncnr01.jpg') }}">picture 1</a><br>
+            <a href="{{ url_for ('static', filename='ncnr02.jpg') }}">picture 2</a>
+            <a href="[[ url_for ('celery_bumps', filename='app.py') ]]">app.py</a>-->
+			<table>
+				<tr>
+					<th>
+						Problem Definition
+					</th>
+					<th>
+						Fitting Parameters
+					</th>
+					<th>
+                        Remote Parameters
+                    </th>
+                    <th width="50%">
+                        Submitted Jobs
+                    </th>
+				</tr>
+                <tr>
+                    <td style="vertical-align: top;">
+                        <table class="no_border" width="100%">
+                            <tr style="vertical-align: top;">
+                                <td class="no_border"><input type="button" id="clear_file"  value="Clear"></td>
+                                <td class="no_border"><input type="file" id="problemFile"></td>
+                                <td class="no_border"><input type="button" id="save_problem_file"  value="Save As..."></td>
+                            </tr>
+                        </table>
+                        Problem code
+                        <!--<label style="text-align:center;" for="problem_text">Problem code</label><br>-->
+                        <textarea cols="50" rows="20" id="problem_text" width="100%" wrap="soft"></textarea>
+                    </td>
+                    <td valign="top">
+                        <div style="text-align: center;">
+                            Submit a new job...<br>
+                            <!-- <input id="btnSendJob" type="button" value="Send Job" disabled = "disabled" onclick="sendJob()"> -->
+                            <input id="btnSendJob" type="button" value="Send Job" onclick="sendJob()">
+                            <br>
+                            <input id="btnSendFitJob" type="button" value="Send Fit Job" onclick="sendJob()">
+                        </div>
+                        <p></p>Fitting Algorithm<br>
+                        <select id="algorithm" selected="newton">
+                            <option value="lm">Levenberg Marquardt</option>
+                            <option value="newton">Quasi-Newton BFGS</option>
+                            <option value="de">Differential Evolution</option>
+                            <option value="dream">DREAM</option>
+                            <option value="amoeba">Nelder-Mead Simplex</option>
+                            <option value="pt">Parallel Tempering</option>
+                            <option value="ps">Particle Swarm</option>
+                            <option value="rl">Random Lines</option>
+                        </select>
+                        <table width="100%">
+                            <tr>
+                                <td>Steps:</td>
+                                <td><input type="number" id="fitting_steps" value="100" steps="10" min="1" style="width: 5em;"></td>
+                            </tr>
+                            <tr>
+                                <td>Burn:</td>
+                                <td><input type="number" id="fitting_burn" value="100" steps="10" min="1" style="width: 5em;"></td>
+                            </tr>
+                        </table>
+                        <hr>
+                        <input id="btnSendPrintStatus" type="button" value="Print Status" onclick="sendPrintStatus()">
+                    </td>
+                    <td valign="top" style="border: 2px solid blue;">
+                        <table>
+                            <tr>
+                                <td width="80%" style="text-align: center;">Server</td>
+                                <td width="20%">Port</td>
+                            </tr>
+                            <tr>
+                                <td width="80%"><input type="text" id="remote_server" size="25" value="localhost"></td>
+                                <td width="20%"><input type="text" id="remote_port" size="3" value="4567"></td>
+                            </tr>
+                        </table>
+                        <p style="text-align:center;">
+                        Tag: <input type="text" id="remote_tag" size="15" > <input type="button" value="Generate" onclick="generateTag()">
+                        <hr>
+                        <table width="100%"><tr>
+                            <td style="text-align:center;"><input type="radio" id="mp_none" onclick="change_multi_processing(this.value)" checked="true" value="none">None</td>
+                            <td style="text-align:center;"><input type="radio" id="mp_celery" onclick="change_multi_processing(this.value)" value="celery">Celery</td>
+                            <td style="text-align:center;"><input type="radio" id="mp_slurm" onclick="change_multi_processing(this.value)" value="slurm">Slurm</td>
+                        </tr>
+                        </table>
+                        <div id="slurm_params">
+                            <table width="100%">
+                                <tr>
+                                    <td>Processors</td>
+                                    <td><input type="number" id="slurm_processors" value="1" min="1" size="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>GPUs</td>
+                                    <td><input type="text" id="slurm_gpus" value="0" cols="5"></td>
+                                </tr>
+                                <tr>
+                                    <td>Memory</td>
+                                    <td>
+                                        <input type="text" name="slurm_procs" value="512" size="5">
+                                        <select>
+                                            <option value="mb">Mega Bytes</option>
+                                            <option value="gb">Giga Bytes</option>
+                                        </select>
+                                    </td>
+                                    </tr>
+                                </table>
+                        </div>
+                        <div id="celery_params" style="text-align:center;">Using Celery</div>
+                        <div id="no_mp_params" style="text-align:center;">Using Local Only</div>
+                    </td>
+                    <td width="50%" valign="top">
+                        <table width="100%">
+                            <tr style="text-align: center;">
+                                <td>
+                                    <input type="button" id="btnResultDelete"  value="Delete" onclick="onResultsDeleteClick()">
+                                </td>
+                                <td>
+                                    <input type="button" id="btnResultDisplay" value="Display" onclick="onResultsDisplayClick()">
+                                </td>
+                                <td>
+                                    <input type="button" id="btnResultLoad" value="Load" onclick="onResultsLoadClick()">
+                                </td>
+                                <td>
+                                    <input type="button" id="btnResultStatus" value="Status" onclick="onResultsStatusClick()">
+                                </td>
+                                <td>
+                                    <input type="checkbox" id="cboxStatusPoll">Status Poll
+                                </td>
+                            </tr>
+                        </table>
+                        <table width="100%" id="tblResults">
+                            <tr>
+                                <th>Job ID</th>
+                                <th>Date/Time</th>
+                                <th>Tag</th>
+                                <th>Status</th>
+                                <th>Results</th>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="1">
+                        <div id=status_header>
+                            <input type="button" value="Clear Status" onclick="clearStatus()">
+                        </div>
+                        <div id="status_line"> status line </div>
+                    </td>
+                    <td colspan="3" style="vertical-align: top;">
+                        <div id="fit_results" style="vertical-align: top;">
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        <div id=job_results>
+            
+        </div>
+    </body>
+    <script>
+        function clearStatus() {
+            document.getElementById('status_line').innerText='';
+        }
+        document.getElementById("problemFile").onchange = load_bumps_problem;
+        document.getElementById("clear_file").onclick = clear_file;
+        document.getElementById("save_problem_file").onclick = save_model;
+        document.getElementById("btnSendJob").onclick = onSendJobClick;
+        document.getElementById("btnSendFitJob").onclick = onSendFitJobClick;
+
+        setInterval(onStatusTimerTick, 500);
+        
+        var alg=document.getElementById("algorithm");
+        if (alg)
+            alg.value="newton";
+    </script>
+</html>
