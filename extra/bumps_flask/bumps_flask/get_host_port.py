@@ -1,11 +1,12 @@
 import sys, getopt
 #------------------------------------------------------------------------------
-def get_host_port (def_host='0.0.0.0', def_port=5000):
+def get_host_port (def_host='1.2.4.5', def_port=5000):
     host = def_host,
     port = def_port
     try:
-        options, remainder = getopt.getopt(sys.argv[1:],
-            'h:p:',
+        # Note: arguments start after 2nd word (flask run --<parameter>)
+        options, remainder = getopt.getopt(sys.argv[2:],
+            'h:p:y',
             [
             'host=',
             'port='

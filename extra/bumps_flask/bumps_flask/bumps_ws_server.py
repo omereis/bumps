@@ -11,23 +11,26 @@ from sqlalchemy import create_engine, MetaData
 from bumps import cli
 from time import sleep
 try:
-    from .oe_debug import print_debug
-    from .bumps_constants import *
-    from .misc import get_results_dir, get_web_results_dir
-    from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
-    from .db_misc import get_next_job_id, results_dir_for_job
-    from .message_parser import ClientMessage, generate_key
-    from .get_host_port import get_host_port
-    from .MessageCommand import MessageCommand
-except:
-    from oe_debug import print_debug
-    from bumps_constants import *
-    from misc import get_results_dir, get_web_results_dir
-    from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
-    from db_misc import get_next_job_id, results_dir_for_job
-    from message_parser import ClientMessage, MessageCommand, generate_key
-    from get_host_port import get_host_port
-    from MessageCommand import MessageCommand
+    try:
+        from bumps_flask.oe_debug import print_debug
+        from bumps_flask.bumps_constants import *
+        from bumps_flask.misc import get_results_dir, get_web_results_dir
+        from bumps_flask.FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
+        from bumps_flask.db_misc import get_next_job_id, results_dir_for_job
+        from bumps_flask.message_parser import ClientMessage, MessageCommand, generate_key
+        from bumps_flask.get_host_port import get_host_port
+        from bumps_flask.MessageCommand import MessageCommand
+    except:
+        from .oe_debug import print_debug
+        from .bumps_constants import *
+        from .misc import get_results_dir, get_web_results_dir
+        from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
+        from .db_misc import get_next_job_id, results_dir_for_job
+        from .message_parser import ClientMessage, generate_key
+        from .get_host_port import get_host_port
+        from .MessageCommand import MessageCommand
+except Exception as e:
+    print(f'runtime error in bumps_ws_server.py: {e}')
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 host = 'NCNR-R9nano.campus.nist.gov'

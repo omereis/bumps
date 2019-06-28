@@ -1,12 +1,13 @@
 from enum import Enum
-from MessageCommand import MessageCommand
 import os, json
 try:
-    from .oe_debug import print_debug
-    from .misc import get_results_dir
+    from bumps_flask.oe_debug import print_debug
+    from bumps_flask.misc import get_results_dir
+    from bumps_flask.MessageCommand import MessageCommand
 except:
     from oe_debug import print_debug
     from misc import get_results_dir
+    from MessageCommand import MessageCommand
 
 #base_results_dir = '/tmp/bumps_results/'
 #------------------------------------------------------------------------------

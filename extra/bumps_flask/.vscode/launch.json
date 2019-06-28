@@ -5,6 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Bumps GUI",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": true,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            "args" : ["-v"],
+        },
+        {
             "name": "Python Bumps Alpha",
             "type": "python",
             "request": "launch",
@@ -14,7 +26,7 @@
             "cwd": "${workspaceFolder}",
             "env": {},
             "envFile": "${workspaceFolder}/.env",
-            "args" : ["-y", "--server", "0.0.0.0", "--port", "4567", "curv_fit.py"],
+            "args" : ["-y", "--host", "0.0.0.0", "--port", "4567", "curv_fit.py"],
             "debugOptions": [
                 "RedirectOutput"
             ]

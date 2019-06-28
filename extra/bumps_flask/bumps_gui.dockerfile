@@ -26,10 +26,6 @@ WORKDIR /home/app_user/bumps_flask
 # Install the app dependencies using pip
 RUN pip install -U pip
 RUN pip install --upgrade pip
-#COPY requirements.txt /home/app_user/bumps_flask/
-###############
-#RUN pip install --no-cache-dir -r ../requirements.txt
-###############
 RUN pip install flask-socketio
 RUN pip install git+https://github.com/omereis/bumps.git
 
@@ -51,24 +47,25 @@ EXPOSE 4000
 # Create a new user called 'app_user' and set it up on the OS
 # RUN groupadd -r app_user && useradd --no-log-init -r -g app_user app_user
 
-RUN pip install -r requirements.txt
+#RUN pip install -r requirements.txt
 
-RUN pip install websockets
-RUN pip install sqlalchemy
-RUN pip install pymysql
+RUN pip install websockets sqlalchemy pymysql
 RUN pip install mysql-connector-python
 RUN pip install bumps numpy scipy matplotlib nest_asyncio
+RUN pip install flask flask_redis flask_jwt_extended flask_restful flask_wtf
+RUN pip install celery readchar
 
 # Log in with 'app_user' for the rest of the process
 # USER app_user
 
 # Set the environment variables for Flask
-ENV FLASK_APP=bumps_flask
-ENV FIT_RESULTS_DIR=/home/app_user/bumps_flask/bumps_flask/static/fit_results
-ENV FLASK_HOME=/home/app_user/bumps_flask
-ENV FLASK_PORT=4000
+#ENV FLASK_APP=bumps_flask
+#ENV FIT_RESULTS_DIR=/home/app_user/bumps_flask/bumps_flask/static/fit_results
+#ENV FLASK_HOME=/home/app_user/bumps_flask
+#ENV FLASK_PORT=4000
 ENV WEBSOCKET_PORT=4567
-export FLASK_ENV=development
+#ENV FLASK_ENV=development
+ENV BUMPS_MP_PORT=4567
 
 # Launch the app
 # CMD ["mod_wsgi-express", "start-server", "--host", "0.0.0.0", "--port", "5000", "bumps_flask.wsgi"]
