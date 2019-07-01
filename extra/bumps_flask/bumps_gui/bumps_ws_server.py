@@ -214,13 +214,13 @@ async def HandleDelete (cm, server_params):
     return_params = cm.params
     db_connection = None
     try:
-        db_connection = database_engine.connect()
+        db_connection = server_params.database_engine.connect()
         remove_from_list_by_id (server_params.listAllJobs, cm.params, db_connection)
     except Exception as e:
         print ('bumps_ws_server.py, HandleDelete, bug: {}'.format(e))
-    #finally:
-        #if db_connection:
-            #db_connection.close()
+    finally:
+        if db_connection:
+            db_connection.close()
     return return_params
  #------------------------------------------------------------------------------
 async def HandleStatus (cm, server_params):

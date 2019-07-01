@@ -19,20 +19,17 @@ def on_send_fit_job():
         res = request.args['message']
         cm = json.loads(res)
         msg = json.dumps(cm)
-        print(f'cm = {cm}')
-        print(f'Message:\n{msg}')
-        print('++++++++++++++++++++++++++++++++++++++++++++++')
-        print(f'bumps parameters:\n{bumps_params.to_string()}')
-        print('++++++++++++++++++++++++++++++++++++++++++++++')
+#        print(f'cm = {cm}')
+#       print(f'Message:\n{msg}')
+#        print('++++++++++++++++++++++++++++++++++++++++++++++')
+#        print(f'bumps parameters:\n{bumps_params.to_string()}')
+#        print('++++++++++++++++++++++++++++++++++++++++++++++')
         ws = websocket.create_connection(f'ws://{bumps_params.server}:{bumps_params.mp_port}')
-        print ('websocket connected')
+#        print ('websocket connected')
         ws.send(msg)
         ret = ws.recv()
         ws.close()
-        print (f'websocket disconnected, return value: {ret}')
-#        print(f'type(cm): {type(cm)}')
-#        for key in cm.keys():
-#            print(f'\t{key}:\t{cm[key]}')
+#        print (f'websocket disconnected, return value: {ret}')
     except Exception as e:
         print (f'run time error in on_send_fit_job: {e}')
     return ret
@@ -48,6 +45,7 @@ def get_cli_params():
             's:p:m:hv',
             [
             'server=',
+            'host=',
             'port=',
 			'mp_port=',
 			'help',
@@ -59,7 +57,7 @@ def get_cli_params():
         exit(1) 
     for opt, arg in options:
         #if opt in ('-h', '--host'):
-        if opt in ('-s', '--server'):
+        if opt in ('-s', '--server', '--host'):
             bumps_params.server = arg.strip();
         elif opt in ('-p', '--port'):
             bumps_params.port = int (arg.strip())
@@ -76,7 +74,7 @@ def print_usage():
         python {__file__} [options]\n\
         options:\n\
             -s, --server  - flask server name or ip address\n\
-                            default: localhost\n\
+                --host      default: localhost\n\
             -p, --port    - flask server port\n\
                             default: 5000\n\
             -m, --mp_port - multiprocessing port (multiprocessing server is the same is flask server)\n\
@@ -97,8 +95,7 @@ def main():
             exit(0)
         else:
             print('\n')
-    flask_dir = os.getcwd() + '/static/'
-    pServer = multiprocessing.Process(name='bumps websockets server', target=ws_server_main, args=(bumps_params.server, bumps_params.mp_port,flask_dir))
+    pServer = multiprocessing.Process(name='bumps websockets server', target=ws_server_main, args=(bumps_params.server, bumps_params.mp_port, os.getcwd()))
     pServer.start()
     print('server started')
     app.run(debug=False, host=bumps_params.server, port=bumps_params.port)

@@ -584,13 +584,13 @@ function sendForFitResults (job_id) {
     var message = getMessageStart();
     message['command'] = ServerCommands.GET_RESULTS;
     message['params'] = id;
-    sendMessage (JSON.stringify(message));
-    //var s = '<img src="/static/ncnr01.jpg">';
+    sendMesssageThroughFlask(message);
+    //sendMessage (JSON.stringify(message));
+
     res_div.innerHTML = res_div.innerHTML + '<br>' + s + '<hr>';
     //res_div.innerHTML = res_div.innerHTML + '<table><tr><td>' + job_id.toString() + '</td></tr></table><br><hr><img src="/static/ncnr01.jpg>';
     //</img>'<img src="http://urbanologia.tau.ac.il/wp-content/uploads/2015/06/20141212-RAHAT-ARAD-262.jpg" width="100" height="100">'
     $.post("dashboard");
-    //res_div.innerHTML + 'more results from ' + job_id.toString() + '<br>';
 }
 //-----------------------------------------------------------------------------
 function updateJobsStatus (params) {
@@ -636,7 +636,8 @@ function composeSendDeleteMessage (aLinesToDel) {
     var message = getMessageStart();
     message['command'] = ServerCommands.DELETE;
     message['params'] = aLinesToDel;
-    sendMessage (JSON.stringify(message));
+    //sendMessage (JSON.stringify(message));
+    sendMesssageThroughFlask(message);
 //    g_socket.send (JSON.stringify(message));
 }
 //-----------------------------------------------------------------------------
@@ -654,11 +655,10 @@ function getStatusCommandMessage() {
 }
 //-----------------------------------------------------------------------------
 function sendStatusMessage() {
-    var message = getMessageStart();
+    //var message = getMessageStart();
 
-    message['command'] = ServerCommands.GET_STATUS;
-    sendMessage (JSON.stringify(getStatusCommandMessage()));
-    //sendMessage (JSON.stringify(message));
+    //message['command'] = ServerCommands.GET_STATUS;
+    sendMesssageThroughFlask(getStatusCommandMessage());
 }
 //-----------------------------------------------------------------------------
 function sendPrintStatus() {
@@ -728,6 +728,32 @@ function onSendJobClick() {
         alert ('Missing problem definition');
 }
 //-----------------------------------------------------------------------------
+function sendMesssageThroughFlask(message) {
+    $.ajax({
+        url: "/onsendfitjob",
+        type: "get",
+        data: {message: JSON.stringify(message)},
+        success: function(response) {
+            try {
+                var reply;
+                if (typeof(response) != 'string')
+                    reply = JSON.parse(response);
+                else
+                    reply = response;
+                console.log(JSON.stringify(reply));
+                handle_reply(reply);
+            }
+            catch (err) {
+                console.log(err);
+            }
+        },
+        error: function(xhr) {
+            alert('error');
+            console.log(xhr.toString());
+        }
+    });
+}
+//-----------------------------------------------------------------------------
 function onSendFitJobClick() {
     var txtProblem = $('#problem_text').val().trim();
 
@@ -736,30 +762,8 @@ function onSendFitJobClick() {
         var tag = message['tag'];
         var row_id = addResultRow (tag);
         message['row_id'] = row_id;
-        $.ajax({
-            url: "/onsendfitjob",
-            type: "get",
-            data: {message: JSON.stringify(message)},
-            success: function(response) {
-                try {
-                    var reply;
-                    if (typeof(response) != 'string')
-                        reply = JSON.parse(response);
-                    else
-                        reply = response;
-                    console.log(JSON.stringify(reply));
-                    handle_reply(reply);
-                }
-                catch (err) {
-                    console.log(err);
-                }
-            },
-            error: function(xhr) {
-                alert('error')
-              //Do Something to handle error
-            }
-          });
-          }
+        sendMesssageThroughFlask(message);
+    }
     else
         alert ('Missing problem definition');
 }
