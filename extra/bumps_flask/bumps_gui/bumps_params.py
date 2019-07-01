@@ -16,16 +16,22 @@ class BumpsParams:
     mp_port = 4567
     is_help = False
     verify = False
-#------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
     def print_params(self):
         print (f'server  = {self.server}')
         print (f'port    = {self.port}')
         print (f'mp_port = {self.mp_port}')
-#------------------------------------------------------------------------------
+    #------------------------------------------------------------------------------
     def verify_params(self):
         self.print_params()
         print('Are you ok with the parameters ([y]/n)?', end=' ')
         sys.stdout.flush()
         return read_y_n()
     #------------------------------------------------------------------------------
+    def to_string(self):
+        param_str = f'\
+                server  = {self.server}\n\
+                port    = {self.port}\n\
+                mp_port = {self.mp_port}\n'
+        return param_str
 #------------------------------------------------------------------------------

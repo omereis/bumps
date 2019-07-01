@@ -54,6 +54,7 @@ RUN pip install mysql-connector-python
 RUN pip install bumps numpy scipy matplotlib nest_asyncio
 RUN pip install flask flask_redis flask_jwt_extended flask_restful flask_wtf
 RUN pip install celery readchar
+RUN pip install websocket websocket-client
 
 # Log in with 'app_user' for the rest of the process
 # USER app_user

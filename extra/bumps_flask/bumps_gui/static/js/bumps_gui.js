@@ -741,10 +741,21 @@ function onSendFitJobClick() {
             type: "get",
             data: {message: JSON.stringify(message)},
             success: function(response) {
-              var reply = JSON.parse(response);
-              console.log(JSON.stringify(reply));
+                try {
+                    var reply;
+                    if (typeof(response) != 'string')
+                        reply = JSON.parse(response);
+                    else
+                        reply = response;
+                    console.log(JSON.stringify(reply));
+                    handle_reply(reply);
+                }
+                catch (err) {
+                    console.log(err);
+                }
             },
             error: function(xhr) {
+                alert('error')
               //Do Something to handle error
             }
           });

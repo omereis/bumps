@@ -3,26 +3,39 @@ from bumps_params import BumpsParams
 import json, sys, getopt, os, multiprocessing
 from bumps_ws_server import ws_server_main
 from bumps_params import read_y_n
+import websocket
 #------------------------------------------------------------------------------
 # Source:
 # https://stackoverflow.com/questions/40963401/flask-dynamic-data-update-without-reload-page
+# websocket source:
+# https://github.com/websocket-client/websocket-client/blob/master/examples/echo_client.py
 app = Flask(__name__)
 #------------------------------------------------------------------------------
 @app.route('/onsendfitjob')
 def on_send_fit_job():
+    global bumps_params
     res = {}
     try:
         res = request.args['message']
-#        print(f'res:\n---------------\n{res}\n-------------------\n')
-#        print(f'type(res): {type(res)}')
         cm = json.loads(res)
-#        print(f'cm = {cm}')
+        msg = json.dumps(cm)
+        print(f'cm = {cm}')
+        print(f'Message:\n{msg}')
+        print('++++++++++++++++++++++++++++++++++++++++++++++')
+        print(f'bumps parameters:\n{bumps_params.to_string()}')
+        print('++++++++++++++++++++++++++++++++++++++++++++++')
+        ws = websocket.create_connection(f'ws://{bumps_params.server}:{bumps_params.mp_port}')
+        print ('websocket connected')
+        ws.send(msg)
+        ret = ws.recv()
+        ws.close()
+        print (f'websocket disconnected, return value: {ret}')
 #        print(f'type(cm): {type(cm)}')
 #        for key in cm.keys():
 #            print(f'\t{key}:\t{cm[key]}')
     except Exception as e:
         print (f'run time error in on_send_fit_job: {e}')
-    return json.dumps(res)
+    return ret
 #------------------------------------------------------------------------------
 @app.route('/')
 def index():
@@ -73,6 +86,7 @@ def print_usage():
         ')
 #------------------------------------------------------------------------------
 def main():
+    global bumps_params
     bumps_params = get_cli_params()        
     if bumps_params.is_help:
         print_usage()
@@ -86,10 +100,10 @@ def main():
     flask_dir = os.getcwd() + '/static/'
     pServer = multiprocessing.Process(name='bumps websockets server', target=ws_server_main, args=(bumps_params.server, bumps_params.mp_port,flask_dir))
     pServer.start()
-    app.run(debug=False, host=bumps_params.server, port=bumps_params.port)
     print('server started')
-    read_y_n()
+    app.run(debug=False, host=bumps_params.server, port=bumps_params.port)
     pServer.terminate()
+    print('server terminated')
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
     main()
