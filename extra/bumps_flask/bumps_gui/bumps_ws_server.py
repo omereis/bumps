@@ -269,7 +269,6 @@ def handle_incoming_message (websocket, message, server_params):
     cm = ClientMessage()
     try:
         if cm.parse_message(websocket, message, server_params):
-            print(f'Message command: {cm.command}')
             if cm.command == MessageCommand.StartFit:
                 job_id = HandleFitMessage (cm, server_params)
                 if job_id:
@@ -294,12 +293,12 @@ async def bumps_server(websocket, path, server_params):
     try:
         jmsg = json.loads(message)
     except:
-        jmsg={}
+        msg = message.replace("'",'"')
+        jmsg = json.loads(msg)
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     save_message(strTime + ':\n\n'+ message + '\n')
-    return_params = handle_incoming_message (websocket, json.loads(message), server_params)
+    return_params = handle_incoming_message (websocket, jmsg, server_params)
 
-    source = "{}:{}".format(websocket.host, websocket.port)
     try:
         remote_client = websocket.remote_address[0]
     except Exception as e:
@@ -337,7 +336,6 @@ def ws_server_main(serverHost='0.0.0.0', serverPort='4567', flask_dir='/home/app
         database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
         server_params = set_server_params(database_engine, flask_dir)
         connection = database_engine.connect()
-        print("Database connected")
     except Exception as e:
         print("Error while connecting to database bumps_db in NCNR-R9nano.campus.nist.gov:3306:")
         print("{}".format(e))

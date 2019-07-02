@@ -223,6 +223,7 @@ def params_from_command_line():
         options, remainder = getopt.getopt(sys.argv[1:],
             's:p:a:t:yh?',
             ['server=',
+                'host='
                 'port=',
                 'tag=',
                 'steps=',
@@ -233,7 +234,7 @@ def params_from_command_line():
         print(err) 
         exit(1)
     for opt, arg in options:
-        if opt in ('-s', '--server'):
+        if opt in ('-s', '--server', '--host'):
             message_params.server = arg.strip()
         elif opt in ('-p', '--port'):
             message_params.port = int(arg.strip())
@@ -279,6 +280,7 @@ def compose_fit_message(message_params):
     message['problem_file'] = message_params.files_names[0]
     message['params'] = message_params.compose_params()
     return message
+import websocket
 #------------------------------------------------------------------------------
 def main():
     message_params = params_from_command_line()
@@ -293,8 +295,11 @@ def main():
     sys.stdout.flush()
     message = compose_fit_message(message_params)
     print(f'Message:\n{message}')
-    asyncio.run(send_fit_command(message, message_params))
-
+    websocket.enableTrace(True)
+    ws = websocket.create_connection("ws://echo.websocket.org/")
+    ws.send('hello, world')
+    results = ws.recv()
+    print (f'results: {results}')
     exit(0)
 #------------------------------------------------------------------------------
 if __name__ == '__main__':

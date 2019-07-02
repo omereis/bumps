@@ -134,8 +134,8 @@ function getNextCBoxID () {
 //-----------------------------------------------------------------------------
 function insertSelectCell (row, idx) {
     var cell = row.insertCell(idx);
-	var cbox_id = 'cbox' + (getNextCBoxID () + 1);//table.rows.length.toString(10);
-    cell.innerHTML = '<input type="checkbox" id="' + cbox_id + '">';//cbox4">';
+	var cbox_id = 'cbox' + (getNextCBoxID () + 1);
+    cell.innerHTML = '<input type="checkbox" id="' + cbox_id + '">';
     return (cbox_id);
 }
 //-----------------------------------------------------------------------------
@@ -343,59 +343,20 @@ function sleep(milliseconds) {
     }
 }
 //-----------------------------------------------------------------------------
-function webSocketSendMessage(protocol, hostname, port, endpoint, message) {
-    var webSocketURL = null;
-    webSocketURL = protocol + "://" + hostname + ":" + port + endpoint;
-    console.log("openWSConnection::Connecting to: " + webSocketURL);
-    try {
-        while (g_flagNetBusy) {
-            sleep (10);
-        }
-        g_flagNetBusy = true;
-        webSocket = new WebSocket(webSocketURL);
-        webSocket.addEventListener('error', (event) => {
-            console.log('in addEventListener');
-            console.log(event);
-        });
-        webSocket.onopen = function(openEvent) {
-            console.log("WebSocket OPEN: " + JSON.stringify(openEvent, null, 4));
-            webSocket.send(message);
-            enableResultsButtons('open');
-        };
-        webSocket.onclose = function (closeEvent) {
-            console.log("WebSocket CLOSE: " + JSON.stringify(closeEvent, null, 4));
-            enableResultsButtons('close');
-        };
-        webSocket.onerror = function (errorEvent) {
-            var msg = "WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4);
-            console.log("WebSocket ERROR: " + JSON.stringify(errorEvent, null, 4));
-            console.log(msg);
-            socketErrorHandler (webSocket, errorEvent);
-        };
-        webSocket.onmessage = function (messageEvent) {
-            var wsMsg = messageEvent.data;
-            console.log("WebSocket MESSAGE: " + wsMsg);
-            if (wsMsg.indexOf("error") > 0) {
-                document.getElementById("job_results").value += "error: " + wsMsg.error + "\r\n";
-            } else {
-                console.log(wsMsg);
-                handle_reply(wsMsg);
-				$('#status_line').append(wsMsg + '<br>');
-            }
-        };
-    } catch (exception) {
-        console.error(exception);
-    }
-    finally {
-        g_flagNetBusy = false;
-    }
-	return (webSocket);
-}
-//-----------------------------------------------------------------------------
 function generateTag() {
     var rw = random_words()
     document.getElementById('remote_tag').value = rw;
     return (rw)
+}
+//-----------------------------------------------------------------------------
+function handleDelete (jmsg) {
+    var params = jmsg['params'];
+    console.log('length(params): ' + params.length);
+    for (var n=0 ; n < params.length ; n++) {
+        var id = params[n];
+        deleteRowByDBID (id);
+        deleteResultsById (id);
+    }
 }
 //-----------------------------------------------------------------------------
 function handle_reply(wsMsg) {
@@ -412,12 +373,7 @@ function handle_reply(wsMsg) {
         cell.innerHTML += db_id.toString();
     }
     else if (command == ServerCommands.DELETE) {
-        var params = jmsg['params'];
-        console.log('length(params): ' + params.length);
-        for (var n=0 ; n < params.length ; n++) {
-            var id = params[n];
-            deleteRowByDBID (id);
-        }
+        handleDelete (jmsg);
     }
     else if (command == ServerCommands.GET_STATUS) {
         var params = jmsg['params'];
@@ -466,13 +422,19 @@ function getDifference(a, b)
     return result;
 }
 //-----------------------------------------------------------------------------
+function getResultsDivFromID (id) {
+    var strFitResults = 'fit_results_' + id.toString();
+    return (strFitResults);
+}
+//-----------------------------------------------------------------------------
 function showFitResults (jmsg) {
     var divResults = document.getElementById('fit_results');
     var n, strHtml='', name, ext, id;
 
     if (divResults) {
         id = jmsg['params'].id;
-        var strFitResults = 'fit_results_' + id.toString();
+        //var strFitResults = 'fit_results_' + id.toString();
+        var strFitResults = getResultsDivFromID (jmsg['params'].id);
         var divJobRslt = document.getElementById(strFitResults);
         if (divJobRslt == null) {
             divJobRslt = document.createElement('div');
@@ -574,6 +536,12 @@ function deleteRowByDBID (btn_id) {
     }
 }
 //-----------------------------------------------------------------------------
+function deleteResultsById (id) {
+    var div = document.getElementById(getResultsDivFromID(id));
+    if (div)
+        div.parentNode.removeChild(div);
+}
+//-----------------------------------------------------------------------------
 function sendForFitResults (job_id) {
     var res_div = document.getElementById('fit_results')
     var row = getRowByBtnShowID (job_id)
@@ -636,9 +604,7 @@ function composeSendDeleteMessage (aLinesToDel) {
     var message = getMessageStart();
     message['command'] = ServerCommands.DELETE;
     message['params'] = aLinesToDel;
-    //sendMessage (JSON.stringify(message));
     sendMesssageThroughFlask(message);
-//    g_socket.send (JSON.stringify(message));
 }
 //-----------------------------------------------------------------------------
 function onResultsDisplayClick() {
@@ -655,9 +621,6 @@ function getStatusCommandMessage() {
 }
 //-----------------------------------------------------------------------------
 function sendStatusMessage() {
-    //var message = getMessageStart();
-
-    //message['command'] = ServerCommands.GET_STATUS;
     sendMesssageThroughFlask(getStatusCommandMessage());
 }
 //-----------------------------------------------------------------------------
@@ -719,10 +682,7 @@ function onSendJobClick() {
         var tag = message['tag'];
         var row_id = addResultRow (tag);
         message['row_id'] = row_id;
-        //g_socket = openWSConnection("ws", remoteServer, remotePort, "");
         sendMessage (JSON.stringify(message));
-        //webSocketSendMessage ("ws", remoteServer, remotePort, "", JSON.stringify(message));
-//        g_socket.send (JSON.stringify(message));
     }
     else
         alert ('Missing problem definition');
@@ -767,12 +727,4 @@ function onSendFitJobClick() {
     else
         alert ('Missing problem definition');
 }
-//-----------------------------------------------------------------------------
-function sendMessage (message) {
-    var remoteServer = $('#remote_server').val();
-    var remotePort   = $('#remote_port').val();
-
-    webSocketSendMessage ("ws", remoteServer, remotePort, "", message);
-}
-//-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

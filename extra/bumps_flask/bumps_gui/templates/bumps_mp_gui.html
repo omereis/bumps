@@ -77,18 +77,6 @@
                         <input id="btnSendPrintStatus" type="button" value="Print Status" onclick="sendPrintStatus()">
                     </td>
                     <td valign="top" style="border: 2px solid blue;">
-<!--
-                            <table>
-                            <tr>
-                                <td width="80%" style="text-align: center;">Server</td>
-                                <td width="20%">Port</td>
-                            </tr>
-                            <tr>
-                                <td width="80%"><input type="text" id="remote_server" size="25" value="localhost"></td>
-                                <td width="20%"><input type="text" id="remote_port" size="3" value="4567"></td>
-                            </tr>
-                        </table>
--->
                         <p style="text-align:center;">
                         Tag: <input type="text" id="remote_tag" size="15" > <input type="button" value="Generate" onclick="generateTag()">
                         <hr>
@@ -175,11 +163,14 @@
         function clearStatus() {
             document.getElementById('status_line').innerText='';
         }
-        document.getElementById("problemFile").onchange = load_bumps_problem;
-        document.getElementById("clear_file").onclick = clear_file;
-        document.getElementById("save_problem_file").onclick = save_model;
-        document.getElementById("btnSendJob").onclick = onSendJobClick;
-        document.getElementById("btnSendFitJob").onclick = onSendFitJobClick;
+        try {
+            document.getElementById("problemFile").onchange = load_bumps_problem;
+            document.getElementById("clear_file").onclick = clear_file;
+            document.getElementById("save_problem_file").onclick = save_model;
+        }
+        catch (err) {
+            console.log(err);
+        }
 
         setInterval(onStatusTimerTick, 500);
         
