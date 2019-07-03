@@ -14,6 +14,7 @@ RUN ln -s /usr/bin/pip3 /usr/bin/pip
 
 COPY get-pip.py /tmp
 RUN apt install -y python3-distutils
+RUN apt install -y sqlite3
 RUN python /tmp/get-pip.py
 
 RUN pip install -U pip
@@ -22,13 +23,10 @@ RUN pip install --upgrade pip
 RUN pip install websockets
 RUN pip install random_word
 RUN pip install readchar
+RUN pip install websocket websocket-client
 
-WORKDIR /home/oe/
-ENV HOME=/home/oe/
-COPY ./ /home/oe
+WORKDIR /home/bumps_alpha
+ENV HOME=/home/bumps_alpha/
+COPY ./ /home/bumps_alpha
 COPY ./vimrc /etc/vim/vimrc
 
-# Make the 5678 port available from outside the container
-#EXPOSE 5678
-# EXPOSE 5555
-#apt -y install software-properties-common dirmngr apt-transport-https lsb-release ca-certificates

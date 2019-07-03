@@ -1,10 +1,17 @@
-import asyncio
-import websockets
-import sys, getopt
-import readchar
+import asyncio, websockets
+import os, sys, getopt
+import readchar, sqlite3
 from random_word import RandomWords
 import datetime
 from MessageCommand import MessageCommand
+#------------------------------------------------------------------------------
+tbl_sent_jobs   = 'sent_jobs'
+fld_id      = 'local_id'
+fld_server  = 'server_id'
+fld_problem = 'problem_file'
+fld_tag     = 'tag'
+fld_sent    = 'sent_time'
+
 #------------------------------------------------------------------------------
 def name_of_algorithm(algorithm):
     if algorithm:
@@ -87,13 +94,19 @@ class MessageParams:
         problem = ''
         f = None
         try:
+#            fname = os.getcwd() + "/" + self.files_names[0]
+#            f = open(fname, 'r')
             f = open(self.files_names[0], 'r')
             problem = f.read()
         except Exception as e:
             print(f'Error reading problem file: "{e}"')
+#            exit(1)
         finally:
             if f:
                 f.close()
+        if len(problem) == 0:
+            print('Missing problem definition. Aborting')
+            exit(1)
         return problem
 #------------------------------------------------------------------------------
     def compose_params(self):
@@ -105,6 +118,10 @@ class MessageParams:
         except Exception as e:
             print(f'Error in compose_params: "{e}"')
         return params
+#------------------------------------------------------------------------------
+    def get_remote_address(self):
+        remote_address = f'ws://{self.server}:{self.port}'
+        return remote_address
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 class BumpsMessage:
@@ -163,27 +180,52 @@ def read_file(file_name):
     return content
 #------------------------------------------------------------------------------
 def is_help_params(sys_argv):
-    is_help = False
-    try:
-            options, remainder = getopt.getopt(sys.argv[1:],
-                's:p:a:t:yh',
-                ['server=',
-                 'port=',
-                 'tag=',
-                 'steps=',
-                 'burn=',
-                 'help',
-                 'algorithm='])
-#        options = getopt.getopt(sys_argv,
-#            'h?',
-#            ['help'])
-    except getopt.GetoptError as err:
-        print(err) 
-        exit(1)
-    for opt, arg in options:
-        if opt in ('-h', '?', '--help'):
-            is_help = True
-    return is_help
+    for v in sys.argv[1:]:
+        if (v.startswith('--')) and not ('=' in v):
+            if 'help' in (v):
+                return True
+        elif (v.startswith('-')) and not ('=' in v):
+            if v == '-h':
+                return True
+        elif v == '?':
+            return True
+    return False
+#------------------------------------------------------------------------------
+def print_usage2():
+    print(f'Usage\n\
+        python {__file__} [options] --params <parameters file> problem_file[,problem_file,...]\n\
+        parameters file is a JSON format, that should include the following fields.\n\
+        Note that all fields must be enclose in double quotes, such as "field": "value"\n\
+            server  Fitter server name or ip.\n\
+                    default: localhost\n\
+            port    Fitter port used for the websocket service\n\
+                    default: 4567\n\
+            options\n\
+                -h | --help |-?     print this message\n\
+                -v                  print parsed parameters, and request approval\n\
+            command Fitter  case sensitive command. Can be only one of the following:\n\
+                StartFit    Start fit\n\
+                GetStatus   Return status for job, identified by the message tag.\n\
+                Delete      Delete results a database record for jobs identified by id, in params field\n\
+                get_data    Retrieve file names (URLs) for the files resulted from the fitting algorithm.\n\
+                            Note that one of the files is an archive (zip) that encapsulate all the results files.\n\
+                print_status    print jobs status on server console. Used mainly during development.\n\
+            params:         parameters field. In case of StartFit command, this field should include the following dict:\n\
+                algorithm   fitting algorithm. Possible options include:\n\
+                    "lm"     (Levenberg Marquardt)\n\
+                    newton"  (Quasi-Newton BFGS)\n\
+                    "de"     (Differential Evolution)\n\
+                    "dream"  (DREAM)\n\
+                    "amoeba" (Nelder-Mead Simplex)\n\
+                    "pt"     (Parallel Tempering)\n\
+                    "ps"     (Particle Swarm)\n\
+                    "rl"     (Random Lines)\n\
+                steps       number of steps\n\
+                burns       number of burns\n\
+            multi_processing    may by "none", "celery" or "slurm"\n\
+            row_id          some client generated id that uniqueuely identifies the job for the client.\n\
+                            The server returns uniqueue database id, for each job.\n\
+                            The client should bind the database id to the local id\n')
 #------------------------------------------------------------------------------
 def print_usage():
     src_filename = __file__
@@ -214,43 +256,45 @@ def print_usage():
         ------------\n\
         --steps      Maximum number of iterative steps\n\
         ------------\n\
-        --burn       number of burn-in iterations before accumulating stats\n\
+        --burn         number of burn-in iterations before accumulating stats\n\
+        --view      display the parsed message\n\
         ')
 #------------------------------------------------------------------------------
 def params_from_command_line():
     message_params = MessageParams()
-    try:
-        options, remainder = getopt.getopt(sys.argv[1:],
-            's:p:a:t:yh?',
-            ['server=',
-                'host='
-                'port=',
-                'tag=',
-                'steps=',
-                'burn=',
-                'help',
-                'algorithm='])
-    except getopt.GetoptError as err:
-        print(err) 
-        exit(1)
-    for opt, arg in options:
-        if opt in ('-s', '--server', '--host'):
-            message_params.server = arg.strip()
-        elif opt in ('-p', '--port'):
-            message_params.port = int(arg.strip())
-        elif opt in ('-a', '--algorithm'):
-            message_params.set_algorithm (arg.strip())
-        elif opt in ('--steps'):
-            message_params.step = int(arg.strip())
-        elif opt in ('--burn'):
-            message_params.burn = int(arg.strip())
-        elif opt in ('-t','--tag'):
-            message_params.tag = arg.strip()
-        elif opt in ('-y'):
-            message_params.check_params = False
-        elif opt in ('-h', '--help'):
-            message_params.is_help = True
-    message_params.add_files(remainder)
+    message_params.is_help = is_help_params(sys.argv[1:])
+    if not message_params.is_help:
+        try:
+            options, remainder = getopt.getopt(sys.argv[1:],
+                's:p:a:t:yh?',
+                ['server=',
+                    'host=',
+                    'port=',
+                    'tag=',
+                    'steps=',
+                    'burn=',
+                    'algorithm='])
+        except getopt.GetoptError as err:
+            print(err) 
+            exit(1)
+        for opt, arg in options:
+            if opt in ('-s', '--server', '--host'):
+                message_params.server = arg.strip()
+            elif opt in ('-p', '--port'):
+                message_params.port = int(arg.strip())
+            elif opt in ('-a', '--algorithm'):
+                message_params.set_algorithm (arg.strip())
+            elif opt in ('--steps'):
+                message_params.step = int(arg.strip())
+            elif opt in ('--burn'):
+                message_params.burn = int(arg.strip())
+            elif opt in ('-t','--tag'):
+                message_params.tag = arg.strip()
+            elif opt in ('-y'):
+                message_params.check_params = False
+            elif opt in ('-h', '--help'):
+                message_params.is_help = True
+        message_params.add_files(remainder)
     return message_params
 #------------------------------------------------------------------------------
 import datetime
@@ -270,6 +314,74 @@ def get_message_time():
         message_time = {}
     return message_time
 #------------------------------------------------------------------------------
+def assert_jobs_table(conn):
+    global tbl_sent_jobs, fld_id, fld_problem, fld_tag, fld_sent
+
+#    sql = "select name from SQLITE_MASTER where type='table' and name = '{tbl_sent_jobs}';"
+#    print(f'"assert_jobs_table", sql:\n{sql}')
+#    res = conn.execute(sql).fetchall())
+#    print(f'"assert_jobs_table", len(res):\n{len(res)}')
+#    if len(conn.execute(sql).fetchall()) == 0:
+    try:
+        sql = f'create table if not exists {tbl_sent_jobs} (\
+            {fld_id}        integer,\
+            {fld_server}    integer,\
+            {fld_problem}    varchar(100),\
+            {fld_tag}       varchar(100),\
+            {fld_sent}       datetime);'
+        conn.execute(sql)
+    except Exception as e:
+        print(f'"assert_jobs_table" runtime error: {e}')
+        exit(1)
+#------------------------------------------------------------------------------
+def open_local_db():
+    return sqlite3.connect('sent_jobs.db')
+#------------------------------------------------------------------------------
+def get_next_local_id():
+    global tbl_sent_jobs, fld_id, fld_server, fld_problem, fld_sent
+
+    try:
+        conn = open_local_db()#sqlite3.connect('sent_jobs.db')
+        assert_jobs_table(conn)
+        sql = f'select max ({fld_id}) from {tbl_sent_jobs};'
+        mx = conn.execute(sql).fetchall()
+        if mx[0][0] == None:
+            db_id = 0
+        else:
+            db_id = int(mx[0][0])
+    except Exception as e:
+        print(f'get_next_local_id, runtime error: {e}')
+    finally:
+        conn.close()
+    return db_id + 1
+#------------------------------------------------------------------------------
+def get_dict_value (source, key, default_value=None):
+    src_keys = list(source.keys())
+    if key in src_keys:
+        value = source[key]
+    else:
+        value = default_value
+    return value
+
+#------------------------------------------------------------------------------
+def save_local_message(message):
+    global tbl_sent_jobs, fld_id, fld_server, fld_tag, fld_problem, fld_sent
+
+    try:
+        conn = open_local_db()
+#        msg_keys = list(message.keys())
+        file_name = get_dict_value (message, 'problem_file', '')
+        local_id  = get_dict_value (message, 'row_id')
+        tag       = get_dict_value (message, 'tag')
+        sql = f'insert into {tbl_sent_jobs} ({fld_id}, {fld_problem}, {fld_tag}, {fld_sent})\
+                values \
+            ({local_id}, {file_name}, {tag}, {str(datetime.datetime.now())});'
+        conn.execute(sql)
+    except Exception as e:
+        print(f'"save_local_message" runtime error: {e}')
+    finally:
+        conn.close()
+#------------------------------------------------------------------------------
 def compose_fit_message(message_params):
     message = {}
     message['header'] = 'bumps client'
@@ -279,10 +391,14 @@ def compose_fit_message(message_params):
     message['fit_problem'] = message_params.read_problem_file()
     message['problem_file'] = message_params.files_names[0]
     message['params'] = message_params.compose_params()
+    message['multi_processing'] = 'none'
+    message['row_id'] = get_next_local_id()
     return message
 import websocket
 #------------------------------------------------------------------------------
 def main():
+# 1. get parameters: server, instruction, problem files
+# 2.
     message_params = params_from_command_line()
     if message_params.is_help:
         print_usage()
@@ -294,25 +410,38 @@ def main():
     print('\nsending fit job')
     sys.stdout.flush()
     message = compose_fit_message(message_params)
-    print(f'Message:\n{message}')
-    websocket.enableTrace(True)
-    ws = websocket.create_connection("ws://echo.websocket.org/")
-    ws.send('hello, world')
-    results = ws.recv()
-    print (f'results: {results}')
+    save_local_message(message)
+    #print(f'Message:\n{message}')
+    #websocket.enableTrace(True)
+    remote_address = message_params.get_remote_address()
+    #ws = websocket.create_connection("ws://echo.websocket.org/")
+    #ws = websocket.create_connection(message_params.get_remote_address())
+    try:
+        ws = websocket.create_connection(remote_address)
+        ws.send(str(message))
+        print(f'message sent:\n\
+            local ID: {message["row_id"]})\n\
+            Tag:      {message["tag"]}')
+        results = ws.recv()
+        print (f'results: {results}')
+    except Exception as e:
+        print(f'"main" runtime error: {e}')
+    finally:
+        ws.close()
     exit(0)
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
     main()
-    file_name = get_cli_name()
-    if file_name:
-        message = read_file(file_name)
-        if message:
-            print(f'Message read from file:\n==========\n{message}\n==========\n')
-            f = open('outmsg.txt', 'w+')
-            f.write(message)
-            f.close()
+#    file_name = get_cli_name()
+#    if file_name:
+#        message = read_file(file_name)
+#        if message:
+#            print(f'Message read from file:\n==========\n{message}\n==========\n')
+#            f = open('outmsg.txt', 'w+')
+#            f.write(message)
+#            f.close()
 
 
-    print(f'File name: "{file_name}"')
+#    print(f'File name: "{file_name}"')
 #asyncio.get_event_loop().run_until_complete(test())
+# 4:51 pm

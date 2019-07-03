@@ -1,0 +1,13 @@
+{
+    "server":"bumps_gui",
+    "port":"4567",
+    "tag":"",
+    "command": "StartFit",
+    "params": {
+        "algorithm": "newton",
+        "steps": "100",
+        "burns": "100"
+    },
+    "multi_processing": "none",
+    "row_id": "cbox3"
+}
