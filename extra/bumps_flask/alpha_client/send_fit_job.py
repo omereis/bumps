@@ -1,11 +1,11 @@
-import asyncio, websockets
+import asyncio, websockets, json
 import os, sys, getopt
 import readchar, sqlite3
 from random_word import RandomWords
 import datetime
 from MessageCommand import MessageCommand
 #------------------------------------------------------------------------------
-tbl_sent_jobs   = 'sent_jobs'
+tbl_sent_jobs   = 't_sent_jobs'
 fld_id      = 'local_id'
 fld_server  = 'server_id'
 fld_problem = 'problem_file'
@@ -136,24 +136,6 @@ class BumpsMessage:
         message['header'] = self.header
         message['tag']    = message_params.tag
         return message
-#------------------------------------------------------------------------------
-async def test():
-   async with websockets.connect('ws://0.0.0.0:5678') as websocket:
-        await websocket.send("hello")
-        response = await websocket.recv()
-        print(response)
-#------------------------------------------------------------------------------
-async def send_fit_command(message, message_params):
-    try:
-        remote_address = f'ws://{message_params.server}:{message_params:port}'
-        print(f'sending to address "{remote_address}"')
-        async with websockets.connect(remote_address) as websocket:
-    #async with websockets.connect('ws://0.0.0.0:5678') as websocket:
-            await websocket.send("hello")
-            response = await websocket.recv()
-            print(response)
-    except Exception as e:
-        print(f'"Error in send_fit_command": {e}')
 #------------------------------------------------------------------------------
 def get_cli_name():
     file_name = None
@@ -373,21 +355,24 @@ def save_local_message(message):
         file_name = get_dict_value (message, 'problem_file', '')
         local_id  = get_dict_value (message, 'row_id')
         tag       = get_dict_value (message, 'tag')
+        #sql = f'insert into {tbl_sent_jobs} ({fld_id}) values(1);'
         sql = f'insert into {tbl_sent_jobs} ({fld_id}, {fld_problem}, {fld_tag}, {fld_sent})\
                 values \
-            ({local_id}, {file_name}, {tag}, {str(datetime.datetime.now())});'
+            ({local_id}, "{file_name}", "{tag}", "{str(datetime.datetime.now())}");'
         conn.execute(sql)
+        conn.commit()
     except Exception as e:
         print(f'"save_local_message" runtime error: {e}')
     finally:
         conn.close()
+        print(sql)
 #------------------------------------------------------------------------------
 def compose_fit_message(message_params):
     message = {}
     message['header'] = 'bumps client'
     message['tag']    = message_params.tag
     message['message_time'] = get_message_time()
-    message['command'] = str(MessageCommand.StartFit)
+    message['command'] = 'StartFit'
     message['fit_problem'] = message_params.read_problem_file()
     message['problem_file'] = message_params.files_names[0]
     message['params'] = message_params.compose_params()
@@ -423,7 +408,10 @@ def main():
             local ID: {message["row_id"]})\n\
             Tag:      {message["tag"]}')
         results = ws.recv()
+        results_str = results.replace("'",'"')
+        json_results = json.loads(results_str)
         print (f'results: {results}')
+        print(f'json_results: {json_results}')
     except Exception as e:
         print(f'"main" runtime error: {e}')
     finally:

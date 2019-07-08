@@ -272,7 +272,8 @@ def handle_incoming_message (websocket, message, server_params):
             if cm.command == MessageCommand.StartFit:
                 job_id = HandleFitMessage (cm, server_params)
                 if job_id:
-                    return_params[cm.row_id] = job_id # return job_id to client
+                    # converting local id to string required due to client conversion to JSON
+                    return_params[str(cm.row_id)] = job_id
             elif cm.command == MessageCommand.Delete:
                 return_params = asyncio.run(HandleDelete (cm, server_params))
             elif cm.command == MessageCommand.Status:

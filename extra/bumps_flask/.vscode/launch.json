@@ -5,6 +5,21 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python read json",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": true,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            "args" : ["server.params"],
+            "debugOptions": [
+                "RedirectOutput"
+            ]
+        },
+        {
             "name": "Bumps GUI",
             "type": "python",
             "request": "launch",
@@ -26,7 +41,8 @@
             "cwd": "${workspaceFolder}",
             "env": {},
             "envFile": "${workspaceFolder}/.env",
-            "args" : ["-y", "--host", "0.0.0.0", "--port", "4567", "curv_fit.py"],
+            "args" : ["-y", "--host", "localhost", "--port", "4567", "--tag", "alpha", "curv_fit.py"],
+            //"args" : ["--help", "curv_fit.py"],
             "debugOptions": [
                 "RedirectOutput"
             ]
