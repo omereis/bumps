@@ -88,8 +88,8 @@ class FitJob:
             if job_id:
                 job_id = job_id + 1
                 sql = 'insert into {} ({},{},{},{},{},{},{}) values ({},"{}","{}","{}","{}","{}","{}");'.format(\
-                        DB_Table,
-                        DB_Field_JobID, DB_Field_SentIP, DB_Field_SentTime, DB_Field_Tag, DB_Field_Message, DB_Field_ResultsDir,DB_Field_ProblemFile,
+                        tbl_bumps_jobs,
+                        fld_JobID, fld_SentIP, fld_SentTime, fld_Tag, fld_Message, fld_ResultsDir,fld_ProblemFile,
                         job_id, cm.host_ip, message_date_time, cm.tag, cm.message, cm.results_dir, cm.problem_file_name)
                 res = connection.execute(sql)
                 self.job_id = job_id
@@ -134,13 +134,13 @@ class FitJob:
         self.update_status_in_db(db_connection)
 #------------------------------------------------------------------------------
     def update_status_in_db(self, connection):
-        #j = JobStatus.status_by_name.StandBy
-        #print (f'StandBy status: {j}')
-        sqlInsert = f'insert into {DB_StatusTable} {DB_Field_JobID,DB_Field_StatusTime,DB_Field_StatusName}'.replace("'","")
+        sqlInsert = f'insert into {tbl_job_status} {fld_JobID,fld_StatusTime,fld_StatusName}'.replace("'","")
+        print_debug(f'"update_status_in_db", sqlInsert: "{sqlInsert}"')
         strSql = f'{sqlInsert} values {self.job_id, str(datetime.datetime.now()), name_of_status(self.status)};'
-        #strSql = f'insert into {DB_StatusTable} {DB_Field_JobID,DB_Field_StatusTime,DB_Field_StatusName} values {self.job_id, str(datetime.datetime.now()), status_by_name(self.status)};'
+        print_debug(f'"update_status_in_db", strSql: "{strSql}"')
         try:
             connection.execute(strSql)
+            connection.commit()
         except Exception as e:
             print (f'FitJob.py, update_status_in_db: bug ; {e}\nSQL: "{strSql}"')
             print_stack ()
@@ -149,7 +149,7 @@ class FitJob:
         return self.client_message.tag
 #------------------------------------------------------------------------------
     def delete_from_db(self, connection):
-        strSql = f'delete from {DB_Table} where {DB_Field_JobID}={self.job_id};'
+        strSql = f'delete from {tbl_bumps_jobs} where {fld_JobID}={self.job_id};'
         try:
             connection.execute(strSql)
         except Exception as e:

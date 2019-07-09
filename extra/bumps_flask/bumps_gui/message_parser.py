@@ -25,7 +25,7 @@ MessageProblemFile = 'problem_file'
 MessageCode        = 'command'
 MessageFitProblem  = 'fit_problem'
 MessageParams      = 'params'
-MessageRowID       = 'row_id'
+MessageClientID    = 'local_id'
 #------------------------------------------------------------------------------
 def generate_key (client_host, time_string):
     key = client_host.replace('.','_') + '_' + str(time_string)
@@ -57,6 +57,8 @@ def parse_command (message_command):
         command = MessageCommand.PrintStatus
     elif message_command == 'get_results':
         command = MessageCommand.GetResults
+    elif message_command == 'GetDbStatus':
+        command = MessageCommand.GetDbStatus
     else:
         command = MessageCommand.Error
     return command
@@ -79,7 +81,8 @@ class ClientMessage:
     problem_text = None
     problem_file_name = None
     params       = None
-    row_id       = None
+    #row_id       = None
+    local_id       = None
 #------------------------------------------------------------------------------
     def parse_message(self, websocket, message, server_params):
         try:
@@ -95,7 +98,8 @@ class ClientMessage:
                 self.command      = parse_command (getMessageField (message, MessageCode))
                 self.problem_text = getMessageField (message, MessageFitProblem)
                 self.params       = getMessageField (message, MessageParams)
-                self.row_id       = getMessageField (message, MessageRowID)
+                self.local_id       = getMessageField (message, MessageClientID)
+                #self.row_id       = getMessageField (message, MessageClientID)
                 self.job_dir      = self.compose_job_directory_name (server_params) # just get the name, does not create directory
                 parse = True
         except Exception as e:

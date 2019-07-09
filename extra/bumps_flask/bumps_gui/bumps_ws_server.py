@@ -137,7 +137,6 @@ def jobs_runner_process(server_params):
 #------------------------------------------------------------------------------
 async def job_finalizer(server_params):
     while True:
-        #print(f'"job_finalizer", process {os.getpid()}, waiting for a fit job to end')
         fit_job = server_params.queueJobEnded.get()
         print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
         print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
@@ -145,7 +144,6 @@ async def job_finalizer(server_params):
         sys.stdout.flush()
         if fit_job.status == JobStatus.Running:
             try:
-                #db_connection = database_engine.connect()
                 idx = find_job_by_id(server_params.listAllJobs, fit_job.job_id)
                 if idx >= 0:
                     job = server_params.listAllJobs[idx]
@@ -153,11 +151,6 @@ async def job_finalizer(server_params):
                     server_params.listAllJobs[idx] = job
                 else:
                     print(f'job_finalizer, process {os.getpid()}, job {fit_job.job_id} not on list')
-                #print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended and completed')
-                #print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended and completed')
-                #sys.stdout.flush()
-                #scan_jobs_list (db_connection, server_params)
-                #print_jobs(server_params.listAllJobs, "job_finalizer")
                 scan_jobs_list (server_params)
             except Exception as e:
                 print_debug(f'"job_finalizer", process {os.getpid()}, error"{e}"')
@@ -242,27 +235,26 @@ def get_results (cm, server_params):
         results_dir = results_dir_for_job (server_params.database_engine, cm.params)
         flask_dir = server_params.flask_dir
         final_dir = results_dir[len(flask_dir) - 1 : ]
-
-#        print('-------------------------')
-#        print('-------Directories-------')
-#        print(f'results: "{results_dir}"')
-#        print(f'web results: "{web_dir}"')
-#        print(f'final dir: "{final_dir}"')
-#        print(f'flask dir: "{server_params.flask_dir}"')
-#        print(f'Results dir: "{server_params.results_dir}"')
-        
         files_list = os.listdir(results_dir)
         files = []
         for file in files_list:
             file = final_dir + '/' + file
             files.append(file)
-#        for file in files:
-#            print (f'file: {file}')
     except Exception as e:
         print(f'Error in "get_results": {e}')
         files = {e}
     return_params = {'id': cm.params, 'files' : files}
     return return_params
+#------------------------------------------------------------------------------
+def get_db_status (cm, server_params):
+    params = {}
+    if cm.tag:
+        sql = f'select {fld_JobID} from {tbl_bumps_jobs} where {fld_Tag}="{cm.tag}" order by {fld_JobID};'
+        db_connection = server_params.database_engine.connect()
+        results = db_connection.execute(sql)
+        for row in results:
+            print(f'{row}')
+    return params
 #------------------------------------------------------------------------------
 def handle_incoming_message (websocket, message, server_params):
     return_params = {}
@@ -273,7 +265,8 @@ def handle_incoming_message (websocket, message, server_params):
                 job_id = HandleFitMessage (cm, server_params)
                 if job_id:
                     # converting local id to string required due to client conversion to JSON
-                    return_params[str(cm.row_id)] = job_id
+                    return_params[str(cm.local_id)] = job_id
+                    #return_params[str(cm.row_id)] = job_id
             elif cm.command == MessageCommand.Delete:
                 return_params = asyncio.run(HandleDelete (cm, server_params))
             elif cm.command == MessageCommand.Status:
@@ -282,6 +275,8 @@ def handle_incoming_message (websocket, message, server_params):
                 print_jobs(server_params.listAllJobs, title='current_status')
             elif cm.command == MessageCommand.GetResults:
                 return_params = get_results (cm, server_params)
+            elif cm.command == MessageCommand.GetDbStatus:
+                return_params = get_db_status (cm, server_params)
         else:
             print('parse_message error.')
     except Exception as err:

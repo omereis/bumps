@@ -1,7 +1,8 @@
 import asyncio, websockets, json
 import os, sys, getopt
 import readchar, sqlite3
-from random_word import RandomWords
+#from random_word import RandomWords
+from client_params import MessageParams
 import datetime
 from MessageCommand import MessageCommand
 #------------------------------------------------------------------------------
@@ -11,118 +12,7 @@ fld_server  = 'server_id'
 fld_problem = 'problem_file'
 fld_tag     = 'tag'
 fld_sent    = 'sent_time'
-
-#------------------------------------------------------------------------------
-def name_of_algorithm(algorithm):
-    if algorithm:
-        loalg = algorithm.lower()
-    else:
-        loalg = ""
-    if loalg == "lm":
-        alg_name = "Levenberg Marquardt"
-    elif loalg == "newton":
-        alg_name = "Quasi-Newton BFGS"
-    elif loalg == "de":
-        alg_name = "Differential Evolution"
-    elif loalg == "dream":
-        alg_name = "DREAM"
-    elif loalg == "amoeba":
-        alg_name = "Nelder-Mead Simplex"
-    elif loalg == "pt":
-        alg_name = "Parallel Tempering"
-    elif loalg == "ps":
-        alg_name = "Particle Swarm"
-    elif loalg == "rl":
-        alg_name = "Random Lines"
-    else:
-        alg_name = "unknown"
-    return alg_name
-#------------------------------------------------------------------------------
-def read_y_n():
-    byte = readchar.readchar()
-    if (type(byte) is str) == False:
-        c = byte.decode('utf-8')
-    else:
-        c = byte
-    ret = not (c == 'n')
-    return ret
-#------------------------------------------------------------------------------
-class MessageParams:
-    server      = 'localhost'
-    port        = 5678
-    algorithm   = 'lm'
-    steps       = 100
-    burn        = 100
-    tag         = None
-    files_names = []
-    problem     = None
-    check_params = True
-    is_help      = False
-#------------------------------------------------------------------------------
-    def __init__(self):
-        r = RandomWords()
-        self.tag = r.get_random_word()
-#------------------------------------------------------------------------------
-    def set_algorithm (self, alg_abrv):
-        allowed_abvr = ["lm", "newton", "de", "dream", "amoeba", "pt", "ps", "rl"]
-        if alg_abrv.lower() in allowed_abvr:
-            self.algorithm = alg_abrv
-        else:
-            raise Exception (f'unknown algorithm abbreviation {alg_abrv}')
-#------------------------------------------------------------------------------
-    def print_params(self):
-        print(f'server: {self.server}')
-        print(f'port: {self.port}')
-        print(f'algorithm: {name_of_algorithm(self.algorithm)}')
-        print(f'steps: {self.steps}')
-        print(f'burn: {self.burn}')
-        print(f'tag: {self.tag}')
-        print(f'file_name: {self.files_names}')
-        print(f'problem: {self.problem}')
-        print(f'Check parameters: {self.check_params}')
-#------------------------------------------------------------------------------
-    def add_files(self, new_files):
-        self.files_names += new_files
-#------------------------------------------------------------------------------
-    def params_ok(self):
-        self.print_params()
-        print('Are you ok with the parameters ([y]/n)?', end=' ')
-        sys.stdout.flush()
-        return read_y_n()
-#------------------------------------------------------------------------------
-    def read_problem_file(self):
-        problem = ''
-        f = None
-        try:
-#            fname = os.getcwd() + "/" + self.files_names[0]
-#            f = open(fname, 'r')
-            f = open(self.files_names[0], 'r')
-            problem = f.read()
-        except Exception as e:
-            print(f'Error reading problem file: "{e}"')
-#            exit(1)
-        finally:
-            if f:
-                f.close()
-        if len(problem) == 0:
-            print('Missing problem definition. Aborting')
-            exit(1)
-        return problem
-#------------------------------------------------------------------------------
-    def compose_params(self):
-        params = {}
-        try:
-            params['algorithm'] = self.algorithm
-            params['steps']     = self.steps
-            params['burn']      = self.burn
-        except Exception as e:
-            print(f'Error in compose_params: "{e}"')
-        return params
-#------------------------------------------------------------------------------
-    def get_remote_address(self):
-        remote_address = f'ws://{self.server}:{self.port}'
-        return remote_address
-#------------------------------------------------------------------------------
+fld_status  = 'status'
 #------------------------------------------------------------------------------
 class BumpsMessage:
     header = 'bumps client'
@@ -136,20 +26,6 @@ class BumpsMessage:
         message['header'] = self.header
         message['tag']    = message_params.tag
         return message
-#------------------------------------------------------------------------------
-def get_cli_name():
-    file_name = None
-    try:
-        options, remainder = getopt.getopt(sys.argv[1:],
-            'f:',
-            ['file='])
-    except getopt.GetoptError as err:
-        print(err) 
-        #exit(1)
-    for opt, arg in options:
-        if opt in ('-f', '--file'):
-            file_name = arg.strip();
-    return file_name
 #------------------------------------------------------------------------------
 def read_file(file_name):
     content = None
@@ -205,7 +81,7 @@ def print_usage2():
                 steps       number of steps\n\
                 burns       number of burns\n\
             multi_processing    may by "none", "celery" or "slurm"\n\
-            row_id          some client generated id that uniqueuely identifies the job for the client.\n\
+            local_id        some client generated id that uniqueuely identifies the job for the client.\n\
                             The server returns uniqueue database id, for each job.\n\
                             The client should bind the database id to the local id\n')
 #------------------------------------------------------------------------------
@@ -216,7 +92,7 @@ def print_usage():
     src_filename.replace('\\','')
     print(f'file: {__file__}, source file: {src_filename}')
     print('Usage\n\
-        python send_job.py [options] problem_file1(s)\n\
+        python send_fit_job.py [options] problem_file1(s)\n\
         Note: problem files may include wild card, e.g. "curv_fit*.py"\n\
         \n\
         options:\n\
@@ -226,6 +102,14 @@ def print_usage():
         --port      Server port used for websockets.\n\
           default   4567\n\
         ------------\n\
+        --command   The command to be sent to the Fit Server. it can be only one of the following:\n\
+                    send   - Send fit job(s) with the specified parameters and problem files. \n\
+                    local   - List all local jobs and their status. The list is taken from the local database\n\
+                              rather then the server.\n\
+                              For update from the Fit Server use "status" command.\n\
+                    status - Find jobs status on the Fit Server memory, for a given tag. If no tag is giver,\n\
+                             then all tags from the local database are queried\n\
+                    server - Display jobs from the server database for given tags.\n\
         --algorithm Optimization algorithm. Possible options include:\n\
             "lm"     (Levenberg Marquardt)\n\
             newton"  (Quasi-Newton BFGS)\n\
@@ -248,13 +132,14 @@ def params_from_command_line():
     if not message_params.is_help:
         try:
             options, remainder = getopt.getopt(sys.argv[1:],
-                's:p:a:t:yh?',
+                's:p:a:t:c:yh?',
                 ['server=',
                     'host=',
                     'port=',
                     'tag=',
                     'steps=',
                     'burn=',
+                    'command=',
                     'algorithm='])
         except getopt.GetoptError as err:
             print(err) 
@@ -272,6 +157,11 @@ def params_from_command_line():
                 message_params.burn = int(arg.strip())
             elif opt in ('-t','--tag'):
                 message_params.tag = arg.strip()
+            elif opt in ('-c','--command'):
+                if not message_params.set_command (arg.strip()):
+                    print(f'Unknown command: {arg.strip()}.\nAborting')
+                    exit(1)
+                #message_params.command = arg.strip()
             elif opt in ('-y'):
                 message_params.check_params = False
             elif opt in ('-h', '--help'):
@@ -297,34 +187,33 @@ def get_message_time():
     return message_time
 #------------------------------------------------------------------------------
 def assert_jobs_table(conn):
-    global tbl_sent_jobs, fld_id, fld_problem, fld_tag, fld_sent
+    global tbl_sent_jobs, fld_id, fld_problem, fld_tag, fld_sent, fld_status
 
-#    sql = "select name from SQLITE_MASTER where type='table' and name = '{tbl_sent_jobs}';"
-#    print(f'"assert_jobs_table", sql:\n{sql}')
-#    res = conn.execute(sql).fetchall())
-#    print(f'"assert_jobs_table", len(res):\n{len(res)}')
-#    if len(conn.execute(sql).fetchall()) == 0:
     try:
         sql = f'create table if not exists {tbl_sent_jobs} (\
             {fld_id}        integer,\
             {fld_server}    integer,\
             {fld_problem}    varchar(100),\
             {fld_tag}       varchar(100),\
+            {fld_status}    varchar(25),\
             {fld_sent}       datetime);'
+        sql = sql.replace('  ', ' ')
         conn.execute(sql)
     except Exception as e:
         print(f'"assert_jobs_table" runtime error: {e}')
         exit(1)
 #------------------------------------------------------------------------------
 def open_local_db():
-    return sqlite3.connect('sent_jobs.db')
+    conn = sqlite3.connect('sent_jobs.db')
+    assert_jobs_table(conn)
+    return conn
 #------------------------------------------------------------------------------
 def get_next_local_id():
     global tbl_sent_jobs, fld_id, fld_server, fld_problem, fld_sent
 
     try:
         conn = open_local_db()#sqlite3.connect('sent_jobs.db')
-        assert_jobs_table(conn)
+        #assert_jobs_table(conn)
         sql = f'select max ({fld_id}) from {tbl_sent_jobs};'
         mx = conn.execute(sql).fetchall()
         if mx[0][0] == None:
@@ -344,7 +233,27 @@ def get_dict_value (source, key, default_value=None):
     else:
         value = default_value
     return value
+#------------------------------------------------------------------------------
+def update_server_id (tag, local_id, server_id):
+    global tbl_sent_jobs, fld_id, fld_server, fld_tag, fld_problem, fld_sent
 
+    try:
+        conn = open_local_db()
+        sql = f'update {tbl_sent_jobs} set {fld_server}={server_id} where {fld_id}={local_id} and {fld_tag}="{tag}";'
+        conn.execute(sql)
+        conn.commit()
+    except Exception as e:
+        print(f'"update_server_id" runtime error: {e}')
+    finally:
+        conn.close()
+#------------------------------------------------------------------------------
+def update_sent_jobs_db(tag, local_id, results):
+    results_str = results.replace("'",'"')
+    json_results = json.loads(results_str)
+    print(f'json_results: {json_results}')
+    server_id = json_results['params'][local_id]
+    print(f'json_results: {json_results}')
+    update_server_id (tag, local_id, server_id)
 #------------------------------------------------------------------------------
 def save_local_message(message):
     global tbl_sent_jobs, fld_id, fld_server, fld_tag, fld_problem, fld_sent
@@ -353,7 +262,7 @@ def save_local_message(message):
         conn = open_local_db()
 #        msg_keys = list(message.keys())
         file_name = get_dict_value (message, 'problem_file', '')
-        local_id  = get_dict_value (message, 'row_id')
+        local_id  = get_dict_value (message, 'local_id')
         tag       = get_dict_value (message, 'tag')
         #sql = f'insert into {tbl_sent_jobs} ({fld_id}) values(1);'
         sql = f'insert into {tbl_sent_jobs} ({fld_id}, {fld_problem}, {fld_tag}, {fld_sent})\
@@ -365,21 +274,127 @@ def save_local_message(message):
         print(f'"save_local_message" runtime error: {e}')
     finally:
         conn.close()
-        print(sql)
 #------------------------------------------------------------------------------
-def compose_fit_message(message_params):
+def create_message_header(message_params):
     message = {}
     message['header'] = 'bumps client'
-    message['tag']    = message_params.tag
+    #message['tag']    = message_params.tag
     message['message_time'] = get_message_time()
+    return message
+#------------------------------------------------------------------------------
+def compose_fit_message(message_params, idx=0):
+    message = create_message_header(message_params)
+    message['tag']    = message_params.get_new_tag()
     message['command'] = 'StartFit'
-    message['fit_problem'] = message_params.read_problem_file()
-    message['problem_file'] = message_params.files_names[0]
+    message['fit_problem'] = message_params.read_problem_file(idx)
+    message['problem_file'] = message_params.files_names[idx]
     message['params'] = message_params.compose_params()
     message['multi_processing'] = 'none'
-    message['row_id'] = get_next_local_id()
+    message['local_id'] = get_next_local_id()
     return message
 import websocket
+#------------------------------------------------------------------------------
+def send_fit_job (message_params):
+    remote_address = message_params.get_remote_address()
+    try:
+        for n in range(len(message_params.files_names)):
+            ws = websocket.create_connection(remote_address)
+            message = compose_fit_message(message_params, n)
+            save_local_message(message)
+            ws.send(str(message))
+            print('\nmessage sent')
+            local_id = str(message["local_id"])
+            tag      = message["tag"]
+            results = ws.recv()
+            print(f'\nreply recieved: {results}')
+            update_sent_jobs_db(tag, local_id, results)
+            ws.close()
+    except Exception as e:
+        print(f'"main" runtime error: {e}')
+#------------------------------------------------------------------------------
+def show_local_jobs():
+    print('local command')
+#------------------------------------------------------------------------------
+def load_tags_from_db ():
+    global tbl_sent_jobs, fld_tag
+
+    tags = []
+    try:
+        conn = open_local_db()
+        sql = f'select distinct {fld_tag} from {tbl_sent_jobs};'
+        records = conn.execute(sql)
+        for rec in records:
+            tags.append(rec[0])
+    except Exception as e:
+        print(f'"load_tags_from_db" runtime error: {e}')
+    finally:
+        conn.close()
+    return tags
+#------------------------------------------------------------------------------
+def update_jobs_server_status (params):
+    global tbl_sent_jobs, fld_id, fld_problem, fld_tag, fld_sent, fld_status, fld_server
+
+    conn = open_local_db()
+    for x in params:
+        server_id     = x['job_id']
+        server_status = x['job_status']
+        sql = f'update {tbl_sent_jobs} set {fld_status}="{server_status}" where {fld_server}={server_id};'
+        conn.execute(sql)
+    conn.commit()
+    conn.close()
+#------------------------------------------------------------------------------
+def create_query_server_message(message_params):
+    message = create_message_header(message_params)
+    message['command'] = 'GetDbStatus'
+    message['tag'] = message_params.tag
+    return message
+#------------------------------------------------------------------------------
+def show_jobs_on_server(message_params):
+    message = create_query_server_message(message_params)
+    print(f'"show_jobs_on_server", message:\n{message}')
+    readchar.readchar()
+    remote_address = message_params.get_remote_address()
+    ws = websocket.create_connection(remote_address)
+    ws.send(str(message))
+    results = ws.recv()
+    print(f'server jobs:\n{results}')
+#------------------------------------------------------------------------------
+def compose_status_message(message_params):
+    message = create_message_header(message_params)
+    message['command'] = 'GetStatus'
+    return message
+#------------------------------------------------------------------------------
+def show_jobs_status(message_params):
+    try:
+        tags=[]
+        server_job_status = []
+        remote_address = message_params.get_remote_address()
+        message = compose_status_message(message_params)
+        if message_params.tag:
+            tags.append(message_params.tag)
+        else:
+            tags = load_tags_from_db ()
+        for tag in tags:
+            ws = websocket.create_connection(remote_address)
+            message['tag'] = tag
+            ws.send(str(message))
+            results = ws.recv()
+            print(f'reply received: {results}')
+            ws.close()
+            reply_msg = json.loads(results.replace("'",'"'))
+            params = reply_msg['params']
+            for p in params:
+                server_job_status.append(p)
+            print('connection closed')
+    except Exception as e:
+        print(f'"show_jobs_status", runtime error: {e}')
+    finally:
+        if 'params' in locals():
+            update_jobs_server_status (params)
+        else:
+            print('no status retrieved')
+        for x in server_job_status:
+            print(f"{x['job_id']}: {x['job_status']}")
 #------------------------------------------------------------------------------
 def main():
 # 1. get parameters: server, instruction, problem files
@@ -392,44 +407,17 @@ def main():
         if not message_params.params_ok():
             print('Problem with parameters. Aborting')
             exit(0)
-    print('\nsending fit job')
     sys.stdout.flush()
-    message = compose_fit_message(message_params)
-    save_local_message(message)
-    #print(f'Message:\n{message}')
-    #websocket.enableTrace(True)
-    remote_address = message_params.get_remote_address()
-    #ws = websocket.create_connection("ws://echo.websocket.org/")
-    #ws = websocket.create_connection(message_params.get_remote_address())
-    try:
-        ws = websocket.create_connection(remote_address)
-        ws.send(str(message))
-        print(f'message sent:\n\
-            local ID: {message["row_id"]})\n\
-            Tag:      {message["tag"]}')
-        results = ws.recv()
-        results_str = results.replace("'",'"')
-        json_results = json.loads(results_str)
-        print (f'results: {results}')
-        print(f'json_results: {json_results}')
-    except Exception as e:
-        print(f'"main" runtime error: {e}')
-    finally:
-        ws.close()
+    if message_params.is_send_command():
+        print(f'message command: {message_params.command}')
+        send_fit_job (message_params)
+    elif message_params.is_local_command():
+        show_local_jobs()
+    elif message_params.is_status_command():
+        show_jobs_status(message_params)
+    elif message_params.is_server_command():
+        show_jobs_on_server(message_params)
     exit(0)
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
     main()
-#    file_name = get_cli_name()
-#    if file_name:
-#        message = read_file(file_name)
-#        if message:
-#            print(f'Message read from file:\n==========\n{message}\n==========\n')
-#            f = open('outmsg.txt', 'w+')
-#            f.write(message)
-#            f.close()
-
-
-#    print(f'File name: "{file_name}"')
-#asyncio.get_event_loop().run_until_complete(test())
-# 4:51 pm

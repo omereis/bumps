@@ -365,9 +365,9 @@ function handle_reply(wsMsg) {
     var command = jmsg['command'];
     if (command == ServerCommands.START_FIT) {
         var params = jmsg['params'];
-        var row_id = Object.keys(params).toString();
-        var db_id = params[row_id];
-        var cbox = document.getElementById(row_id);
+        var local_id = Object.keys(params).toString();
+        var db_id = params[local_id];
+        var cbox = document.getElementById(local_id);
         cbox.setAttribute('db_id', db_id);
         var cell = cbox.parentElement;
         cell.innerHTML += db_id.toString();
@@ -673,6 +673,7 @@ function composeJobSendMessage(txtProblem) {
     message['multi_processing'] = upload_multiprocessing();
     return (message);
 }
+/*
 //-----------------------------------------------------------------------------
 function onSendJobClick() {
     var txtProblem = $('#problem_text').val().trim();
@@ -681,12 +682,13 @@ function onSendJobClick() {
         var message = composeJobSendMessage(txtProblem);
         var tag = message['tag'];
         var row_id = addResultRow (tag);
-        message['row_id'] = row_id;
+        message['local_id'] = row_id;
         sendMessage (JSON.stringify(message));
     }
     else
         alert ('Missing problem definition');
 }
+*/
 //-----------------------------------------------------------------------------
 function sendMesssageThroughFlask(message) {
     $.ajax({
@@ -721,7 +723,8 @@ function onSendFitJobClick() {
         var message = composeJobSendMessage(txtProblem);
         var tag = message['tag'];
         var row_id = addResultRow (tag);
-        message['row_id'] = row_id;
+        message['local_id'] = row_id;
+        //message['row_id'] = row_id;
         sendMesssageThroughFlask(message);
     }
     else

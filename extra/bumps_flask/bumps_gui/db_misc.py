@@ -6,7 +6,7 @@ except:
 def get_next_job_id(connection):
     job_id = 0
     try:
-        sql = 'select max({}) from {};'.format(DB_Field_JobID, DB_Table)
+        sql = 'select max({}) from {};'.format(DB_Field_JobID, tbl_bumps_jobs)
         res = connection.execute(sql)
         for row in res:
             job_id = row.values()[0]
@@ -19,7 +19,7 @@ def get_next_job_id(connection):
 def results_dir_for_job (database_engine, job_id):
     try:
         connection = database_engine.connect()
-        strSql = f'select {DB_Field_ResultsDir} from {DB_Table} where {DB_Field_JobID}={job_id};'
+        strSql = f'select {DB_Field_ResultsDir} from {tbl_bumps_jobs} where {DB_Field_JobID}={job_id};'
         res = connection.execute(strSql)
         for row in res:
             res_dir = f'{row[0]}'
