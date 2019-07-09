@@ -247,13 +247,22 @@ def get_results (cm, server_params):
     return return_params
 #------------------------------------------------------------------------------
 def get_db_status (cm, server_params):
-    params = {}
+    params = []
+    fmt = '%d %m %Y %H %M %S %f'
+    params.append({'datetime format': fmt})
     if cm.tag:
-        sql = f'select {fld_JobID} from {tbl_bumps_jobs} where {fld_Tag}="{cm.tag}" order by {fld_JobID};'
+        sqlIn = f'select distinct {fld_JobID} from {tbl_bumps_jobs} where {fld_Tag}="{cm.tag}" order by {fld_JobID}'
+        sqlSelect = f'select {fld_JobID},{fld_StatusTime},{fld_StatusName} from {tbl_job_status} where {fld_JobID} in ({sqlIn});'
         db_connection = server_params.database_engine.connect()
-        results = db_connection.execute(sql)
+        results = db_connection.execute(sqlSelect)
+        #counter = 1
         for row in results:
-            print(f'{row}')
+            item = {'job_id': str(row[0]), 'status time': row[1].strftime(fmt), 'status': row[2]}
+            params.append(item)
+            #counter += 1
+            #print(f'{row}, {item}')
+    print(f'parameters:\n{params}')
+    #print(f'counter:\n{counter}')
     return params
 #------------------------------------------------------------------------------
 def handle_incoming_message (websocket, message, server_params):

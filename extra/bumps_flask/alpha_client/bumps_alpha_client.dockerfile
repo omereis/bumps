@@ -23,10 +23,12 @@ RUN pip install --upgrade pip
 RUN pip install websockets
 RUN pip install random_word
 RUN pip install readchar
+RUN pip install tabulate
 RUN pip install websocket websocket-client
 
 WORKDIR /home/bumps_alpha
 ENV HOME=/home/bumps_alpha/
 COPY ./ /home/bumps_alpha
 COPY ./vimrc /etc/vim/vimrc
+# python send_fit_job.py --command server --tag alpha --server bumps_gui --port 4567 -y
 

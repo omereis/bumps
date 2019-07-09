@@ -1,5 +1,5 @@
 import asyncio, websockets, json
-import os, sys, getopt
+import os, sys, getopt, tabulate
 import readchar, sqlite3
 #from random_word import RandomWords
 from client_params import MessageParams
@@ -107,7 +107,7 @@ def print_usage():
                     local   - List all local jobs and their status. The list is taken from the local database\n\
                               rather then the server.\n\
                               For update from the Fit Server use "status" command.\n\
-                    status - Find jobs status on the Fit Server memory, for a given tag. If no tag is giver,\n\
+                    status - Find jobs status on the Fit Server memory, for a given tag. If no tag is given,\n\
                              then all tags from the local database are queried\n\
                     server - Display jobs from the server database for given tags.\n\
         --algorithm Optimization algorithm. Possible options include:\n\
@@ -349,15 +349,45 @@ def create_query_server_message(message_params):
     message['tag'] = message_params.tag
     return message
 #------------------------------------------------------------------------------
+def message_reply_to_dict(message):
+    try:
+        reply = json.loads(message)
+    except:
+        message = message.replace("'",'"')
+        reply = json.loads(message)
+    return reply
+#------------------------------------------------------------------------------
+def item_from_row(row, fmt):
+    item = []
+    item.append(list(row.values())[0])
+    src_time_str = list(row.values())[1]
+    dt = datetime.datetime.strptime(src_time_str,fmt)
+    time_str = dt.strftime('%H:%M:%S, %b %d, %Y')
+    item.append(time_str)
+    item.append(list(row.values())[2])
+    return item
+#------------------------------------------------------------------------------
 def show_jobs_on_server(message_params):
-    message = create_query_server_message(message_params)
-    print(f'"show_jobs_on_server", message:\n{message}')
-    readchar.readchar()
-    remote_address = message_params.get_remote_address()
-    ws = websocket.create_connection(remote_address)
-    ws.send(str(message))
-    results = ws.recv()
-    print(f'server jobs:\n{results}')
+    results = []
+    try:
+        message = create_query_server_message(message_params)
+        remote_address = message_params.get_remote_address()
+        ws = websocket.create_connection(remote_address)
+        ws.send(str(message))
+        server_results = message_reply_to_dict(ws.recv())
+        params = server_results['params']
+        for n in range(len(params)):
+            if n == 0:
+                fmt = list(params[0].values())[0]
+            else:
+                item = item_from_row(params[n], fmt)
+                results.append(item)
+    except Exception as e:
+        print (f'"show_jobs_on_server" runtime error: {e}')
+    finally:
+        ws.close()
+    print(tabulate.tabulate(results, headers=['Job ID', 'Time & Date', 'Status'], tablefmt='orgtbl'))
+    return results
 #------------------------------------------------------------------------------
 def compose_status_message(message_params):
     message = create_message_header(message_params)
