@@ -138,6 +138,9 @@ class MessageParams:
     def is_server_command(self):
         return self.command == 'server'
 #------------------------------------------------------------------------------
+    def is_data_command(self):
+        return self.command == 'data'
+#------------------------------------------------------------------------------
     def get_new_tag(self):
         if self.tag == None:
             try:

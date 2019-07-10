@@ -110,6 +110,7 @@ def print_usage():
                     status - Find jobs status on the Fit Server memory, for a given tag. If no tag is given,\n\
                              then all tags from the local database are queried\n\
                     server - Display jobs from the server database for given tags.\n\
+                    data   - Retrieve archived results for completed jobs by job server ID.\n\
         --algorithm Optimization algorithm. Possible options include:\n\
             "lm"     (Levenberg Marquardt)\n\
             newton"  (Quasi-Newton BFGS)\n\
@@ -389,6 +390,27 @@ def show_jobs_on_server(message_params):
     print(tabulate.tabulate(results, headers=['Job ID', 'Time & Date', 'Status'], tablefmt='orgtbl'))
     return results
 #------------------------------------------------------------------------------
+def get_jobs_server_data(message_params):
+    try:
+        message = create_message_header(message_params)
+        message['command'] = 'get_data'
+        message['tag']    = message_params.tag
+        ws = websocket.create_connection(message_params.get_remote_address())
+        ws.send(str(message))
+        server_results = ws.recv()
+    #server_results = message_reply_to_dict(ws.recv())
+        print(f'type(results): {type(server_results)}')
+        server_results = server_results.replace("'",'"')
+        print('replaced quotes')
+        print(f'chars 70 - 75: {server_results[70:75]}')
+        #json_results = json.loads(server_results)
+        print(f'results: {server_results}')
+    #params = server_results['params']
+    #print(f'params reply received: {params}')
+    except Exception as e:
+        print(f'"get_jobs_server_data" runtime error: {e}')
+    ws.close()
+#------------------------------------------------------------------------------
 def compose_status_message(message_params):
     message = create_message_header(message_params)
     message['command'] = 'GetStatus'
@@ -447,6 +469,8 @@ def main():
         show_jobs_status(message_params)
     elif message_params.is_server_command():
         show_jobs_on_server(message_params)
+    elif message_params.is_data_command():
+        get_jobs_server_data(message_params)
     exit(0)
 #------------------------------------------------------------------------------
 if __name__ == '__main__':

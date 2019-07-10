@@ -137,12 +137,21 @@ def jobs_runner_process(server_params):
     print(f'"jobs_q_manager", started process with id {os.getpid()}, number of jobs: {len(server_params.listAllJobs)}')
     asyncio.run(job_runner(server_params))
 #------------------------------------------------------------------------------
-def zip_job_results(job):
-    job_dir = os.path.abspath(os.path.join(job.client_message.results_dir, '..'))
+def get_job_dir_zip_name(results_dir):
+    job_dir = os.path.abspath(os.path.join(results_dir, '..'))
     if job_dir[len(job_dir) - 1] == os.path.sep:
         job_dir = job_dir[0:len(job_dir) - 1]
     parts = job_dir.split(os.path.sep)
     zip_name = f'{parts[len(parts) - 1]}.zip'
+    return job_dir, zip_name
+#------------------------------------------------------------------------------
+def zip_job_results(job):
+    job_dir, zip_name = get_job_dir_zip_name(job.client_message.results_dir)
+    #job_dir = os.path.abspath(os.path.join(job.client_message.results_dir, '..'))
+    #if job_dir[len(job_dir) - 1] == os.path.sep:
+        #job_dir = job_dir[0:len(job_dir) - 1]
+    #parts = job_dir.split(os.path.sep)
+    #zip_name = f'{parts[len(parts) - 1]}.zip'
     cur_dir = os.getcwd()
     if job_dir.find(cur_dir) == 0:
         zip_dir = '.' + job_dir[len(cur_dir):len(job_dir)]
@@ -271,18 +280,31 @@ def get_db_status (cm, server_params):
         sqlSelect = f'select {fld_JobID},{fld_StatusTime},{fld_StatusName} from {tbl_job_status} where {fld_JobID} in ({sqlIn});'
         db_connection = server_params.database_engine.connect()
         results = db_connection.execute(sqlSelect)
-        #counter = 1
         for row in results:
             item = {'job_id': str(row[0]), 'status time': row[1].strftime(fmt), 'status': row[2]}
             params.append(item)
-            #counter += 1
-            #print(f'{row}, {item}')
     print(f'parameters:\n{params}')
-    #print(f'counter:\n{counter}')
     return params
 #------------------------------------------------------------------------------
 def get_job_data (cm, server_params):
-    a=0
+    params = []
+    if cm.tag:
+        db_connection = server_params.database_engine.connect()
+        sql = f'select {fld_JobID},{fld_ResultsDir} from {tbl_bumps_jobs} where {fld_Tag} = "{cm.tag}";'
+        results = db_connection.execute(sql)
+        for row in results:
+            job_dir, zip_name = get_job_dir_zip_name(row[1])
+            zip_name = f'{job_dir}{os.path.sep}{zip_name}'
+            f = open (zip_name, 'rb')
+            bin_content = f.read()
+            f.close()
+            string_content = bin_content.decode('latin1')
+            item = {str(row[0]) : 'string_content'}
+            #item = {str(row[0]) : string_content}
+            params.append(item)
+            #bin = open()
+            print(f'{dir}')
+    return params
 #------------------------------------------------------------------------------
 def handle_incoming_message (websocket, message, server_params):
     return_params = {}
