@@ -59,6 +59,7 @@ def parse_command (message_command):
         command = MessageCommand.GetResults
     elif message_command == 'GetDbStatus':
         command = MessageCommand.GetDbStatus
+        GetJobData
     else:
         command = MessageCommand.Error
     return command

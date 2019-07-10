@@ -135,12 +135,11 @@ class FitJob:
 #------------------------------------------------------------------------------
     def update_status_in_db(self, connection):
         sqlInsert = f'insert into {tbl_job_status} {fld_JobID,fld_StatusTime,fld_StatusName}'.replace("'","")
-        print_debug(f'"update_status_in_db", sqlInsert: "{sqlInsert}"')
+        #print_debug(f'"update_status_in_db", sqlInsert: "{sqlInsert}"')
         strSql = f'{sqlInsert} values {self.job_id, str(datetime.datetime.now()), name_of_status(self.status)};'
-        print_debug(f'"update_status_in_db", strSql: "{strSql}"')
+        #print_debug(f'"update_status_in_db", strSql: "{strSql}"')
         try:
             connection.execute(strSql)
-            connection.commit()
         except Exception as e:
             print (f'FitJob.py, update_status_in_db: bug ; {e}\nSQL: "{strSql}"')
             print_stack ()

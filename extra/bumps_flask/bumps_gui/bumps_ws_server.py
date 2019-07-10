@@ -6,6 +6,8 @@ import mysql.connector
 import json, os
 import multiprocessing
 import nest_asyncio
+import bumps.cli
+import functools
 from mysql.connector import Error
 from sqlalchemy import create_engine, MetaData
 from bumps import cli
@@ -19,6 +21,7 @@ try:
     from .message_parser import ClientMessage, generate_key
     from .get_host_port import get_host_port
     from .MessageCommand import MessageCommand
+    from .misc import zip_directory
 except:
     from oe_debug import print_debug
     from bumps_constants import *
@@ -28,6 +31,7 @@ except:
     from message_parser import ClientMessage, MessageCommand, generate_key
     from get_host_port import get_host_port
     from MessageCommand import MessageCommand
+    from misc import zip_directory
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 host = 'NCNR-R9nano.campus.nist.gov'
@@ -104,7 +108,6 @@ def scan_jobs_list (server_params):
                 #print_jobs (server_params.listAllJobs, "scan_jobs_list")
 #------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
-import bumps.cli
 def run_fit_job (fit_job, server_params):
     try:
         sys.argv = fit_job.params
@@ -134,11 +137,22 @@ def jobs_runner_process(server_params):
     print(f'"jobs_q_manager", started process with id {os.getpid()}, number of jobs: {len(server_params.listAllJobs)}')
     asyncio.run(job_runner(server_params))
 #------------------------------------------------------------------------------
+def zip_job_results(job):
+    job_dir = os.path.abspath(os.path.join(job.client_message.results_dir, '..'))
+    if job_dir[len(job_dir) - 1] == os.path.sep:
+        job_dir = job_dir[0:len(job_dir) - 1]
+    parts = job_dir.split(os.path.sep)
+    zip_name = f'{parts[len(parts) - 1]}.zip'
+    cur_dir = os.getcwd()
+    if job_dir.find(cur_dir) == 0:
+        zip_dir = '.' + job_dir[len(cur_dir):len(job_dir)]
+    else:
+        zip_dir = job_dir
+    zip_directory (zip_name, zip_dir)
 #------------------------------------------------------------------------------
 async def job_finalizer(server_params):
     while True:
         fit_job = server_params.queueJobEnded.get()
-        print_debug(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
         print(f'"job_finalizer", process {os.getpid()}, fit job {fit_job.job_id} ended, not completed')
         fit_job.save_params()
         sys.stdout.flush()
@@ -148,12 +162,15 @@ async def job_finalizer(server_params):
                 if idx >= 0:
                     job = server_params.listAllJobs[idx]
                     job.set_completed(server_params.get_connection())
+                    zip_job_results(job)
+                    
+                    #print(f'\n\nJob {fit_job.job_id} ended, results at {fit_job.client_message.results_dir},\njob directory: "{job_dir}"\n\n')
                     server_params.listAllJobs[idx] = job
                 else:
                     print(f'job_finalizer, process {os.getpid()}, job {fit_job.job_id} not on list')
                 scan_jobs_list (server_params)
             except Exception as e:
-                print_debug(f'"job_finalizer", process {os.getpid()}, error"{e}"')
+                print(f'"job_finalizer", process {os.getpid()}, error"{e}"')
             finally:
                 server_params.close_connection()
                 #db_connection.close()
@@ -183,7 +200,7 @@ def HandleFitMessage (cm, server_params):
 def get_orred_ids (params):
     astrWhere = []
     for id in params:
-        astrWhere.append ('(' + DB_Field_JobID + '=' + str(id) + ')')
+        astrWhere.append ('(' + fld_JobID + '=' + str(id) + ')')
     if len(astrWhere) > 1:
         strWhere = ' or '.join(astrWhere)
     else:
@@ -228,7 +245,6 @@ async def HandleStatus (cm, server_params):
             return_params.append(item)
     return return_params
 #------------------------------------------------------------------------------
-import os
 def get_results (cm, server_params):
     print(f'getting results for job {cm.params}')
     try:
@@ -265,6 +281,9 @@ def get_db_status (cm, server_params):
     #print(f'counter:\n{counter}')
     return params
 #------------------------------------------------------------------------------
+def get_job_data (cm, server_params):
+    a=0
+#------------------------------------------------------------------------------
 def handle_incoming_message (websocket, message, server_params):
     return_params = {}
     cm = ClientMessage()
@@ -286,13 +305,14 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = get_results (cm, server_params)
             elif cm.command == MessageCommand.GetDbStatus:
                 return_params = get_db_status (cm, server_params)
+            elif cm.command == MessageCommand.GetData:
+                return_params = get_job_data (cm, server_params)
         else:
             print('parse_message error.')
     except Exception as err:
         print(f'handle_incoming_message, error: {err}')
     return return_params
 #------------------------------------------------------------------------------
-import functools
 async def bumps_server(websocket, path, server_params):
     message = await websocket.recv()
     try:
