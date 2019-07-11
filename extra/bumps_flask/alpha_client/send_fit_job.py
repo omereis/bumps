@@ -111,6 +111,7 @@ def print_usage():
                              then all tags from the local database are queried\n\
                     server - Display jobs from the server database for given tags.\n\
                     data   - Retrieve archived results for completed jobs by job server ID.\n\
+                    tags   - Display all distinct tags in the database\n\
         --algorithm Optimization algorithm. Possible options include:\n\
             "lm"     (Levenberg Marquardt)\n\
             newton"  (Quasi-Newton BFGS)\n\
@@ -397,6 +398,7 @@ def save_results(key, hex_value):
     f = open(zip_name, 'wb')
     f.write(bin_content)
     f.close()
+    return zip_name
 #------------------------------------------------------------------------------
 def get_jobs_server_data(message_params):
     try:
@@ -415,13 +417,33 @@ def get_jobs_server_data(message_params):
                 print(f'item:\n{item}')
                 print(f'type of item #{n+1}: {type(item)}')
                 for key in item.keys():
-                    save_results(key, item[key])
+                    zip_name = save_results(key, item[key])
                     print(f'results file {zip_name} written')
         else:
             print(f'No data found for tag "{message_params.tag}"')
     except Exception as e:
         print(f'"get_jobs_server_data" runtime error: {e}')
-    ws.close()
+    finally:
+        ws.close()
+#------------------------------------------------------------------------------
+def get_server_tags(message_params):
+    try:
+        message = create_message_header(message_params)
+        message['command'] = 'get_tags'
+        ws = websocket.create_connection(message_params.get_remote_address())
+        ws.send(str(message))
+        server_results = ws.recv()
+        server_results = server_results.replace("'",'"')
+        print(f'"get_server_tags" server_results : {server_results}')
+        json_results = json.loads(server_results)
+        tags = json_results['params']
+        for tag in tags:
+            print(f'{tag}')
+        #print(f'json results: {json_results["params"]}')
+    except Exception as e:
+        print(f'"get_server_tags" runtime error: {e}')
+    finally:
+        ws.close()
 #------------------------------------------------------------------------------
 def compose_status_message(message_params):
     message = create_message_header(message_params)
@@ -483,6 +505,8 @@ def main():
         show_jobs_on_server(message_params)
     elif message_params.is_data_command():
         get_jobs_server_data(message_params)
+    elif message_params.is_tag_command():
+        get_server_tags(message_params)
     exit(0)
 #------------------------------------------------------------------------------
 if __name__ == '__main__':

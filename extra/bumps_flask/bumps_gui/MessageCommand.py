@@ -9,4 +9,5 @@ class MessageCommand (Enum):
     PrintStatus = 5
     GetResults  = 6
     GetDbStatus = 7
+    GetTags     = 8
 #------------------------------------------------------------------------------

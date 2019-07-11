@@ -299,11 +299,22 @@ def get_job_data (cm, server_params):
             bin_content = f.read()
             f.close()
             string_content = bin_content.hex()
-            #item = {str(row[0]) : 'string_content'}
             item = {str(row[0]) : string_content}
             params.append(item)
-            #bin = open()
             print(f'{dir}')
+    return params
+#------------------------------------------------------------------------------
+def get_db_tags (cm, server_params):
+    params = []
+    try:
+        db_connection = server_params.database_engine.connect()
+        sql = f'select distinct {fld_Tag} from {tbl_bumps_jobs} order by {fld_Tag};'
+        results = db_connection.execute(sql)
+        for row in results:
+            params.append(row[0])
+    except Exception as e:
+        print('"get_db_tags" runtime error: {e}')
+        params = [e]
     return params
 #------------------------------------------------------------------------------
 def handle_incoming_message (websocket, message, server_params):
@@ -329,6 +340,10 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = get_db_status (cm, server_params)
             elif cm.command == MessageCommand.GetData:
                 return_params = get_job_data (cm, server_params)
+            elif cm.command == MessageCommand.GetTags:
+                return_params = get_db_tags (cm, server_params)
+            else:
+                return_params = {'unknown command' : f'{cm.command}'}
         else:
             print('parse_message error.')
     except Exception as err:

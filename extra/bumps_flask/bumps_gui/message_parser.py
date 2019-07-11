@@ -59,6 +59,8 @@ def parse_command (message_command):
         command = MessageCommand.GetResults
     elif message_command == 'GetDbStatus':
         command = MessageCommand.GetDbStatus
+    elif message_command == 'get_tags':
+        command = MessageCommand.GetTags
     else:
         command = MessageCommand.Error
     return command
