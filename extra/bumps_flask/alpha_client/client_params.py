@@ -33,6 +33,7 @@ def read_y_n():
     else:
         c = byte
     ret = not (c == 'n')
+    print('')
     return ret
 #------------------------------------------------------------------------------
 class MessageParams:

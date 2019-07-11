@@ -390,6 +390,14 @@ def show_jobs_on_server(message_params):
     print(tabulate.tabulate(results, headers=['Job ID', 'Time & Date', 'Status'], tablefmt='orgtbl'))
     return results
 #------------------------------------------------------------------------------
+def save_results(key, hex_value):
+    #hex_data = item[key]
+    bin_content = bytes().fromhex(hex_value)
+    zip_name = f'{key}.zip'
+    f = open(zip_name, 'wb')
+    f.write(bin_content)
+    f.close()
+#------------------------------------------------------------------------------
 def get_jobs_server_data(message_params):
     try:
         message = create_message_header(message_params)
@@ -398,15 +406,19 @@ def get_jobs_server_data(message_params):
         ws = websocket.create_connection(message_params.get_remote_address())
         ws.send(str(message))
         server_results = ws.recv()
-    #server_results = message_reply_to_dict(ws.recv())
-        print(f'type(results): {type(server_results)}')
         server_results = server_results.replace("'",'"')
-        print('replaced quotes')
-        print(f'chars 70 - 75: {server_results[70:75]}')
-        #json_results = json.loads(server_results)
-        print(f'results: {server_results}')
-    #params = server_results['params']
-    #print(f'params reply received: {params}')
+        json_results = json.loads(server_results)
+        params = json_results['params']
+        if params.lower() != 'none':
+            for n in range(len(params)):
+                item = params[n]
+                print(f'item:\n{item}')
+                print(f'type of item #{n+1}: {type(item)}')
+                for key in item.keys():
+                    save_results(key, item[key])
+                    print(f'results file {zip_name} written')
+        else:
+            print(f'No data found for tag "{message_params.tag}"')
     except Exception as e:
         print(f'"get_jobs_server_data" runtime error: {e}')
     ws.close()

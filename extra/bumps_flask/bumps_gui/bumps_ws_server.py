@@ -298,9 +298,9 @@ def get_job_data (cm, server_params):
             f = open (zip_name, 'rb')
             bin_content = f.read()
             f.close()
-            string_content = bin_content.decode('latin1')
-            item = {str(row[0]) : 'string_content'}
-            #item = {str(row[0]) : string_content}
+            string_content = bin_content.hex()
+            #item = {str(row[0]) : 'string_content'}
+            item = {str(row[0]) : string_content}
             params.append(item)
             #bin = open()
             print(f'{dir}')
