@@ -1,4 +1,4 @@
-import asyncio, websockets, json
+import asyncio, websockets, json, websocket
 import os, sys, getopt, tabulate
 import readchar, sqlite3
 #from random_word import RandomWords
@@ -103,15 +103,20 @@ def print_usage():
           default   4567\n\
         ------------\n\
         --command   The command to be sent to the Fit Server. it can be only one of the following:\n\
-                    send   - Send fit job(s) with the specified parameters and problem files. \n\
+                    send <file>[,<file>...]\n\
+                        Send fit job(s) with the specified parameters and problem files. \n\
                     local   - List all local jobs and their status. The list is taken from the local database\n\
                               rather then the server.\n\
                               For update from the Fit Server use "status" command.\n\
                     status - Find jobs status on the Fit Server memory, for a given tag. If no tag is given,\n\
                              then all tags from the local database are queried\n\
                     server - Display jobs from the server database for given tags.\n\
-                    data   - Retrieve archived results for completed jobs by job server ID.\n\
-                    tags   - Display all distinct tags in the database\n\
+                    data <tag> - Retrieve archived results for completed jobs.\n\
+                    tags\n\
+                        Display all distinct tags in the database\n\
+                    delete <job_id>[,<job_id>,...]\n\
+                        Delete jobs from the server disk, the server database and local database\n\
+                            Note: local files will not be deleted\n\
         --algorithm Optimization algorithm. Possible options include:\n\
             "lm"     (Levenberg Marquardt)\n\
             newton"  (Quasi-Newton BFGS)\n\
@@ -252,9 +257,7 @@ def update_server_id (tag, local_id, server_id):
 def update_sent_jobs_db(tag, local_id, results):
     results_str = results.replace("'",'"')
     json_results = json.loads(results_str)
-    print(f'json_results: {json_results}')
     server_id = json_results['params'][local_id]
-    print(f'json_results: {json_results}')
     update_server_id (tag, local_id, server_id)
 #------------------------------------------------------------------------------
 def save_local_message(message):
@@ -294,28 +297,63 @@ def compose_fit_message(message_params, idx=0):
     message['multi_processing'] = 'none'
     message['local_id'] = get_next_local_id()
     return message
-import websocket
+#------------------------------------------------------------------------------
+def show_sent_jobs(local_ids):
+    global tbl_sent_jobs, fld_id, fld_problem, fld_tag, fld_sent, fld_status, fld_server
+
+    try:
+        conn = open_local_db()
+        where = []
+        for id in local_ids:
+            where.append(f'{fld_id}={id}')
+        sql_where = " or ".join(where)
+        sql = f'select {fld_id}, {fld_server}, {fld_problem}, {fld_tag}, {fld_sent} \
+            from {tbl_sent_jobs}  where {sql_where} order by {fld_problem};'
+        sent_jobs = conn.execute(sql).fetchall()
+        display_jobs = []
+        for row in sent_jobs:
+            display_jobs.append(list(row))
+        print(tabulate.tabulate(display_jobs, headers=['Local ID', 'Server ID', 'File', 'Tag', 'Time & Date'], tablefmt='orgtbl'))
+    except Exception as e:
+        print(f'"show_sent_jobs" runtime error: {e}')
+    finally:
+        conn.close()
 #------------------------------------------------------------------------------
 def send_fit_job (message_params):
     remote_address = message_params.get_remote_address()
+    local_ids = []
     try:
         for n in range(len(message_params.files_names)):
             ws = websocket.create_connection(remote_address)
             message = compose_fit_message(message_params, n)
             save_local_message(message)
             ws.send(str(message))
-            print('\nmessage sent')
             local_id = str(message["local_id"])
             tag      = message["tag"]
             results = ws.recv()
-            print(f'\nreply recieved: {results}')
             update_sent_jobs_db(tag, local_id, results)
+            local_ids.append(local_id)
             ws.close()
+        show_sent_jobs(local_ids)
     except Exception as e:
-        print(f'"main" runtime error: {e}')
+        print(f'"send_fit_job" runtime error: {e}')
 #------------------------------------------------------------------------------
 def show_local_jobs():
     print('local command')
+    global tbl_sent_jobs, fld_id, fld_server, fld_problem, fld_tag, fld_sent, fld_status
+
+    try:
+        display_jobs = []
+        conn = open_local_db()
+        sql = f'select {fld_tag},{fld_server},{fld_problem},{fld_tag},{fld_status},{fld_sent} from {tbl_sent_jobs} order by {fld_tag},{fld_server},{fld_status};'
+        res = conn.execute(sql).fetchall()
+        for row in res:
+            display_jobs.append(list(row))
+        print(tabulate.tabulate(display_jobs, headers=['Tag', 'Server ID', 'File', 'Tag', 'Status', 'Time & Date'], tablefmt='orgtbl'))
+    except Exception as e:
+        print(f'get_next_local_id, runtime error: {e}')
+    finally:
+        conn.close()
 #------------------------------------------------------------------------------
 def load_tags_from_db ():
     global tbl_sent_jobs, fld_tag
@@ -392,7 +430,6 @@ def show_jobs_on_server(message_params):
     return results
 #------------------------------------------------------------------------------
 def save_results(key, hex_value):
-    #hex_data = item[key]
     bin_content = bytes().fromhex(hex_value)
     zip_name = f'{key}.zip'
     f = open(zip_name, 'wb')
@@ -401,6 +438,9 @@ def save_results(key, hex_value):
     return zip_name
 #------------------------------------------------------------------------------
 def get_jobs_server_data(message_params):
+    if message_params.tag == None:
+        print(f'Missing Tag. Required argument for this command')
+        exit(0)
     try:
         message = create_message_header(message_params)
         message['command'] = 'get_data'
@@ -411,11 +451,9 @@ def get_jobs_server_data(message_params):
         server_results = server_results.replace("'",'"')
         json_results = json.loads(server_results)
         params = json_results['params']
-        if params.lower() != 'none':
+        if True:#params.lower() != 'none':
             for n in range(len(params)):
                 item = params[n]
-                print(f'item:\n{item}')
-                print(f'type of item #{n+1}: {type(item)}')
                 for key in item.keys():
                     zip_name = save_results(key, item[key])
                     print(f'results file {zip_name} written')
@@ -434,12 +472,33 @@ def get_server_tags(message_params):
         ws.send(str(message))
         server_results = ws.recv()
         server_results = server_results.replace("'",'"')
-        print(f'"get_server_tags" server_results : {server_results}')
         json_results = json.loads(server_results)
         tags = json_results['params']
         for tag in tags:
             print(f'{tag}')
-        #print(f'json results: {json_results["params"]}')
+    except Exception as e:
+        print(f'"get_server_tags" runtime error: {e}')
+    finally:
+        ws.close()
+#------------------------------------------------------------------------------
+def delete_server_jobs(message_params):
+    global tbl_sent_jobs, fld_server
+    try:
+        message = create_message_header(message_params)
+        message['command'] = 'Delete'
+        message['params'] = message_params.files_names
+        ws = websocket.create_connection(message_params.get_remote_address())
+        ws.send(str(message))
+        server_results = message_reply_to_dict(ws.recv())
+        server_ids = server_results['params']
+        where=[]
+        for id in server_ids:
+            where.append(f'{fld_server}={int(id)}')
+        where_id = ' or '.join(where)
+        conn = open_local_db()
+        sql = f'delete from {tbl_sent_jobs} where {where_id};'
+        conn.execute(sql)
+        conn.commit()
     except Exception as e:
         print(f'"get_server_tags" runtime error: {e}')
     finally:
@@ -495,7 +554,6 @@ def main():
             exit(0)
     sys.stdout.flush()
     if message_params.is_send_command():
-        print(f'message command: {message_params.command}')
         send_fit_job (message_params)
     elif message_params.is_local_command():
         show_local_jobs()
@@ -507,6 +565,8 @@ def main():
         get_jobs_server_data(message_params)
     elif message_params.is_tag_command():
         get_server_tags(message_params)
+    elif message_params.is_delete_command():
+        delete_server_jobs(message_params)
     exit(0)
 #------------------------------------------------------------------------------
 if __name__ == '__main__':

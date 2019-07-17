@@ -301,7 +301,6 @@ def get_job_data (cm, server_params):
             string_content = bin_content.hex()
             item = {str(row[0]) : string_content}
             params.append(item)
-            print(f'{dir}')
     return params
 #------------------------------------------------------------------------------
 def get_db_tags (cm, server_params):

@@ -48,7 +48,7 @@ class MessageParams:
     check_params = True
     is_help      = False
     command      = 'send'
-    valid_commands = ('send','local', 'status','data', 'server', 'tags', 'help')
+    valid_commands = ('send','local', 'status','data', 'server', 'tags', 'delete', 'help')
 #------------------------------------------------------------------------------
 #    def __init__(self):
 #        try:
@@ -128,22 +128,25 @@ class MessageParams:
         return command_valid
 #------------------------------------------------------------------------------
     def is_send_command(self):
-        return self.command == 'send'
+        return self.command.lower() == 'send'
 #------------------------------------------------------------------------------
     def is_local_command(self):
-        return self.command == 'local'
+        return self.command.lower() == 'local'
 #------------------------------------------------------------------------------
     def is_status_command(self):
-        return self.command == 'status'
+        return self.command.lower() == 'status'
 #------------------------------------------------------------------------------
     def is_server_command(self):
-        return self.command == 'server'
+        return self.command.lower() == 'server'
 #------------------------------------------------------------------------------
     def is_data_command(self):
-        return self.command == 'data'
+        return self.command.lower() == 'data'
 #------------------------------------------------------------------------------
     def is_tag_command(self):
-        return self.command == 'tags'
+        return self.command.lower() == 'tags'
+#------------------------------------------------------------------------------
+    def is_delete_command(self):
+        return self.command.lower() == 'delete'
 #------------------------------------------------------------------------------
     def get_new_tag(self):
         if self.tag == None:

@@ -17,11 +17,10 @@ RUN apt install -y tree
 RUN mkdir -p /home/app_user/bumps_flask
 
 # Set the home directory to our app user's home.
-ENV HOME=/home/app_user/bumps_flask
+ENV HOME=/home/app_user/bumps_flask/bumps_gui
 
 # Set the directory for relative file paths
-#WORKDIR /home/app_user/bumps_flask/bumps_flask
-WORKDIR /home/app_user/bumps_flask
+WORKDIR /home/app_user/bumps_flask/bumps_gui
 
 # Install the app dependencies using pip
 RUN pip install -U pip
@@ -60,10 +59,6 @@ RUN pip install websocket websocket-client
 # USER app_user
 
 # Set the environment variables for Flask
-#ENV FLASK_APP=bumps_flask
-#ENV FIT_RESULTS_DIR=/home/app_user/bumps_flask/bumps_flask/static/fit_results
-#ENV FLASK_HOME=/home/app_user/bumps_flask
-#ENV FLASK_PORT=4000
 ENV WEBSOCKET_PORT=4567
 #ENV FLASK_ENV=development
 ENV BUMPS_MP_PORT=4567
