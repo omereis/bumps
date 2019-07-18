@@ -9,11 +9,13 @@ def get_next_job_id(connection):
         sql = 'select max({}) from {};'.format(fld_JobID, tbl_bumps_jobs)
         res = connection.execute(sql)
         for row in res:
-            job_id = row.values()[0]
+            db_job_id = row.values()[0]
+        if db_job_id:
+            job_id = db_job_id
     except Exception as e:
-        print("Error in get_next_job_id()")
-        print("{}".format(e))
-        job_id = None
+        print(f"Error in get_next_job_id: {e}")
+        job_id = 0
+    job_id += 1
     return job_id
 #------------------------------------------------------------------------------
 def results_dir_for_job (database_engine, job_id):

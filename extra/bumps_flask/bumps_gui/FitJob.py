@@ -84,15 +84,15 @@ class FitJob:
     def save_message_to_db (self, cm, connection):
         try:
             job_id = get_next_job_id(connection)
+            if job_id == None:
+                job_id = 1
             message_date_time = get_message_datetime_string (cm.message_time)
-            if job_id:
-                job_id = job_id + 1
-                sql = 'insert into {} ({},{},{},{},{},{},{}) values ({},"{}","{}","{}","{}","{}","{}");'.format(\
+            sql = 'insert into {} ({},{},{},{},{},{},{}) values ({},"{}","{}","{}","{}","{}","{}");'.format(\
                         tbl_bumps_jobs,
                         fld_JobID, fld_SentIP, fld_SentTime, fld_Tag, fld_Message, fld_ResultsDir,fld_ProblemFile,
                         job_id, cm.host_ip, message_date_time, cm.tag, cm.message, cm.results_dir, cm.problem_file_name)
-                res = connection.execute(sql)
-                self.job_id = job_id
+            res = connection.execute(sql)
+            self.job_id = job_id
         except Exception as e:
             print ('bumps_ws_server, save_message_to_db, bug: {}'.format(e))
         return job_id
@@ -137,6 +137,8 @@ class FitJob:
         sqlInsert = f'insert into {tbl_job_status} {fld_JobID,fld_StatusTime,fld_StatusName}'.replace("'","")
         #print_debug(f'"update_status_in_db", sqlInsert: "{sqlInsert}"')
         strSql = f'{sqlInsert} values {self.job_id, str(datetime.datetime.now()), name_of_status(self.status)};'
+        print(f'sqlInsert: "{sqlInsert}"')
+        print(f'strSql: "{strSql}"')
         #print_debug(f'"update_status_in_db", strSql: "{strSql}"')
         try:
             connection.execute(strSql)

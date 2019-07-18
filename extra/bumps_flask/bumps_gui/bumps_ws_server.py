@@ -17,7 +17,7 @@ try:
     from .bumps_constants import *
     from .misc import get_results_dir, get_web_results_dir
     from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
-    from .db_misc import get_next_job_id, results_dir_for_job
+    from .db_misc import results_dir_for_job
     from .message_parser import ClientMessage, generate_key
     from .get_host_port import get_host_port
     from .MessageCommand import MessageCommand
@@ -27,7 +27,7 @@ except:
     from bumps_constants import *
     from misc import get_results_dir, get_web_results_dir
     from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
-    from db_misc import get_next_job_id, results_dir_for_job
+    from db_misc import results_dir_for_job
     from message_parser import ClientMessage, MessageCommand, generate_key
     from get_host_port import get_host_port
     from MessageCommand import MessageCommand
