@@ -3,9 +3,9 @@ FROM ubuntu:18.04
 
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y \
-    apache2 \
-    apache2-dev \
-    libssl-dev \
+#    apache2 \
+#    apache2-dev \
+#    libssl-dev \
     git        \
     python-dev \
     python-pip
