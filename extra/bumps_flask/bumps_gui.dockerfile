@@ -49,9 +49,14 @@ RUN pip install flask flask_redis flask_jwt_extended flask_restful flask_wtf
 RUN pip install celery readchar
 RUN pip install websocket websocket-client
 
+RUN pip install celery
+
 # Set the environment variables for Flask
 ENV WEBSOCKET_PORT=4567
 ENV BUMPS_MP_PORT=4567
+
+ENV CELERY_RESULT_BACKEND='amqp'
+ENV BROKER_URL='amqp://guest@rabbit.local//'
 
 # Launch the app
 # CMD ["python", "app_bumps.py", "-s 0.0.0.0", "-p 4000", "-m 4567"]
