@@ -1,0 +1,47 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Test Dir",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": true,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            "args" : ["--host", "localhost", "--port", "4567", "--tag", "alpha", "curv_fit.py","--store=/home/bumps/celery/problems/results"],
+            //"args" : ["-y", "--host", "localhost", "--port", "4567", "--tag", "alpha", "curv_fit.py"],
+            //"args" : ["--help", "curv_fit.py"],
+            "debugOptions": [
+                "RedirectOutput"
+            ]
+        },         {
+            "name": "Python Test",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": true,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            //"args" : ["d:\\Omer\\Source\\bumps\\extra\\bumps_flask\\bumps_gui"],
+            //"args" : ["--help", "curv_fit.py"],
+            "debugOptions": [
+                "RedirectOutput"
+            ]
+        },
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        }
+    ]
+}

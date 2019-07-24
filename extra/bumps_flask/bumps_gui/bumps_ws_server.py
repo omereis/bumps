@@ -6,12 +6,11 @@ import mysql.connector
 import json, os
 import multiprocessing
 import nest_asyncio
-import bumps.cli
 import functools
-from mysql.connector import Error
+#from mysql.connector import Error
 from sqlalchemy import create_engine, MetaData
-from bumps import cli
-from time import sleep
+import bumps
+#from time import sleep
 try:
     from .oe_debug import print_debug
     from .bumps_constants import *
@@ -90,22 +89,21 @@ def print_jobs(listJobs, title=''):
         print(f'Error in print_job: "{e}"')
 #------------------------------------------------------------------------------
 def scan_jobs_list (server_params):
-    n_cpus = multiprocessing.cpu_count()
-    for n in range(len(server_params.listAllJobs)):
-        n_running_jobs = count_running_jobs(server_params.listAllJobs)
-        fit_job = server_params.listAllJobs[n]
-        if fit_job.status == JobStatus.Parsed:
-            fit_job.set_standby(server_params.db_connection)
-            #print_debug(f'"scan_jobs_list", process ID {os.getpid()}, writing job {fit_job.job_id} to queueRunJobs, , list contains {server_params.jobs_count()} jobs')
-        elif fit_job.status == JobStatus.StandBy:
-            if n_running_jobs < n_cpus:
-                #print_debug(f'"scan_jobs_list", process ID {os.getpid()}, writing job {fit_job.job_id} to queueRunJobs, , list contains {server_params.jobs_count()} jobs')
-                fit_job.prepare_params()
-                fit_job.set_running(server_params.get_connection())
-                server_params.listAllJobs[n] = fit_job
-                server_params.queueRunJobs.put(fit_job)
-                #print_debug(f'"scan_jobs_list", process ID {os.getpid()}, job {fit_job.job_id} written to queueRunJobs, current status {name_of_status(fit_job.status)} list contains {server_params.jobs_count()} jobs')
-                #print_jobs (server_params.listAllJobs, "scan_jobs_list")
+    try:
+        n_cpus = multiprocessing.cpu_count()
+        for n in range(len(server_params.listAllJobs)):
+            n_running_jobs = count_running_jobs(server_params.listAllJobs)
+            fit_job = server_params.listAllJobs[n]
+            if fit_job.status == JobStatus.Parsed:
+                fit_job.set_standby(server_params.db_connection)
+            elif fit_job.status == JobStatus.StandBy:
+                if n_running_jobs < n_cpus:
+                    fit_job.prepare_params()
+                    fit_job.set_running(server_params.get_connection())
+                    server_params.listAllJobs[n] = fit_job
+                    server_params.queueRunJobs.put(fit_job)
+    except Exception as e:
+        print(f'"scan_jobs_list" runtime error: {e}')
 #------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
 def run_fit_job (fit_job, server_params):
@@ -114,6 +112,7 @@ def run_fit_job (fit_job, server_params):
         try:
             #print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} running, params: {fit_job.params}')
             #print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} running')
+            #bumps.cli.main()
             bumps.cli.main()
         finally:
             #rint_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} ended')
@@ -188,17 +187,24 @@ def job_ending_manager(server_params):
     print(f'"job_ending_manager", started process with id {os.getpid()}, length(listJobs): {len(server_params.listAllJobs)}')
     asyncio.run(job_finalizer(server_params))
 #------------------------------------------------------------------------------
+from bumps_celery import tasks as celery_tasks
+def send_celery_fit (cm, results_dir, message):
+    res = celery_tasks.run_bumps (message)
 #------------------------------------------------------------------------------
-def HandleFitMessage (cm, server_params):
-    cm.create_results_dir(server_params)
+def HandleFitMessage (cm, server_params, message):
+    results_dir = cm.create_results_dir(server_params)
     cm.save_problem_file()
     fit_job = FitJob (cm)
     try:
         db_connection = server_params.database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
-        fit_job.set_standby(db_connection)
-        server_params.append_job (fit_job)
-        scan_jobs_list (server_params)
+        if cm.multi_proc == 'celery':
+            fit_job.set_celery(db_connection)
+            send_celery_fit (cm, results_dir, message)
+        else:
+            fit_job.set_standby(db_connection)
+            server_params.append_job (fit_job)
+            scan_jobs_list (server_params)
     except Exception as e:
         print (f'bumps_ws_server.py, HandleFitMessage, bug: {e}')
         job_id = 0
@@ -320,13 +326,11 @@ def handle_incoming_message (websocket, message, server_params):
     return_params = {}
     cm = ClientMessage()
     try:
-        if cm.parse_message(websocket, message, server_params):
+        if cm.parse_message(websocket.remote_address[0], message, server_params.results_dir):
             if cm.command == MessageCommand.StartFit:
-                job_id = HandleFitMessage (cm, server_params)
+                job_id = HandleFitMessage (cm, server_params, message)
                 if job_id:
-                    # converting local id to string required due to client conversion to JSON
                     return_params[str(cm.local_id)] = job_id
-                    #return_params[str(cm.row_id)] = job_id
             elif cm.command == MessageCommand.Delete:
                 return_params = asyncio.run(HandleDelete (cm, server_params))
             elif cm.command == MessageCommand.Status:

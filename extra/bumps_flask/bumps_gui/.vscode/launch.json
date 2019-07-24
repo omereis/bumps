@@ -5,6 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python cli",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": true,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            //"args" : ["/home/bumps/celery/problems/cf1.py"],
+            "args" : ["bumps_tag", "tst.py"],
+            "debugOptions": [
+                "RedirectOutput"
+            ]
+        },
+        {
             "name": "Python Test",
             "type": "python",
             "request": "launch",

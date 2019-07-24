@@ -26,6 +26,7 @@ MessageCode        = 'command'
 MessageFitProblem  = 'fit_problem'
 MessageParams      = 'params'
 MessageClientID    = 'local_id'
+MessageMultiProc   = 'multi_processing'
 #------------------------------------------------------------------------------
 def generate_key (client_host, time_string):
     key = client_host.replace('.','_') + '_' + str(time_string)
@@ -83,15 +84,17 @@ class ClientMessage:
     problem_text = None
     problem_file_name = None
     params       = None
-    #row_id       = None
-    local_id       = None
+    bumps_params = None
+    multi_proc   = None
+    local_id     = None
 #------------------------------------------------------------------------------
-    def parse_message(self, websocket, message, server_params):
+    #def parse_message(self, host_ip, message, server_params):
+    def parse_message(self, host_ip, message, results_dir):
         try:
             parse = False
             header = message['header']
             if header ==  'bumps client':
-                self.host_ip      = websocket.remote_address[0]
+                self.host_ip      = host_ip
                 self.message      = message
                 self.tag          = getMessageField (message, MessageTag)
                 self.message_time = getMessageField (message,  MessageTime)
@@ -100,22 +103,29 @@ class ClientMessage:
                 self.command      = parse_command (getMessageField (message, MessageCode))
                 self.problem_text = getMessageField (message, MessageFitProblem)
                 self.params       = getMessageField (message, MessageParams)
-                self.local_id       = getMessageField (message, MessageClientID)
+                self.local_id     = getMessageField (message, MessageClientID)
                 #self.row_id       = getMessageField (message, MessageClientID)
-                self.job_dir      = self.compose_job_directory_name (server_params) # just get the name, does not create directory
+                self.multi_proc   = getMessageField (message, MessageMultiProc)
+                self.job_dir      = self.compose_job_directory_name (results_dir) # just get the name, does not create directory
                 parse = True
         except Exception as e:
             print('message_parser.py, parse_message: {}'.format(e))
             parse = False
         return parse
 #------------------------------------------------------------------------------
-    def compose_job_directory_name (self, server_params):
+    def compose_job_directory_name (self, results_dir=None):
         try:
+            if results_dir == None:
+                results_dir = f'.{os.sep}bumps_fit'
+                print(f'message_parser.py, parse_message, base_results_dir: {results_dir}')
             #base_results_dir = get_results_dir()
-            base_results_dir = server_params.results_dir
+            #base_results_dir = server_params.results_dir
+            base_results_dir = results_dir
             tmp_dir = results_dir = base_results_dir + self.host_ip + "/" + self.tag
-        except:
+        except Exception as e:
+            print('message_parser.py, parse_message: {}'.format(e))
             tmp_dir = results_dir = base_results_dir + '/results'
+            print(f'using temporary directory: {tmp_dir}')
         n = 1
         while os.path.exists(results_dir):
             results_dir = tmp_dir + '_' + str(n)
@@ -124,7 +134,7 @@ class ClientMessage:
 #------------------------------------------------------------------------------
     def create_results_dir (self, server_params):
         if len(self.job_dir) == 0:
-            self.job_dir = self.compose_job_directory_name (server_params)
+            self.job_dir = self.compose_job_directory_name (server_params.results_dir)
         results_dir = tmp_dir = self.job_dir + '/results'
         n = 1
         while os.path.exists(results_dir):
@@ -135,21 +145,44 @@ class ClientMessage:
         self.results_dir = results_dir
         return results_dir
 #------------------------------------------------------------------------------
-    def create_results_dir1 (self):
+    def prepare_bumps_params(self):
+        self.bumps_params = []
         try:
-            tmp_dir = results_dir = base_results_dir + self.host_ip + "/" +self.tag
-            dir_len = len(results_dir)
+            self.bumps_params.append('bumps')
+            self.bumps_params.append(self.problem_file_name)
+            self.bumps_params.append('--batch')
+            for k in self.params.keys():
+                if k == 'algorithm':
+                    self.bumps_params.append(f'--fit={self.params[k]}')
+                elif k == 'burns':
+                    self.bumps_params.append(f'--burn={self.get_burn()}')
+                elif k == 'steps':
+                    self.bumps_params.append(f'--steps={self.get_steps()}')
+            self.bumps_params.append(f'--store={self.results_dir}')
+        except Exception as e:
+            print(f'"ClientMessage.prepare_params", runtime error: {e}')
+        return self.bumps_params
+#------------------------------------------------------------------------------
+    def set_job_directory(self, work_dir):
+        try:
+            os.makedirs(work_dir)
+            os.chmod(work_dir, 0o7777)
+            self.job_dir = work_dir
+        except Exception as e:
+            print(f'"set_job_directory" runtime error: {e}')
+            self.job_dir = '.'
+        try:
+            res = 'results'
             n = 1
-            while os.path.exists(results_dir):
-                results_dir = tmp_dir + '_' + str(n)
-                n = n + 1
-            #results_dir += '/out'
-            os.makedirs (results_dir, 0o7777)
-            os.chmod(results_dir, 0o7777)
+            base_dir = results_dir = f'{self.job_dir}{os.sep}{res} '
+            fExists = os.path.exists(results_dir)
+            if fExists:
+                results_dir = f'{results_dir}_{n}'
+                fExists = os.path.exists(results_dir)
+                n += 1
             self.results_dir = results_dir
-        except:
-            results_dir = './results'
-        return results_dir
+        except Exception as e:
+            print(f'Could not create esults directory: {e}')
 #------------------------------------------------------------------------------
     def get_problem_file_name (self):
         problem_file_name = ''

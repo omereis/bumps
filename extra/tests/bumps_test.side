@@ -2,11 +2,68 @@
   "id": "ca756e44-4e94-4a38-a656-52801e591314",
   "version": "2.0",
   "name": "bumps_test",
-  "url": "",
+  "url": "http://ncnr-r9nano.campus.nist.gov:4000",
   "tests": [{
-    "id": "c082c803-0f2c-4923-a66e-62bd1e95b3bb",
-    "name": "Untitled",
-    "commands": []
+    "id": "de265c2f-c833-40a0-8573-3d348ede755e",
+    "name": "load",
+    "commands": [{
+      "id": "c6f06eec-a61f-4a70-9959-e618caee036d",
+      "comment": "",
+      "command": "open",
+      "target": "/",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "38bc0527-044c-4973-933c-10678bdea0f5",
+      "comment": "",
+      "command": "setWindowSize",
+      "target": "1355x950",
+      "targets": [],
+      "value": ""
+    }, {
+      "id": "706b0445-a51e-46bf-a371-a112ebd3a9fc",
+      "comment": "",
+      "command": "click",
+      "target": "id=remote_tag",
+      "targets": [
+        ["id=remote_tag", "id"],
+        ["css=#remote_tag", "css:finder"],
+        ["xpath=//input[@id='remote_tag']", "xpath:attributes"],
+        ["xpath=//p/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "d3a7fb6e-1418-423b-b512-3382a48a702d",
+      "comment": "",
+      "command": "type",
+      "target": "id=remote_tag",
+      "targets": [
+        ["id=remote_tag", "id"],
+        ["css=#remote_tag", "css:finder"],
+        ["xpath=//input[@id='remote_tag']", "xpath:attributes"],
+        ["xpath=//p/input", "xpath:position"]
+      ],
+      "value": "selenium"
+    }, {
+      "id": "3ec14df2-479e-4600-8a6c-a5ef924b5c18",
+      "comment": "",
+      "command": "click",
+      "target": "id=problemFile",
+      "targets": [
+        ["id=problemFile", "id"],
+        ["css=#problemFile", "css:finder"],
+        ["xpath=//input[@id='problemFile']", "xpath:attributes"],
+        ["xpath=//td[2]/input", "xpath:position"]
+      ],
+      "value": ""
+    }, {
+      "id": "c0a436e6-6adf-42bc-adbc-469cdc1b8432",
+      "comment": "",
+      "command": "xtype",
+      "target": "id=problemFile",
+      "targets": [],
+      "value": "d:\\Omer\\Source\\bumps\\extra\\tests\\cf1.py"
+    }]
   }],
   "suites": [{
     "id": "a578760e-6d5c-48bc-8c79-87869192265a",
@@ -14,8 +71,8 @@
     "persistSession": false,
     "parallel": false,
     "timeout": 300,
-    "tests": ["c082c803-0f2c-4923-a66e-62bd1e95b3bb"]
+    "tests": []
   }],
-  "urls": [],
+  "urls": ["http://ncnr-r9nano.campus.nist.gov:4000/"],
   "plugins": []
 }

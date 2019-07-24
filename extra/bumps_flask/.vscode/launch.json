@@ -41,7 +41,8 @@
             "cwd": "${workspaceFolder}",
             "env": {},
             "envFile": "${workspaceFolder}/.env",
-            "args" : ["-y", "--host", "localhost", "--port", "4567", "--tag", "alpha", "curv_fit.py"],
+            "args" : ["--host", "localhost", "--port", "4567", "--tag", "alpha", "curv_fit.py"],
+            //"args" : ["-y", "--host", "localhost", "--port", "4567", "--tag", "alpha", "curv_fit.py"],
             //"args" : ["--help", "curv_fit.py"],
             "debugOptions": [
                 "RedirectOutput"

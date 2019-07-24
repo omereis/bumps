@@ -1,0 +1,3 @@
+['/usr/local/lib/python2.7/dist-packages/bumps/cli.py','/home/bumps/celery/problems/cf1.py', '--batch', '--stepmon', '--burn=100', '--steps=100', '--store=/home/bumps/celery/problems/results', '--fit=newton']
+
+/home/bumps/celery/problems/cf1.py --batch --stepmon --burn=100 --steps=100 --store=/home/bumps/celery/problems/results --fit=newton

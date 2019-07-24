@@ -19,6 +19,7 @@ class JobStatus (Enum):
     NoData    = 10
     Parsed    = 20
     StandBy   = 30
+    Celery    = 35
     Running   = 40
     Completed = 50
     Error     = 60
@@ -98,24 +99,14 @@ class FitJob:
         return job_id
 #------------------------------------------------------------------------------
     def prepare_params(self):
-        self.params = []
-        self.params.append('bumps')
-        self.params.append(self.client_message.problem_file_name)
-        self.params.append('--batch')
-        for k in self.client_message.params.keys():
-            if k == 'algorithm':
-                self.params.append(f'--fit={self.client_message.params[k]}')
-            elif k == 'burns':
-                self.params.append(f'--burn={self.client_message.get_burn()}')
-            elif k == 'steps':
-                self.params.append(f'--steps={self.client_message.get_steps()}')
-        self.params.append(f'--store={self.client_message.results_dir}')
+        self.params = self.client_message.prepare_bumps_params()
+        return self.params
 #------------------------------------------------------------------------------
     def run_bumps_fit(self, db_connection):
         sys.argv = []
         sys.argv.append('bumps')
-        for p in params:
-            sys.argv.append(p)
+        #for p in params:
+            #sys.argv.append(p)
         print(f'\n\nFitJob, run_bumps_fit\n{sys.argv}')
     #------------------------------------------------------------------------------
     def set_running(self, db_connection):
@@ -129,6 +120,10 @@ class FitJob:
         self.status = JobStatus.StandBy
         self.update_status_in_db(connection)
 #------------------------------------------------------------------------------
+    def set_celery(db_connection):
+        self.status = JobStatus.Celery
+        self.update_status_in_db(connection)
+#------------------------------------------------------------------------------
     def set_completed(self, db_connection):
         self.status = JobStatus.Completed
         self.update_status_in_db(db_connection)
@@ -137,8 +132,8 @@ class FitJob:
         sqlInsert = f'insert into {tbl_job_status} {fld_JobID,fld_StatusTime,fld_StatusName}'.replace("'","")
         #print_debug(f'"update_status_in_db", sqlInsert: "{sqlInsert}"')
         strSql = f'{sqlInsert} values {self.job_id, str(datetime.datetime.now()), name_of_status(self.status)};'
-        print(f'sqlInsert: "{sqlInsert}"')
-        print(f'strSql: "{strSql}"')
+        #print(f'sqlInsert: "{sqlInsert}"')
+        #print(f'strSql: "{strSql}"')
         #print_debug(f'"update_status_in_db", strSql: "{strSql}"')
         try:
             connection.execute(strSql)
@@ -225,7 +220,5 @@ class ServerParams():
             self.listAllJobs[idx] = fit_job
         else:
             self.listAllJobs.append(fit_job)
-            #print_debug(f'append_job, process {os.getpid()}, appended job {fit_job.job_id}, list contains {self.jobs_count()} jobs')
-        #server_params.listAllJobs.append(fit_job)
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
