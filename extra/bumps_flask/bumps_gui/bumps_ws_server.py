@@ -188,6 +188,14 @@ def job_ending_manager(server_params):
     asyncio.run(job_finalizer(server_params))
 #------------------------------------------------------------------------------
 from bumps_celery import tasks as celery_tasks
+from bumps_celery.celery import app as appCelery
+#------------------------------------------------------------------------------
+def _task_postrun(self, task, **kwargs):
+    try:
+        print('task post run')
+    except Exception as e:
+        print(f'_task_postrun runtime error: {e}')
+#------------------------------------------------------------------------------
 def send_celery_fit (cm, results_dir, message):
     res = celery_tasks.run_bumps (message)
 #------------------------------------------------------------------------------

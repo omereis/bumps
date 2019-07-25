@@ -79,13 +79,35 @@ def zipdir(path, ziph):
         for file in files:
             ziph.write(os.path.join(root, file))
 #------------------------------------------------------------------------------
+import sys, bumps, os
+#------------------------------------------------------------------------------
+def save_problem_file (client_message):
+    name = client_message.problem_file_name
+    if (name == None) or (len(name) == 0):
+        name = client_message.tag
+        #file_name = client_message.problem_file_name = client_message.tag
+    client_message.problem_file_name = f'{client_message.job_dir}{os.sep}{name}.py'
+    f = open(client_message.problem_file_name, 'w')
+    f.write(client_message.problem_text)
+    f.close()
+#------------------------------------------------------------------------------
 def run_local_bumps(message):
     client_message = message_parser.ClientMessage()
     host_ip = socket.gethostbyname(socket.gethostname())
     client_message.parse_message(host_ip, message, None)
     work_dir = get_work_dir(client_message.tag)
     client_message.set_job_directory(work_dir)
+    save_problem_file (client_message)
     params = client_message.prepare_bumps_params()
+    print(f'"\n\nrun_local_bumps" params: {params}\n\n')
+    try:
+        system_args = sys.argv
+        sys.argv = params
+        bumps.cli.main()
+    except Exception as e:
+        print(f'"run_local_bumps" runtime error: {e}')
+    finally:
+        sys.argv = system_args
     return params
 #------------------------------------------------------------------------------
 def run_local_bumps1(client_message):

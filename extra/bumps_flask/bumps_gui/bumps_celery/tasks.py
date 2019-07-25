@@ -10,26 +10,15 @@ from .oe_debug import print_debug
 @app.task   
 def run_bumps(message):
 #def run_bumps(client_message):
-    json_message = json.loads(message.replace('\n','\\n'))
-    print(f'json message: {json_message}')
-    res = run_local_bumps (json_message)
+    #json_message = json.loads(message.replace('\n','\\n'))
+    #print(f'json message: {json_message}')
+    #res = run_local_bumps (json_message)
+    res = run_local_bumps (message)
     return res
 #------------------------------------------------------------------------------
 @app.task
-def run_bumps_1(params):
-    try:
-        std_out = sys.stdout
-        res_dir = get_results_directory (params[1:])
-        sa = sys.argv
-        sys.argv = params
-        bumps.cli.main()
-        sys.argv = sa
-    except Exception as e:
-        res_dir = f'{e}'
-    finally:
-        sys.stdout = std_out
-    return res_dir
-#------------------------------------------------------------------------------
+def add(x, y):
+    return x + y
 #------------------------------------------------------------------------------
 @app.task
 def write_file(file_name,file_content):

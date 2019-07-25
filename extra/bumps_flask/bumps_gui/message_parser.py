@@ -174,7 +174,7 @@ class ClientMessage:
         try:
             res = 'results'
             n = 1
-            base_dir = results_dir = f'{self.job_dir}{os.sep}{res} '
+            base_dir = results_dir = f'{self.job_dir}{os.sep}{res}'
             fExists = os.path.exists(results_dir)
             if fExists:
                 results_dir = f'{results_dir}_{n}'

@@ -120,9 +120,9 @@ class FitJob:
         self.status = JobStatus.StandBy
         self.update_status_in_db(connection)
 #------------------------------------------------------------------------------
-    def set_celery(db_connection):
+    def set_celery(self, db_connection):
         self.status = JobStatus.Celery
-        self.update_status_in_db(connection)
+        self.update_status_in_db(db_connection)
 #------------------------------------------------------------------------------
     def set_completed(self, db_connection):
         self.status = JobStatus.Completed
