@@ -1,7 +1,7 @@
 import asyncio
 import websockets
 import getopt, sys
-import datetime
+import datetime, time
 import mysql.connector
 import json, os
 import multiprocessing
@@ -197,7 +197,20 @@ def _task_postrun(self, task, **kwargs):
         print(f'_task_postrun runtime error: {e}')
 #------------------------------------------------------------------------------
 def send_celery_fit (cm, results_dir, message):
-    res = celery_tasks.run_bumps (message)
+    try:
+        tStart = datetime.datetime.now()
+        res = celery_tasks.run_bumps.delay (message)
+        dt = datetime.datetime.now() - tStart
+        while (res.ready() == False) and (dt.seconds < 5 * 60):
+            time.sleep(0.1)
+            dt = datetime.datetime.now() - tStart
+        if res.ready():
+            fit = str(res.get())
+        else:
+            fit = 'no results. timeout'
+        print_debug(fit)
+    except Exception as e:
+        print(f'{__file__},send_celery_fit runtime error: {e}')
 #------------------------------------------------------------------------------
 def HandleFitMessage (cm, server_params, message):
     results_dir = cm.create_results_dir(server_params)

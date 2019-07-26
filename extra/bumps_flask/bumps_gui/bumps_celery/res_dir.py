@@ -102,8 +102,10 @@ def run_local_bumps(message):
     print(f'"\n\nrun_local_bumps" params: {params}\n\n')
     try:
         system_args = sys.argv
+        s_out = sys.stdout
         sys.argv = params
         bumps.cli.main()
+        sys.stdout = s_out
     except Exception as e:
         print(f'"run_local_bumps" runtime error: {e}')
     finally:
