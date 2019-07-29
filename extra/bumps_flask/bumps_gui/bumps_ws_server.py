@@ -110,14 +110,9 @@ def run_fit_job (fit_job, server_params):
     try:
         sys.argv = fit_job.params
         try:
-            #print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} running, params: {fit_job.params}')
-            #print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} running')
-            #bumps.cli.main()
             bumps.cli.main()
         finally:
-            #rint_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} ended')
             server_params.queueJobEnded.put(fit_job)
-            #print_debug(f'"run_fit_job", process {os.getpid()}, fit job {fit_job.job_id} added to queueJobEnded')
     except Exception as e:
         print (f'Error in run_fit_job: {e}')
 #------------------------------------------------------------------------------
@@ -125,9 +120,6 @@ async def job_runner(server_params):
     while True:
         fit_job = server_params.queueRunJobs.get()
         try:
-            #print_debug(f"'job_runner', job id {fit_job.job_id}, status {name_of_status(fit_job.status)}")
-            #fit_job.prepare_params()
-            #fit_job.set_running(server_params.get_connection())
             run_fit_job (fit_job, server_params)
         except Exception as e:
             print(f'Error in job_runner: {e}')
@@ -146,11 +138,6 @@ def get_job_dir_zip_name(results_dir):
 #------------------------------------------------------------------------------
 def zip_job_results(job):
     job_dir, zip_name = get_job_dir_zip_name(job.client_message.results_dir)
-    #job_dir = os.path.abspath(os.path.join(job.client_message.results_dir, '..'))
-    #if job_dir[len(job_dir) - 1] == os.path.sep:
-        #job_dir = job_dir[0:len(job_dir) - 1]
-    #parts = job_dir.split(os.path.sep)
-    #zip_name = f'{parts[len(parts) - 1]}.zip'
     cur_dir = os.getcwd()
     if job_dir.find(cur_dir) == 0:
         zip_dir = '.' + job_dir[len(cur_dir):len(job_dir)]
@@ -171,8 +158,6 @@ async def job_finalizer(server_params):
                     job = server_params.listAllJobs[idx]
                     job.set_completed(server_params.get_connection())
                     zip_job_results(job)
-                    
-                    #print(f'\n\nJob {fit_job.job_id} ended, results at {fit_job.client_message.results_dir},\njob directory: "{job_dir}"\n\n')
                     server_params.listAllJobs[idx] = job
                 else:
                     print(f'job_finalizer, process {os.getpid()}, job {fit_job.job_id} not on list')
@@ -188,16 +173,11 @@ def job_ending_manager(server_params):
     asyncio.run(job_finalizer(server_params))
 #------------------------------------------------------------------------------
 from bumps_celery import tasks as celery_tasks
-from bumps_celery.celery import app as appCelery
-#------------------------------------------------------------------------------
-def _task_postrun(self, task, **kwargs):
-    try:
-        print('task post run')
-    except Exception as e:
-        print(f'_task_postrun runtime error: {e}')
+import zipfile
 #------------------------------------------------------------------------------
 def send_celery_fit (cm, results_dir, message):
     try:
+        cm.adjust_job_directory()
         tStart = datetime.datetime.now()
         res = celery_tasks.run_bumps.delay (message)
         dt = datetime.datetime.now() - tStart
@@ -208,14 +188,26 @@ def send_celery_fit (cm, results_dir, message):
             fit = str(res.get())
         else:
             fit = 'no results. timeout'
-        print_debug(fit)
+        if fit:
+            bin_content = bytes().fromhex(fit)
+            zip_name = f'{cm.job_dir}{os.sep}{cm.tag}.zip'
+            f = open(zip_name,'wb')
+            n_bytes = f.write(bin_content)
+            f.close()
+            with zipfile.ZipFile(zip_name, 'r') as zip_ref:
+                zip_ref.extractall(cm.job_dir)
+            print(f'{n_bytes} saved to zip {zip_name}')
     except Exception as e:
         print(f'{__file__},send_celery_fit runtime error: {e}')
 #------------------------------------------------------------------------------
 def HandleFitMessage (cm, server_params, message):
     results_dir = cm.create_results_dir(server_params)
-    cm.save_problem_file()
+    problem_file = cm.save_problem_file()
+    print(f'problem file saved to {problem_file}')
+    print(f'results directory: {results_dir}')
     fit_job = FitJob (cm)
+    print(f'fit job directory is: {fit_job.client_message.job_dir}')
+    print('\n\n\n')
     try:
         db_connection = server_params.database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)

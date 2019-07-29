@@ -74,10 +74,14 @@ def get_problem_file_name(work_dir, client_message):
 #------------------------------------------------------------------------------
 import zipfile
 def zipdir(path, ziph):
-    # ziph is zipfile handle
-    for root, dirs, files in os.walk(path):
-        for file in files:
-            ziph.write(os.path.join(root, file))
+    try:
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                #_zip = os.path.join(root, file)
+                ziph.write(os.path.join(root, file))
+                #ziph.write(_zip)
+    except Exception as e:
+        print(f'"zipdir" runtime error: {e}')
 #------------------------------------------------------------------------------
 import sys, bumps, os
 #------------------------------------------------------------------------------
@@ -91,6 +95,27 @@ def save_problem_file (client_message):
     f.write(client_message.problem_text)
     f.close()
 #------------------------------------------------------------------------------
+def zip_directory (zip_file_name, work_dir):
+#    zip_name = 'bumps_results.zip'
+    zip_file = zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_DEFLATED)
+    zipdir(work_dir, zip_file)
+    zip_file.close()
+#------------------------------------------------------------------------------
+import ntpath, tempfile
+#------------------------------------------------------------------------------
+def zip_results(client_message):
+    try:
+        zipname = f'{tempfile.gettempdir()}{os.sep}{ntpath.basename(client_message.job_dir)}.zip'
+        current_dir = os.getcwd()
+        os.chdir(client_message.job_dir)
+        zip_directory (zipname, f'.{os.sep}')
+    except Exception as e:
+        print (f'"zip_results" runtime error: {e}')
+        zipname = None
+    finally:
+        os.chdir(current_dir)
+    return zipname
+#------------------------------------------------------------------------------
 def run_local_bumps(message):
     client_message = message_parser.ClientMessage()
     host_ip = socket.gethostbyname(socket.gethostname())
@@ -99,18 +124,28 @@ def run_local_bumps(message):
     client_message.set_job_directory(work_dir)
     save_problem_file (client_message)
     params = client_message.prepare_bumps_params()
-    print(f'"\n\nrun_local_bumps" params: {params}\n\n')
+    print(f'"run_local_bumps" params: {params}')
+    print(f'""run_local_bumps" job directory: {client_message.job_dir}')
     try:
         system_args = sys.argv
         s_out = sys.stdout
         sys.argv = params
+        #
         bumps.cli.main()
+        #
         sys.stdout = s_out
+        zipname = zip_results(client_message)
+        print(f'results zipped to "{zipname}"')
+        f = open(zipname, 'rb')
+        bin_content = f.read()
+        f.close()
+        hex_result = bin_content.hex()
     except Exception as e:
         print(f'"run_local_bumps" runtime error: {e}')
+        hex_result = None
     finally:
         sys.argv = system_args
-    return params
+    return hex_result
 #------------------------------------------------------------------------------
 def run_local_bumps1(client_message):
     work_dir = get_work_dir(client_message.tag)

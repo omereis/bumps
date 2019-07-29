@@ -163,6 +163,17 @@ class ClientMessage:
             print(f'"ClientMessage.prepare_params", runtime error: {e}')
         return self.bumps_params
 #------------------------------------------------------------------------------
+    def adjust_job_directory(self):
+        base_dir = job_dir = self.job_dir
+        n = 1
+        while (os.path.exists(job_dir)):
+            job_dir = f'{base_dir}_{n}'
+            n += 1
+        os.makedirs(job_dir)
+        os.chmod(job_dir, 0o7777)
+        self.job_dir = job_dir
+        return job_dir
+#------------------------------------------------------------------------------
     def set_job_directory(self, work_dir):
         try:
             os.makedirs(work_dir)
