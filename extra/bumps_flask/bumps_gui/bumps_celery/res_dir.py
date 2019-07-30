@@ -139,6 +139,8 @@ def run_local_bumps(message):
         f = open(zipname, 'rb')
         bin_content = f.read()
         f.close()
+        os.remove(zipname)
+        shutil.rmtree(client_message.job_dir)
         hex_result = bin_content.hex()
     except Exception as e:
         print(f'"run_local_bumps" runtime error: {e}')

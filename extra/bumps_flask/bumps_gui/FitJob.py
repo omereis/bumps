@@ -1,9 +1,7 @@
 from enum import Enum
-import datetime
-import asyncio, sys
+import asyncio, sys, multiprocessing, datetime, os
 from bumps import cli
 from shutil import rmtree
-import os
 try:
     from .bumps_constants import *
     from .db_misc import get_next_job_id
@@ -14,6 +12,15 @@ except:
     from db_misc import get_next_job_id
     from message_parser import get_message_datetime_string
     from oe_debug import print_debug, print_stack
+#------------------------------------------------------------------------------
+def get_job_index(listJobs, celery_fit_job):
+    n=0
+    nFound = -1
+    while (n < len(listJobs)) and (nFound < 0):
+        job = listJobs[n]
+        if job.job_id == celery_fit_job.job_id:
+            nFound = n
+    return nFound
 #------------------------------------------------------------------------------
 class JobStatus (Enum):
     NoData    = 10
@@ -33,6 +40,10 @@ def name_of_status (status):
         strName= 'Parsed'
     elif status == JobStatus.StandBy:
         strName= 'StandBy'
+    elif status == JobStatus.Celery:
+        strName= 'Celery'
+    elif status == JobStatus.Celery:
+        strName= 'Celery'
     elif status == JobStatus.Running:
         strName= 'Running'
     elif status == JobStatus.Completed:
@@ -176,9 +187,15 @@ class FitJob:
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 class ServerParams():
-    queueJobEnded   = None
-    queueRunJobs    = None
-    listAllJobs     = None
+    queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
+    queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
+    listAllJobs = multiprocessing.Manager().list()
+    listCeleryJobs  = []
+    #queueJobEnded   = None
+    #queueRunJobs    = None
+    #listAllJobs     = None
+    #listCeleryJobs  = None
+
     db_connection   = None
     database_engine = None
     results_dir     = None
@@ -220,5 +237,13 @@ class ServerParams():
             self.listAllJobs[idx] = fit_job
         else:
             self.listAllJobs.append(fit_job)
+#------------------------------------------------------------------------------
+    def append_celery_job (self, celery_fit_job):
+        self.listCeleryJobs.append(celery_fit_job)
+#------------------------------------------------------------------------------
+    def delete_celery_job (self, celery_fit_job):
+        idx = get_job_index(self.listCeleryJobs, celery_fit_job)
+        if idx >= 0:
+            del self.listCeleryJobs[idx]
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------

@@ -175,9 +175,8 @@ def job_ending_manager(server_params):
 from bumps_celery import tasks as celery_tasks
 import zipfile
 #------------------------------------------------------------------------------
-def send_celery_fit (cm, results_dir, message):
+def send_celery_fit (fit_job, db_connection, message):
     try:
-        cm.adjust_job_directory()
         tStart = datetime.datetime.now()
         res = celery_tasks.run_bumps.delay (message)
         dt = datetime.datetime.now() - tStart
@@ -190,40 +189,57 @@ def send_celery_fit (cm, results_dir, message):
             fit = 'no results. timeout'
         if fit:
             bin_content = bytes().fromhex(fit)
-            zip_name = f'{cm.job_dir}{os.sep}{cm.tag}.zip'
+            zip_name = f'{fit_job.client_message.job_dir}{os.sep}{fit_job.client_message.tag}.zip'
             f = open(zip_name,'wb')
             n_bytes = f.write(bin_content)
             f.close()
             with zipfile.ZipFile(zip_name, 'r') as zip_ref:
-                zip_ref.extractall(cm.job_dir)
+                zip_ref.extractall(fit_job.client_message.job_dir)
             print(f'{n_bytes} saved to zip {zip_name}')
+            fit_job.set_completed(db_connection)
     except Exception as e:
         print(f'{__file__},send_celery_fit runtime error: {e}')
+#------------------------------------------------------------------------------
+import psutil
+#------------------------------------------------------------------------------
+def print_all_celery_procs ():
+    current_process_id = multiprocessing.current_process().pid
+    n = 1
+    for id in psutil.pids():
+        proc = psutil.Process(id)
+        if proc.ppid() == current_process_id:
+            print(f'process (name {proc.name}, id {proc.pid})')
 #------------------------------------------------------------------------------
 def HandleFitMessage (cm, server_params, message):
     results_dir = cm.create_results_dir(server_params)
     problem_file = cm.save_problem_file()
-    print(f'problem file saved to {problem_file}')
-    print(f'results directory: {results_dir}')
     fit_job = FitJob (cm)
-    print(f'fit job directory is: {fit_job.client_message.job_dir}')
-    print('\n\n\n')
     try:
         db_connection = server_params.database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
         if cm.multi_proc == 'celery':
             fit_job.set_celery(db_connection)
-            send_celery_fit (cm, results_dir, message)
+            pCelery = multiprocessing.Process(name='celery fitter', target=send_celery_fit, args=(fit_job, db_connection, message,))
+            server_params.append_celery_job(pCelery.pid)
+            print_all_celery_procs ()
+            pCelery.start()
         else:
             fit_job.set_standby(db_connection)
             server_params.append_job (fit_job)
             scan_jobs_list (server_params)
+            print(f'\nSent job {fit_job.job_id} localy')
     except Exception as e:
         print (f'bumps_ws_server.py, HandleFitMessage, bug: {e}')
         job_id = 0
     finally:
         db_connection.close()
     return job_id
+#------------------------------------------------------------------------------
+def celery_cleanup(server_params):
+    for process in server_params.listCeleryJobs:
+        if not process.is_alive():
+            process.terminate()
+            server_params.delete_celery_job(process)
 #------------------------------------------------------------------------------
 def get_orred_ids (params):
     astrWhere = []
@@ -260,9 +276,31 @@ async def HandleDelete (cm, server_params):
         if db_connection:
             db_connection.close()
     return return_params
- #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+def get_db_jobs_by_tag (job_tag, database_engine):
+    try:
+        connection = database_engine.connect()
+        lstRows = []
+        sql = f'SELECT job_id,status_time,status_name FROM t_jobs_status, \
+                (SELECT job_id AS "id",MAX(status_time) AS "latest_status_time" FROM t_jobs_status GROUP BY id) AS t\
+                WHERE (job_id = id) AND (status_time = latest_status_time) and \
+                job_id in (select job_id from t_bumps_jobs where tag="{job_tag}");'
+        res = connection.execute(sql)
+        for row in res:
+            lstRows.append([row[0],row[1],row[2]])
+    except Exception as e:
+        print(f'"get_db_jobs_by_tag" runtime error: {e}')
+    finally:
+        connection.close()
+    return lstRows
+#------------------------------------------------------------------------------
 async def HandleStatus (cm, server_params):
     return_params = []
+    listJobs = get_db_jobs_by_tag (cm.tag, server_params.database_engine)
+    for job in listJobs:
+        item = {'job_id': job[0], 'job_status': job[2],'status_time': str(job[1])}
+        return_params.append(item)
+    return return_params
     for job in server_params.listAllJobs:
         if job.get_tag() == cm.tag:
             if job.job_id == None:
@@ -400,6 +438,7 @@ def set_server_params(database_engine, flask_dir):
     server_params.queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
     server_params.queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
     server_params.listAllJobs = multiprocessing.Manager().list()
+
     server_params.flask_dir = flask_dir
     server_params.results_dir = flask_dir + 'static/'
 

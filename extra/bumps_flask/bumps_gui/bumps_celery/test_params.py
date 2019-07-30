@@ -1,7 +1,7 @@
 try:
-    from .res_dir import run_bumps
+    from .res_dir import run_bumps, zip_directory
 except:
-    from bumps_celery.res_dir import run_bumps
+    from bumps_celery.res_dir import zip_directory
 import sys
 #------------------------------------------------------------------------------
 class ClientMessage:
@@ -19,8 +19,17 @@ class ClientMessage:
     multi_proc   = None
     local_id     = None
 #------------------------------------------------------------------------------
-import zipfile, shutil, os
-if __name__ == '__main__':
+import os
+#------------------------------------------------------------------------------
+def main():
+    print(f'current directory: {os.getcwd()}')
+    current_dir = os.getcwd()
+    os.chdir('./jkjk')
+    zip_directory (f'..{os.sep}jkjk.zip', f'.{os.sep}')
+    os.chdir(current_dir)
+    exit(0)
+#------------------------------------------------------------------------------
+def main1():
     client_message = ClientMessage()
     if len(sys.argv) >= 2:
         client_message.tag = sys.argv[1]
@@ -40,3 +49,7 @@ if __name__ == '__main__':
     else:
         print(f'Usage:')
         print(f'python {__file__} <tag> <problem_file>')
+#------------------------------------------------------------------------------
+import zipfile, shutil, os
+if __name__ == '__main__':
+    main()

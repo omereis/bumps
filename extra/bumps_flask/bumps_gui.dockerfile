@@ -34,6 +34,9 @@ RUN pip install flask flask_redis flask_jwt_extended flask_restful flask_wtf
 RUN pip install celery readchar
 RUN pip install websocket websocket-client
 
+#required for psutil
+RUN apt install -y python3.7-dev build-essential
+RUN pip install psutil
 # RUN pip install celery
 
 # Set the environment variables for Flask
