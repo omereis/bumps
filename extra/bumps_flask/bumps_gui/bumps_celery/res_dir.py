@@ -1,4 +1,4 @@
-import os, sys, socket
+import os, sys, socket, shutil
 # Add parent to path
 sys.path.append(os.path.abspath(os.path.join('.', os.pardir)))
 # import message parser from parent
