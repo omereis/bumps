@@ -628,7 +628,8 @@ function sendPrintStatus() {
     var message = getMessageStart();
 
     message['command'] = ServerCommands.PRINT_STATUS;
-    sendMessage (JSON.stringify(message));
+    sendMesssageThroughFlask (message);
+    //sendMessage (JSON.stringify(message));
 }
 //-----------------------------------------------------------------------------
 function onResultsStatusClick () {
