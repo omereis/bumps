@@ -219,17 +219,6 @@ class ClientMessage:
         self.problem_file_name = problem_file_name
         return problem_file_name
 #------------------------------------------------------------------------------
-    def save_problem_file1 (self):
-        if not(self.results_dir):
-            self.results_dir = self.create_results_dir()
-        problem_file_name = self.results_dir + "/" + self.get_problem_file_name ()
-        print ("Results file: {}".format(problem_file_name))
-        file = open(problem_file_name, "w+")
-        file.write(self.problem_text)
-        file.close()
-        self.problem_file_name = problem_file_name
-        return problem_file_name
-#------------------------------------------------------------------------------
     def get_param_by_key(self, key, def_val):
         n = None
         try:

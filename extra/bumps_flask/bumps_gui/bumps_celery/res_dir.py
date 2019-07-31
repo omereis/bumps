@@ -124,18 +124,19 @@ def run_local_bumps(message):
     client_message.set_job_directory(work_dir)
     save_problem_file (client_message)
     params = client_message.prepare_bumps_params()
-    print(f'"run_local_bumps" params: {params}')
-    print(f'""run_local_bumps" job directory: {client_message.job_dir}')
+    #print(f'"run_local_bumps" params: {params}')
+    #print(f'""run_local_bumps" job directory: {client_message.job_dir}')
     try:
         system_args = sys.argv
         s_out = sys.stdout
         sys.argv = params
         #
+        #print(f'\nrun_local_bumps, params: {params}\n')
         bumps.cli.main()
         #
         sys.stdout = s_out
         zipname = zip_results(client_message)
-        print(f'results zipped to "{zipname}"')
+        #print(f'results zipped to "{zipname}"')
         f = open(zipname, 'rb')
         bin_content = f.read()
         f.close()

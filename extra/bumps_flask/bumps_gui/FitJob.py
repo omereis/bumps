@@ -187,14 +187,10 @@ class FitJob:
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 class ServerParams():
-    queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
-    queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
-    listAllJobs = multiprocessing.Manager().list()
-    listCeleryJobs  = []
-    #queueJobEnded   = None
-    #queueRunJobs    = None
-    #listAllJobs     = None
-    #listCeleryJobs  = None
+    queueJobEnded   = None
+    queueRunJobs    = None
+    listAllJobs     = None
+    listCeleryJobs  = None
 
     db_connection   = None
     database_engine = None
