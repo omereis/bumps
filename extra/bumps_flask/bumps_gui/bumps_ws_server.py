@@ -88,6 +88,12 @@ def print_jobs(listJobs, title=''):
     except Exception as e:
         print(f'Error in print_job: "{e}"')
 #------------------------------------------------------------------------------
+def print_celery_jobs(listCeleryJobs):
+    print('Celery jobs')
+    print('-----------')
+    for job in listCeleryJobs:
+        print(f'{job}')
+#------------------------------------------------------------------------------
 def scan_jobs_list (server_params):
     try:
         n_cpus = multiprocessing.cpu_count()
@@ -214,7 +220,10 @@ def HandleFitMessage (cm, server_params, message):
         job_id = fit_job.save_message_to_db (cm, db_connection)
         if cm.multi_proc == 'celery':
             fit_job.set_celery(db_connection)
-            send_celery_fit (fit_job, server_params, message)
+            #send_celery_fit (fit_job, server_params, message)
+            pCelery = multiprocessing.Process(name='celery fit', target=send_celery_fit, args=(fit_job, server_params, message,))
+            pCelery.start()
+            server_params.append_celery_job(pCelery)
         else:
             fit_job.set_standby(db_connection)
             server_params.append_job (fit_job)
@@ -360,6 +369,7 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = asyncio.run(HandleStatus (cm, server_params))
             elif  cm.command == MessageCommand.PrintStatus:
                 print_jobs(server_params.listAllJobs, title='current_status')
+                print_celery_jobs(server_params.listCeleryJobs)
             elif cm.command == MessageCommand.GetResults:
                 return_params = get_results (cm, server_params)
             elif cm.command == MessageCommand.GetDbStatus:
