@@ -150,24 +150,3 @@ def run_local_bumps(message):
         sys.argv = system_args
     return hex_result
 #------------------------------------------------------------------------------
-def run_local_bumps1(client_message):
-    work_dir = get_work_dir(client_message.tag)
-    if work_dir:
-        os.makedirs(work_dir)
-        fname = f'{work_dir}{os.sep}{get_problem_file_name(work_dir, client_message)}'
-        f = open(fname, 'w')
-        f.write(client_message.problem_text)
-        f.close()
-        zip_name = 'bumps_results.zip'
-        zip_file = zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED)
-        zipdir(work_dir, zip_file)
-        zip_file.close()
-        f = open(zip_name, 'rb')
-        resuts = f.read()
-        f.close()
-        shutil.rmtree(work_dir)
-        #sleep (3)
-    else:
-        resuts = None
-    return resuts
-#------------------------------------------------------------------------------
