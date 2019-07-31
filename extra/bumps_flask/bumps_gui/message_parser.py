@@ -8,16 +8,6 @@ except:
     from oe_debug import print_debug
     from misc import get_results_dir
 
-#base_results_dir = '/tmp/bumps_results/'
-#------------------------------------------------------------------------------
-#class MessageCommand (Enum):
-#    Error    = -1
-#    StartFit = 1
-#    Status   = 2
-#    Delete   = 3
-#    GetData  = 4
-#    PrintStatus = 5
-#    GetResults  = 6
 #------------------------------------------------------------------------------
 MessageTag         = 'tag'
 MessageTime        = 'message_time'
@@ -88,7 +78,6 @@ class ClientMessage:
     multi_proc   = None
     local_id     = None
 #------------------------------------------------------------------------------
-    #def parse_message(self, host_ip, message, server_params):
     def parse_message(self, host_ip, message, results_dir):
         try:
             parse = False
@@ -104,12 +93,11 @@ class ClientMessage:
                 self.problem_text = getMessageField (message, MessageFitProblem)
                 self.params       = getMessageField (message, MessageParams)
                 self.local_id     = getMessageField (message, MessageClientID)
-                #self.row_id       = getMessageField (message, MessageClientID)
                 self.multi_proc   = getMessageField (message, MessageMultiProc)
                 self.job_dir      = self.compose_job_directory_name (results_dir) # just get the name, does not create directory
                 parse = True
         except Exception as e:
-            print('message_parser.py, parse_message: {}'.format(e))
+            print('message_parser.py, parse_message: {e}')
             parse = False
         return parse
 #------------------------------------------------------------------------------
@@ -117,13 +105,10 @@ class ClientMessage:
         try:
             if results_dir == None:
                 results_dir = f'.{os.sep}bumps_fit'
-                print(f'message_parser.py, parse_message, base_results_dir: {results_dir}')
-            #base_results_dir = get_results_dir()
-            #base_results_dir = server_params.results_dir
             base_results_dir = results_dir
             tmp_dir = results_dir = base_results_dir + self.host_ip + "/" + self.tag
         except Exception as e:
-            print('message_parser.py, parse_message: {}'.format(e))
+            print(f'message_parser.py, parse_message: {e}')
             tmp_dir = results_dir = base_results_dir + '/results'
             print(f'using temporary directory: {tmp_dir}')
         n = 1
