@@ -7,7 +7,6 @@ try:
 except:
     from oe_debug import print_debug
     from misc import get_results_dir
-
 #------------------------------------------------------------------------------
 MessageTag         = 'tag'
 MessageTime        = 'message_time'
@@ -221,7 +220,12 @@ class ClientMessage:
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 def get_message_datetime_string (message_time):
-    datetime_str = '{}-{}-{} {}:{}:{}.{}'.format(message_time['year'], message_time['month'], message_time['date'],\
-                                    message_time['hour'], message_time['minutes'], message_time['seconds'], message_time['milliseconds'])
-    return datetime_str
+    try:
+        strDate = f'{message_time["year"]}-{message_time["month"]}-{message_time["date"]}'
+        strTime = f'{message_time["hour"]}:{message_time["minutes"]}:{message_time["seconds"]}.{message_time["milliseconds"]}'
+        strDateTime = f'{strDate} {strTime}'
+    except Exception as e:
+        print(f'"get_message_datetime_string" runtime error: {e}')
+        strDateTime= ''
+    return strDateTime
 #------------------------------------------------------------------------------
