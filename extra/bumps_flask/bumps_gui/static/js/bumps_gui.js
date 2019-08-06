@@ -208,7 +208,7 @@ function upload_problem_file() {
     var fname = null;
 
     try {
-        fname = $('#problemFile').val();
+        fname = document.getElementById('problemFile').files[0].name;//$('#problemFile').val();
     }
     catch {
         fname = 'problem.py';
