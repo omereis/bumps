@@ -131,7 +131,6 @@ async def job_runner(server_params):
             print(f'Error in job_runner: {e}')
 #------------------------------------------------------------------------------
 def jobs_runner_process(server_params):
-    print(f'"jobs_q_manager", started process with id {os.getpid()}, number of jobs: {len(server_params.listAllJobs)}')
     asyncio.run(job_runner(server_params))
 #------------------------------------------------------------------------------
 def get_job_dir_zip_name(results_dir):
@@ -175,7 +174,6 @@ async def job_finalizer(server_params):
                 #db_connection.close()
 #------------------------------------------------------------------------------
 def job_ending_manager(server_params):
-    print(f'"job_ending_manager", started process with id {os.getpid()}, length(listJobs): {len(server_params.listAllJobs)}')
     asyncio.run(job_finalizer(server_params))
 #------------------------------------------------------------------------------
 from bumps_celery import tasks as celery_tasks
@@ -201,7 +199,6 @@ def send_celery_fit (fit_job, server_params, message):
             f.close()
             with zipfile.ZipFile(zip_name, 'r') as zip_ref:
                 zip_ref.extractall(fit_job.client_message.job_dir)
-            #print(f'\n\n{n_bytes} saved to zip {zip_name}\n\n')
             db_connection = server_params.database_engine.connect()
             fit_job.set_completed(db_connection)
             db_connection.close()
@@ -209,18 +206,14 @@ def send_celery_fit (fit_job, server_params, message):
         print(f'{__file__},send_celery_fit runtime error: {e}')
 #------------------------------------------------------------------------------
 def HandleFitMessage (cm, server_params, message):
-    results_dir = cm.create_results_dir(server_params)
-    problem_file = cm.save_problem_file()
-    #print(f'problem file saved to {problem_file}')
-    #print(f'results directory: {results_dir}')
+    cm.create_results_dir(server_params)
+    cm.save_problem_file()
     fit_job = FitJob (cm)
-    #print(f'fit job directory is: {fit_job.client_message.job_dir}')
     try:
         db_connection = server_params.database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
         if cm.multi_proc == 'celery':
             fit_job.set_celery(db_connection)
-            #send_celery_fit (fit_job, server_params, message)
             pCelery = multiprocessing.Process(name='celery fit', target=send_celery_fit, args=(fit_job, server_params, message,))
             pCelery.start()
             server_params.append_celery_job(pCelery)
@@ -291,10 +284,8 @@ async def HandleStatus (cm, server_params):
     return return_params
 #------------------------------------------------------------------------------
 def get_results (cm, server_params):
-    print(f'getting results for job {cm.params}')
     try:
         results_dir = results_dir_for_job (server_params.database_engine, cm.params)
-        print(f'results_dir for job {cm.params}')
         flask_dir = server_params.flask_dir
         final_dir = results_dir[len(flask_dir) - 1 : ]
         files_list = os.listdir(results_dir)
@@ -306,7 +297,6 @@ def get_results (cm, server_params):
         print(f'Error in "get_results": {e}')
         files = {e}
     return_params = {'id': cm.params, 'files' : files}
-    print(f'\n===return_params:\n{return_params}\n===')
     return return_params
 #------------------------------------------------------------------------------
 def get_db_status (cm, server_params):
@@ -321,7 +311,6 @@ def get_db_status (cm, server_params):
         for row in results:
             item = {'job_id': str(row[0]), 'status time': row[1].strftime(fmt), 'status': row[2]}
             params.append(item)
-    print(f'parameters:\n{params}')
     return params
 #------------------------------------------------------------------------------
 def get_job_data (cm, server_params):
@@ -442,7 +431,6 @@ def ws_server_main(serverHost='0.0.0.0', serverPort='4567', flask_dir='/home/app
     finally:
         if connection:
             connection.close()
-            print("Database connection closed")
         else:
             print("Fatal error. Aborting :-(")
             exit(1)
