@@ -3,8 +3,10 @@ from celery import Celery
 from celery.signals import task_postrun
 
 app = Celery('bumps_celery',
-             broker='amqp://rabbit-server',
-             backend='redis://redis-server',
+             #broker='amqp://rabbit-server',
+             #backend='redis://redis-server',
+             broker='amqp://bumps:bumps@ncnr-r9nano.campus.nist.gov',
+             backend='redis://ncnr-r9nano.campus.nist.gov',
              include=['bumps_celery.tasks'])
 
 def celery_post_run(task, **kwargs):
