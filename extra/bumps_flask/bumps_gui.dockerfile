@@ -13,6 +13,7 @@ ENV HOME=/home/bumps_user/bumps_flask/bumps_gui
 # Set the directory for relative file paths
 WORKDIR /home/bumps_user/bumps_flask/bumps_gui
 
+RUN apt-get install -y iputils-ping
 # RUN apt install -y python3.7
 RUN apt install -y software-properties-common
 RUN add-apt-repository -y ppa:deadsnakes/ppa
@@ -42,9 +43,6 @@ RUN pip install psutil
 # Set the environment variables for Flask
 ENV WEBSOCKET_PORT=4567
 ENV BUMPS_MP_PORT=4567
-
-ENV CELERY_RESULT_BACKEND='amqp'
-ENV BROKER_URL='amqp://guest@rabbit.local//'
 
 # Copy app files to the container
 COPY ./ /home/bumps_user/bumps_flask
