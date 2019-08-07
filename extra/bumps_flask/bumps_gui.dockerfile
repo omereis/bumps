@@ -18,9 +18,14 @@ RUN apt install -y software-properties-common
 RUN add-apt-repository -y ppa:deadsnakes/ppa
 RUN apt install -y python3.7
 RUN ln -s /usr/bin/python3.7 /usr/bin/python
-COPY get-pip.py /tmp
+# RUN apt install -y systemd
+RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
+RUN apt-get install -y tzdata
+RUN dpkg-reconfigure --frontend noninteractive tzdata
 RUN apt install -y python3-distutils
+COPY get-pip.py /tmp
 RUN python /tmp/get-pip.py
+RUN rm -rf /tmp/*
 
 #RUN pip install git+https://github.com/omereis/bumps.git
 
@@ -55,14 +60,4 @@ COPY ./vimrc /etc/vim/vimrc
 #ENTRYPOINT ["celery","-A","bumps_celery","worker","-l" "info","-E"]
  
 # Launch the app
-# ENTRYPOINT ["python"]
-
-# RUN ls -l *py
-# RUN python start_cel.py
-# CMD ["python","start_cel.py"]
-CMD ["python", "app_bumps.py", "-s 0.0.0.0", "-p 4000", "-m 4567"]
-# RUN ps aux  
-# ENTRYPOINT ["python", "app_bumps.py", "-s 0.0.0.0", "-p 4000", "-m 4567"]
-# CMD ["./gui__celery_run.sh"]
-# ENTRYPOINT  ["python","-m","celery","-A","bumps_celery","worker","-l" "info","-E"]
-# CMD  ["python","-m","celery","-A","bumps_celery","worker","-l" "info","-E"]
+# CMD ["python","start_all.py"]
