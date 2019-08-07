@@ -1,6 +1,5 @@
 # Using the latest long-term-support Ubuntu OS
 FROM ubuntu:18.04
-
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y man vim git tree
 
@@ -44,9 +43,26 @@ RUN pip install psutil
 ENV WEBSOCKET_PORT=4567
 ENV BUMPS_MP_PORT=4567
 
+# ENV CELERY_RESULT_BACKEND='amqp'
+# ENV BROKER_URL='amqp://guest@rabbit.local//'
+
 # Copy app files to the container
 COPY ./ /home/bumps_user/bumps_flask
 COPY ./vimrc /etc/vim/vimrc
 
+#RUN celery -A bumps_celery worker -l info -E
+# RUN pwd
+#ENTRYPOINT ["celery","-A","bumps_celery","worker","-l" "info","-E"]
+ 
 # Launch the app
-# CMD ["python", "app_bumps.py", "-s 0.0.0.0", "-p 4000", "-m 4567"]
+# ENTRYPOINT ["python"]
+
+# RUN ls -l *py
+# RUN python start_cel.py
+# CMD ["python","start_cel.py"]
+CMD ["python", "app_bumps.py", "-s 0.0.0.0", "-p 4000", "-m 4567"]
+# RUN ps aux  
+# ENTRYPOINT ["python", "app_bumps.py", "-s 0.0.0.0", "-p 4000", "-m 4567"]
+# CMD ["./gui__celery_run.sh"]
+# ENTRYPOINT  ["python","-m","celery","-A","bumps_celery","worker","-l" "info","-E"]
+# CMD  ["python","-m","celery","-A","bumps_celery","worker","-l" "info","-E"]
