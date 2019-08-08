@@ -50,16 +50,6 @@ class MessageParams:
     command      = 'send'
     valid_commands = ('send','local', 'status','data', 'server', 'tags', 'delete', 'help')
 #------------------------------------------------------------------------------
-#    def __init__(self):
-#        try:
-#            r = RandomWords()
-#            self.tag = r.get_random_word()
-#        except Exception as e:
-#            print(f'MessageParams constructor runtime error: {e}')
-#        finally:
-#            if self.tag == None:
-#                self.tag = 'default_tag'
-#------------------------------------------------------------------------------
     def set_algorithm (self, alg_abrv):
         allowed_abvr = ["lm", "newton", "de", "dream", "amoeba", "pt", "ps", "rl"]
         if alg_abrv.lower() in allowed_abvr:
