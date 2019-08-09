@@ -251,7 +251,7 @@ def remove_from_list_by_id (listJobs, strlstIDs, db_connection):
     except Exception as e:
         print ('bumps_ws_server.py, remove_from_list_by_id, bug: {}'.format(e))
 #------------------------------------------------------------------------------
-async def HandleDelete (cm, server_params):
+def HandleDelete (cm, server_params):
     return_params = cm.params
     db_connection = None
     try:
@@ -264,14 +264,23 @@ async def HandleDelete (cm, server_params):
             db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
+def remove_double_blanks(s):
+    pos = s.find('  ')
+    while pos >= 0:
+        s = s.replace('  ',' ')
+        pos = s.find('  ')
+    return s
+#------------------------------------------------------------------------------
 async def HandleStatus (cm, server_params):
     return_params = []
     try:
         db_connection = server_params.database_engine.connect()
-        sql = f'SELECT job_id,status_time,status_name FROM t_jobs_status, \
+        s = f'SELECT job_id,status_time,status_name FROM t_jobs_status, \
 	        (SELECT job_id AS "id",MAX(status_time) AS "latest_status_time" FROM t_jobs_status GROUP BY id) AS t \
 	        WHERE (job_id = id) AND (status_time = latest_status_time) \
 	        AND job_id IN (SELECT job_id FROM t_bumps_jobs WHERE tag="{cm.tag}");'
+        sql = remove_double_blanks (s)
+        print(f'sql:\n{sql}')
         res = db_connection.execute(sql)
         for row in res:
             item = {'job_id': row[0], 'job_status': row[2], 'job_time' : str(row[1])}
@@ -353,7 +362,8 @@ def handle_incoming_message (websocket, message, server_params):
                 if job_id:
                     return_params[str(cm.local_id)] = job_id
             elif cm.command == MessageCommand.Delete:
-                return_params = asyncio.run(HandleDelete (cm, server_params))
+                #return_params = asyncio.run(HandleDelete (cm, server_params))
+                return_params = HandleDelete (cm, server_params)
             elif cm.command == MessageCommand.Status:
                 return_params = asyncio.run(HandleStatus (cm, server_params))
             elif  cm.command == MessageCommand.PrintStatus:
@@ -398,9 +408,10 @@ async def bumps_server(websocket, path, server_params):
     reply_message['params'] = return_params
     await websocket.send(str(reply_message))
 #------------------------------------------------------------------------------
-def print_intro():
+def print_intro(serverHost, serverPort):
     print('Welcome to bumps WebSocket server')
-    print('Port: {}'.format(port))
+    print(f'Host: {serverHost}')
+    print(f'Port: {serverPort}')
     print(f'Results directory: "{get_results_dir()}"')
     print(f'Current directory: "{os.getcwd()}"')
 #------------------------------------------------------------------------------
@@ -416,7 +427,7 @@ def set_server_params(database_engine, flask_dir):
     return server_params
 #------------------------------------------------------------------------------
 def ws_server_main(serverHost='0.0.0.0', serverPort='4567', flask_dir='/home/app_user/bumps_flask/bumps_flask'):
-    print_intro()
+    print_intro(serverHost, serverPort)
     try:
         connection = None
         if flask_dir[len(flask_dir) - 1] != '/':
