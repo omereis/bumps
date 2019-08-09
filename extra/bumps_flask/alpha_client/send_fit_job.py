@@ -319,12 +319,12 @@ def show_sent_jobs(local_ids):
     finally:
         conn.close()
 #------------------------------------------------------------------------------
-def send_fit_job (message_params):
-    remote_address = message_params.get_remote_address()
+def send_fit_job (message_params, ws, remote_address):
     local_ids = []
     try:
         for n in range(len(message_params.files_names)):
-            ws = websocket.create_connection(remote_address)
+            if not ws.connected:
+                ws.connect(remote_address)
             message = compose_fit_message(message_params, n)
             save_local_message(message)
             ws.send(str(message))
@@ -337,6 +337,9 @@ def send_fit_job (message_params):
         show_sent_jobs(local_ids)
     except Exception as e:
         print(f'"send_fit_job" runtime error: {e}')
+    finally:
+        if ws.connected:
+            ws.close()
 #------------------------------------------------------------------------------
 def show_local_jobs():
     print('local command')
@@ -407,7 +410,7 @@ def item_from_row(row, fmt):
     item.append(list(row.values())[2])
     return item
 #------------------------------------------------------------------------------
-def show_jobs_on_server(message_params):
+def show_jobs_on_server(message_params, ws, remote_address):
     results = []
     try:
         message = create_query_server_message(message_params)
@@ -437,7 +440,7 @@ def save_results(key, hex_value):
     f.close()
     return zip_name
 #------------------------------------------------------------------------------
-def get_jobs_server_data(message_params):
+def get_jobs_server_data(message_params, ws, remote_address):
     if message_params.tag == None:
         print(f'Missing Tag. Required argument for this command')
         exit(0)
@@ -445,43 +448,49 @@ def get_jobs_server_data(message_params):
         message = create_message_header(message_params)
         message['command'] = 'get_data'
         message['tag']    = message_params.tag
-        ws = websocket.create_connection(message_params.get_remote_address())
+        #ws = websocket.create_connection(message_params.get_remote_address())
         ws.send(str(message))
         server_results = ws.recv()
         server_results = server_results.replace("'",'"')
         json_results = json.loads(server_results)
         params = json_results['params']
-        if True:#params.lower() != 'none':
+        if type(params) is str and params.lower() == 'none':
+            print(f'No data found for tag "{message_params.tag}"')
+        else:
             for n in range(len(params)):
                 item = params[n]
                 for key in item.keys():
                     zip_name = save_results(key, item[key])
                     print(f'results file {zip_name} written')
-        else:
-            print(f'No data found for tag "{message_params.tag}"')
     except Exception as e:
         print(f'"get_jobs_server_data" runtime error: {e}')
-    finally:
-        ws.close()
+    #finally:
+        #ws.close()
 #------------------------------------------------------------------------------
-def get_server_tags(message_params):
+def get_server_tags(message_params, ws, remote_address):
     try:
         message = create_message_header(message_params)
         message['command'] = 'get_tags'
-        ws = websocket.create_connection(message_params.get_remote_address())
-        ws.send(str(message))
-        server_results = ws.recv()
-        server_results = server_results.replace("'",'"')
-        json_results = json.loads(server_results)
-        tags = json_results['params']
-        for tag in tags:
-            print(f'{tag}')
+        try:
+            ws = websocket.create_connection(message_params.get_remote_address())
+        except:
+            print(f'Could not create connection to {message_params.get_remote_address()}')
+            ws = None
+        if ws:
+            ws.send(str(message))
+            server_results = ws.recv()
+            server_results = server_results.replace("'",'"')
+            json_results = json.loads(server_results)
+            tags = json_results['params']
+            for tag in tags:
+                print(f'{tag}')
     except Exception as e:
         print(f'"get_server_tags" runtime error: {e}')
     finally:
-        ws.close()
+        if ws:
+            ws.close()
 #------------------------------------------------------------------------------
-def delete_server_jobs(message_params):
+def delete_server_jobs(message_params, ws, remote_address):
     global tbl_sent_jobs, fld_server
     try:
         message = create_message_header(message_params)
@@ -509,9 +518,10 @@ def compose_status_message(message_params):
     message['command'] = 'GetStatus'
     return message
 #------------------------------------------------------------------------------
-def show_jobs_status(message_params):
+def show_jobs_status(message_params, ws, remote_address):
     try:
         tags=[]
+        #ws = websocket.create_connection(remote_address)
         server_job_status = []
         remote_address = message_params.get_remote_address()
         message = compose_status_message(message_params)
@@ -520,17 +530,19 @@ def show_jobs_status(message_params):
         else:
             tags = load_tags_from_db ()
         for tag in tags:
-            ws = websocket.create_connection(remote_address)
+            #ws = websocket.create_connection(remote_address)
+            if not ws.connected:
+                ws.connect(remote_address)
             message['tag'] = tag
             ws.send(str(message))
             results = ws.recv()
-            print(f'reply received: {results}')
+            #print(f'reply received: {results}')
             ws.close()
             reply_msg = json.loads(results.replace("'",'"'))
             params = reply_msg['params']
             for p in params:
                 server_job_status.append(p)
-            print('connection closed')
+            #print('connection closed')
     except Exception as e:
         print(f'"show_jobs_status", runtime error: {e}')
     finally:
@@ -538,8 +550,12 @@ def show_jobs_status(message_params):
             update_jobs_server_status (params)
         else:
             print('no status retrieved')
+        status_list = []
         for x in server_job_status:
-            print(f"{x['job_id']}: {x['job_status']}")
+            if type(x) is dict:
+                status_list.append([x['job_id'],x['job_status'],x['job_time']])
+                #print(f"{x['job_id']}: {x['job_status']}")
+        print(tabulate.tabulate(status_list, headers=['Job ID', 'status','since'], tablefmt='orgtbl'))
 #------------------------------------------------------------------------------
 def main():
 # 1. get parameters: server, instruction, problem files
@@ -553,20 +569,30 @@ def main():
             print('Problem with parameters. Aborting')
             exit(0)
     sys.stdout.flush()
-    if message_params.is_send_command():
-        send_fit_job (message_params)
-    elif message_params.is_local_command():
-        show_local_jobs()
-    elif message_params.is_status_command():
-        show_jobs_status(message_params)
-    elif message_params.is_server_command():
-        show_jobs_on_server(message_params)
-    elif message_params.is_data_command():
-        get_jobs_server_data(message_params)
-    elif message_params.is_tag_command():
-        get_server_tags(message_params)
-    elif message_params.is_delete_command():
-        delete_server_jobs(message_params)
+    remote_address = message_params.get_remote_address()
+    try:
+        ws = websocket.create_connection(remote_address)
+    except:
+        ws = None
+    if ws:
+        if message_params.is_send_command():
+            send_fit_job (message_params, ws, remote_address)
+        elif message_params.is_local_command():
+            show_local_jobs()
+        elif message_params.is_status_command():
+            show_jobs_status(message_params, ws, remote_address)
+        elif message_params.is_server_command():
+            show_jobs_on_server(message_params, ws, remote_address)
+        elif message_params.is_data_command():
+            get_jobs_server_data(message_params, ws, remote_address)
+        elif message_params.is_tag_command():
+            get_server_tags(message_params, ws, remote_address)
+        elif message_params.is_delete_command():
+            delete_server_jobs(message_params, ws, remote_address)
+        if ws.connected:
+            ws.close()
+    else:
+        print(f'Could not connect to {remote_address}')
     exit(0)
 #------------------------------------------------------------------------------
 if __name__ == '__main__':
