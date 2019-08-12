@@ -49,42 +49,6 @@ def is_help_params(sys_argv):
             return True
     return False
 #------------------------------------------------------------------------------
-def print_usage2():
-    print(f'Usage\n\
-        python {__file__} [options] --params <parameters file> problem_file[,problem_file,...]\n\
-        parameters file is a JSON format, that should include the following fields.\n\
-        Note that all fields must be enclose in double quotes, such as "field": "value"\n\
-            server  Fitter server name or ip.\n\
-                    default: localhost\n\
-            port    Fitter port used for the websocket service\n\
-                    default: 4567\n\
-            options\n\
-                -h | --help |-?     print this message\n\
-                -v                  print parsed parameters, and request approval\n\
-            command Fitter  case sensitive command. Can be only one of the following:\n\
-                StartFit    Start fit\n\
-                GetStatus   Return status for job, identified by the message tag.\n\
-                Delete      Delete results a database record for jobs identified by id, in params field\n\
-                get_data    Retrieve file names (URLs) for the files resulted from the fitting algorithm.\n\
-                            Note that one of the files is an archive (zip) that encapsulate all the results files.\n\
-                print_status    print jobs status on server console. Used mainly during development.\n\
-            params:         parameters field. In case of StartFit command, this field should include the following dict:\n\
-                algorithm   fitting algorithm. Possible options include:\n\
-                    "lm"     (Levenberg Marquardt)\n\
-                    newton"  (Quasi-Newton BFGS)\n\
-                    "de"     (Differential Evolution)\n\
-                    "dream"  (DREAM)\n\
-                    "amoeba" (Nelder-Mead Simplex)\n\
-                    "pt"     (Parallel Tempering)\n\
-                    "ps"     (Particle Swarm)\n\
-                    "rl"     (Random Lines)\n\
-                steps       number of steps\n\
-                burns       number of burns\n\
-            multi_processing    may by "none", "celery" or "slurm"\n\
-            local_id        some client generated id that uniqueuely identifies the job for the client.\n\
-                            The server returns uniqueue database id, for each job.\n\
-                            The client should bind the database id to the local id\n')
-#------------------------------------------------------------------------------
 def print_usage():
     src_filename = __file__
     src_filename.replace('.','')
@@ -131,6 +95,10 @@ def print_usage():
         ------------\n\
         --burn         number of burn-in iterations before accumulating stats\n\
         --view      display the parsed message\n\
+        -------------\n\
+        --multi     Multiprocessing\n\
+          default   none\n\
+          "celery"  Use Celery queue management\n\
         ')
 #------------------------------------------------------------------------------
 def params_from_command_line():
@@ -139,7 +107,7 @@ def params_from_command_line():
     if not message_params.is_help:
         try:
             options, remainder = getopt.getopt(sys.argv[1:],
-                's:p:a:t:c:yh?',
+                's:p:a:t:m:c:yh?',
                 ['server=',
                     'host=',
                     'port=',
@@ -147,6 +115,7 @@ def params_from_command_line():
                     'steps=',
                     'burn=',
                     'command=',
+                    'multi=',
                     'algorithm='])
         except getopt.GetoptError as err:
             print(err) 
@@ -168,7 +137,8 @@ def params_from_command_line():
                 if not message_params.set_command (arg.strip()):
                     print(f'Unknown command: {arg.strip()}.\nAborting')
                     exit(1)
-                #message_params.command = arg.strip()
+            elif opt in ('-m','--multi'):
+                message_params.multi = arg.strip()
             elif opt in ('-y'):
                 message_params.check_params = False
             elif opt in ('-h', '--help'):
@@ -265,11 +235,9 @@ def save_local_message(message):
 
     try:
         conn = open_local_db()
-#        msg_keys = list(message.keys())
         file_name = get_dict_value (message, 'problem_file', '')
         local_id  = get_dict_value (message, 'local_id')
         tag       = get_dict_value (message, 'tag')
-        #sql = f'insert into {tbl_sent_jobs} ({fld_id}) values(1);'
         sql = f'insert into {tbl_sent_jobs} ({fld_id}, {fld_problem}, {fld_tag}, {fld_sent})\
                 values \
             ({local_id}, "{file_name}", "{tag}", "{str(datetime.datetime.now())}");'
@@ -283,8 +251,8 @@ def save_local_message(message):
 def create_message_header(message_params):
     message = {}
     message['header'] = 'bumps client'
-    #message['tag']    = message_params.tag
     message['message_time'] = get_message_time()
+    message['multi_processing'] = message_params.get_mp_system()
     return message
 #------------------------------------------------------------------------------
 def compose_fit_message(message_params, idx=0):
@@ -378,13 +346,17 @@ def update_jobs_server_status (params):
     global tbl_sent_jobs, fld_id, fld_problem, fld_tag, fld_sent, fld_status, fld_server
 
     conn = open_local_db()
-    for x in params:
-        server_id     = x['job_id']
-        server_status = x['job_status']
-        sql = f'update {tbl_sent_jobs} set {fld_status}="{server_status}" where {fld_server}={server_id};'
-        conn.execute(sql)
-    conn.commit()
-    conn.close()
+    try:
+        for x in params:
+            server_id     = x['job_id']
+            server_status = x['job_status']
+            sql = f'update {tbl_sent_jobs} set {fld_status}="{server_status}" where {fld_server}={server_id};'
+            conn.execute(sql)
+        conn.commit()
+    except Exception as e:
+        print(f'"update_jobs_server_status" runtime error: {e}')
+    finally:
+        conn.close()
 #------------------------------------------------------------------------------
 def create_query_server_message(message_params):
     message = create_message_header(message_params)
@@ -448,7 +420,8 @@ def get_jobs_server_data(message_params, ws, remote_address):
         message = create_message_header(message_params)
         message['command'] = 'get_data'
         message['tag']    = message_params.tag
-        #ws = websocket.create_connection(message_params.get_remote_address())
+        if not ws.connected:
+            ws.connect(remote_address)
         ws.send(str(message))
         server_results = ws.recv()
         server_results = server_results.replace("'",'"')
@@ -464,15 +437,17 @@ def get_jobs_server_data(message_params, ws, remote_address):
                     print(f'results file {zip_name} written')
     except Exception as e:
         print(f'"get_jobs_server_data" runtime error: {e}')
-    #finally:
-        #ws.close()
+    finally:
+        if ws.connected:
+            ws.close()
 #------------------------------------------------------------------------------
 def get_server_tags(message_params, ws, remote_address):
     try:
         message = create_message_header(message_params)
         message['command'] = 'get_tags'
         try:
-            ws = websocket.create_connection(message_params.get_remote_address())
+            if not ws.connected:
+                ws.connect(remote_address)
         except:
             print(f'Could not create connection to {message_params.get_remote_address()}')
             ws = None
@@ -496,7 +471,8 @@ def delete_server_jobs(message_params, ws, remote_address):
         message = create_message_header(message_params)
         message['command'] = 'Delete'
         message['params'] = message_params.files_names
-        ws = websocket.create_connection(message_params.get_remote_address())
+        if not ws.connected:
+            ws.connect(remote_address)
         ws.send(str(message))
         server_results = message_reply_to_dict(ws.recv())
         server_ids = server_results['params']
@@ -509,7 +485,7 @@ def delete_server_jobs(message_params, ws, remote_address):
         conn.execute(sql)
         conn.commit()
     except Exception as e:
-        print(f'"get_server_tags" runtime error: {e}')
+        print(f'"delete_server_jobs" runtime error: {e}')
     finally:
         ws.close()
 #------------------------------------------------------------------------------
