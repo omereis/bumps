@@ -1,12 +1,6 @@
-import asyncio
-import websockets
-import getopt, sys
-import datetime, time
-import mysql.connector
-import json, os
-import multiprocessing
-import nest_asyncio
-import functools
+import asyncio, websockets, getopt, sys, datetime, time
+import mysql.connector, json, os, multiprocessing
+import nest_asyncio, functools, shutil
 #from mysql.connector import Error
 from sqlalchemy import create_engine, MetaData
 import bumps
@@ -141,6 +135,14 @@ def get_job_dir_zip_name(results_dir):
     zip_name = f'{parts[len(parts) - 1]}.zip'
     return job_dir, zip_name
 #------------------------------------------------------------------------------
+def get_job_full_zip_name(results_dir):
+    job_dir, zip_name = get_job_dir_zip_name(results_dir)
+    if not job_dir.endswith('/'):
+        job_dir += '/'
+    if not zip_name.lower().endswith('.zip'):
+        zip_name += '.zip'
+    return f'{job_dir}{zip_name}'
+#------------------------------------------------------------------------------
 def zip_job_results(job):
     job_dir, zip_name = get_job_dir_zip_name(job.client_message.results_dir)
     cur_dir = os.getcwd()
@@ -193,7 +195,8 @@ def send_celery_fit (fit_job, server_params, message):
             fit = 'no results. timeout'
         if fit:
             bin_content = bytes().fromhex(fit)
-            zip_name = f'{fit_job.client_message.job_dir}{os.sep}{fit_job.client_message.tag}.zip'
+            zip_name = get_job_full_zip_name (fit_job.client_message.results_dir)
+            #zip_name = f'{fit_job.client_message.job_dir}{os.sep}{fit_job.client_message.tag}.zip'
             f = open(zip_name,'wb')
             n_bytes = f.write(bin_content)
             f.close()
@@ -256,7 +259,15 @@ def HandleDelete (cm, server_params):
     db_connection = None
     try:
         db_connection = server_params.database_engine.connect()
-        remove_from_list_by_id (server_params.listAllJobs, cm.params, db_connection)
+        IDs = get_orred_ids (cm.params)
+        sql = f'select results_dir from t_bumps_jobs where {IDs};'
+        res = db_connection.execute(sql)
+        for row in res:
+            if os.path.exists(row[0]):
+                shutil.rmtree(row[0])
+        sql = f'delete from t_bumps_jobs where {IDs};'
+        db_connection.execute(sql)
+        #remove_from_list_by_id (server_params.listAllJobs, cm.params, db_connection)
     except Exception as e:
         print ('bumps_ws_server.py, HandleDelete, bug: {}'.format(e))
     finally:
@@ -280,7 +291,6 @@ async def HandleStatus (cm, server_params):
 	        WHERE (job_id = id) AND (status_time = latest_status_time) \
 	        AND job_id IN (SELECT job_id FROM t_bumps_jobs WHERE tag="{cm.tag}");'
         sql = remove_double_blanks (s)
-        print(f'sql:\n{sql}')
         res = db_connection.execute(sql)
         for row in res:
             item = {'job_id': row[0], 'job_status': row[2], 'job_time' : str(row[1])}
