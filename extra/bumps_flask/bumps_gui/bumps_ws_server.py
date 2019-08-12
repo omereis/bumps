@@ -196,7 +196,6 @@ def send_celery_fit (fit_job, server_params, message):
         if fit:
             bin_content = bytes().fromhex(fit)
             zip_name = get_job_full_zip_name (fit_job.client_message.results_dir)
-            #zip_name = f'{fit_job.client_message.job_dir}{os.sep}{fit_job.client_message.tag}.zip'
             f = open(zip_name,'wb')
             n_bytes = f.write(bin_content)
             f.close()
@@ -205,6 +204,7 @@ def send_celery_fit (fit_job, server_params, message):
             db_connection = server_params.database_engine.connect()
             fit_job.set_completed(db_connection)
             db_connection.close()
+            server_params.kill_celery_process(fit_job.job_id)
     except Exception as e:
         print(f'{__file__},send_celery_fit runtime error: {e}')
 #------------------------------------------------------------------------------
@@ -219,6 +219,7 @@ def HandleFitMessage (cm, server_params, message):
             fit_job.set_celery(db_connection)
             pCelery = multiprocessing.Process(name='celery fit', target=send_celery_fit, args=(fit_job, server_params, message,))
             pCelery.start()
+            pCelery.job_id = fit_job.job_id
             server_params.append_celery_job(pCelery)
         else:
             fit_job.set_standby(db_connection)

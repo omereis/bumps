@@ -237,6 +237,26 @@ class ServerParams():
     def append_celery_job (self, celery_fit_job):
         self.listCeleryJobs.append(celery_fit_job)
 #------------------------------------------------------------------------------
+    def get_celery_process(self, job_id):
+        proc_found = None
+        for process in self.listCeleryJobs:
+            if hasattr(process, 'job_id'):
+                if process.job_id == job_id:
+                    proc_found = process
+            if proc_found:
+                break
+        return proc_found
+
+#------------------------------------------------------------------------------
+    def kill_celery_process(self, job_id):
+        celery_process = self.get_celery_process(job_id)
+        if celery_process:
+            try:
+                celery_process.kill()
+                self.listCeleryJobs.remove(celery_process)
+            except Exception as e:
+                print(f'kill_celery_process runtime error: {e}')
+#------------------------------------------------------------------------------
     def delete_celery_job (self, celery_fit_job):
         idx = get_job_index(self.listCeleryJobs, celery_fit_job)
         if idx >= 0:
