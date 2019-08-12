@@ -38,4 +38,5 @@ __pycache__/
 ~*.*
 *.db
 *.zip
+dev_files/
 
