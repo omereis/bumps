@@ -48,6 +48,7 @@ class MessageParams:
     check_params = True
     is_help      = False
     command      = 'send'
+    multi        = 'none'
     valid_commands = ('send','local', 'status','data', 'server', 'tags', 'delete', 'help')
 #------------------------------------------------------------------------------
     def set_algorithm (self, alg_abrv):
@@ -71,6 +72,12 @@ class MessageParams:
 #------------------------------------------------------------------------------
     def add_files(self, new_files):
         self.files_names += new_files
+#------------------------------------------------------------------------------
+    def get_mp_system(self):
+        mp_system = 'none'
+        if self.multi.lower() == 'celery':
+            mp_system = self.multi.lower()
+        return mp_system
 #------------------------------------------------------------------------------
     def params_ok(self):
         self.print_params()
