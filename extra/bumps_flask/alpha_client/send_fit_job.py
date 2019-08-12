@@ -262,7 +262,7 @@ def compose_fit_message(message_params, idx=0):
     message['fit_problem'] = message_params.read_problem_file(idx)
     message['problem_file'] = message_params.files_names[idx]
     message['params'] = message_params.compose_params()
-    message['multi_processing'] = 'none'
+    #message['multi_processing'] = 'none'
     message['local_id'] = get_next_local_id()
     return message
 #------------------------------------------------------------------------------
@@ -413,13 +413,16 @@ def save_results(key, hex_value):
     return zip_name
 #------------------------------------------------------------------------------
 def get_jobs_server_data(message_params, ws, remote_address):
-    if message_params.tag == None:
-        print(f'Missing Tag. Required argument for this command')
-        exit(0)
+    #if message_params.tag == None:
+        #print(f'Missing Tag. Required argument for this command')
+        #exit(0)
     try:
         message = create_message_header(message_params)
         message['command'] = 'get_data'
-        message['tag']    = message_params.tag
+        if message_params.tag:
+            message['tag']    = message_params.tag
+        else:
+            message['tag']    = 'None'
         if not ws.connected:
             ws.connect(remote_address)
         ws.send(str(message))

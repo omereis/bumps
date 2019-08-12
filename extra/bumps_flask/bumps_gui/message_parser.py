@@ -218,6 +218,22 @@ class ClientMessage:
     def get_burn(self):
         return self.get_param_by_key('burns', 100)
 #------------------------------------------------------------------------------
+    def print_message(self):
+        print(f'host_ip: {self.host_ip}')
+        print(f'key: {self.key}')
+        print(f'message: {self.message}')
+        print(f'tag: {self.tag}')
+        print(f'message_time: {self.message_time}')
+        print(f'command: {self.command}')
+        print(f'job_dir: {self.job_dir}')
+        print(f'results_dir: {self.results_dir}')
+        print(f'problem_text: {self.problem_text}')
+        print(f'problem_file_name: {self.problem_file_name}')
+        print(f'params: {self.params}')
+        print(f'bumps_params: {self.bumps_params}')
+        print(f'multi_proc: {self.multi_proc}')
+        print(f'local_id: {self.local_id}')
+#------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 def get_message_datetime_string (message_time):
     try:
