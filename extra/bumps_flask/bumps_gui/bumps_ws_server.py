@@ -82,12 +82,6 @@ def print_jobs(listJobs, title=''):
     except Exception as e:
         print(f'Error in print_job: "{e}"')
 #------------------------------------------------------------------------------
-def print_celery_jobs(listCeleryJobs):
-    print('Celery jobs')
-    print('-----------')
-    for job in listCeleryJobs:
-        print(f'{job}')
-#------------------------------------------------------------------------------
 def scan_jobs_list (server_params):
     try:
         n_cpus = multiprocessing.cpu_count()
@@ -178,6 +172,11 @@ async def job_finalizer(server_params):
 def job_ending_manager(server_params):
     asyncio.run(job_finalizer(server_params))
 #------------------------------------------------------------------------------
+def print_celery_jobs(server_params):
+    for process in server_params.listCeleryJobs:
+        print(f'{datetime.datetime.now()}: process {process.pid} job id {process.job_id}')
+    time.sleep(20)
+#------------------------------------------------------------------------------
 from bumps_celery import tasks as celery_tasks
 import zipfile
 #------------------------------------------------------------------------------
@@ -197,14 +196,14 @@ def send_celery_fit (fit_job, server_params, message):
             bin_content = bytes().fromhex(fit)
             zip_name = get_job_full_zip_name (fit_job.client_message.results_dir)
             f = open(zip_name,'wb')
-            n_bytes = f.write(bin_content)
+            f.write(bin_content)
             f.close()
             with zipfile.ZipFile(zip_name, 'r') as zip_ref:
                 zip_ref.extractall(fit_job.client_message.job_dir)
             db_connection = server_params.database_engine.connect()
             fit_job.set_completed(db_connection)
             db_connection.close()
-            server_params.kill_celery_process(fit_job.job_id)
+            server_params.print_celery_jobs('send_celery_fit')
     except Exception as e:
         print(f'{__file__},send_celery_fit runtime error: {e}')
 #------------------------------------------------------------------------------
@@ -221,6 +220,7 @@ def HandleFitMessage (cm, server_params, message):
             pCelery.start()
             pCelery.job_id = fit_job.job_id
             server_params.append_celery_job(pCelery)
+            #server_params.print_celery_jobs('HandleFitMessage')
         else:
             fit_job.set_standby(db_connection)
             server_params.append_job (fit_job)
@@ -474,6 +474,11 @@ def ws_server_main(serverHost='0.0.0.0', serverPort='4567', flask_dir='/home/app
         print('loop closed')
         pRunner.terminate()
         pFinalizer.terminate()
+        pCleaner.terminate()
+        print('procersses terminated')
+        pRunner.join()
+        pFinalizer.join()
+        pCleaner.join()
         print('Aborting')
         exit(0)
     except Exception as e:
