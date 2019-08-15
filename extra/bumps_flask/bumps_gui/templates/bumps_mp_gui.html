@@ -46,23 +46,17 @@
                     </td>
                     <td valign="top">
                         <div style="text-align: center;">
-                            Submit a new job...<br>
-                            <!-- <input id="btnSendJob" type="button" value="Send Job" disabled = "disabled" onclick="sendJob()">
-                            <input id="btnSendJob" type="button" value="Send Job" onclick="sendJob()">
-                            <br> -->
-                            <input id="btnSendFitJob" type="button" value="Send Job" onclick="onSendFitJobClick()">
+                            <table width="100%" border="2">
+                                <tr><td colspan="2">
+                                    <input id="btnSendFitJob" type="button" value="Submit Job" onclick="onSendFitJobClick()">
+                                </td></tr>
+                                <tr><td>
+                                    <hr>
+                                    Tag: <input type="text" id="remote_tag" size="15" > <input type="button" value="Generate" onclick="generateTag()">
+                                    <hr>
+                                </td></tr>
+                            </table>
                         </div>
-                        <p></p>Fitting Algorithm<br>
-                        <select id="algorithm" selected="newton">
-                            <option value="lm">Levenberg Marquardt</option>
-                            <option value="newton">Quasi-Newton BFGS</option>
-                            <option value="de">Differential Evolution</option>
-                            <option value="dream">DREAM</option>
-                            <option value="amoeba">Nelder-Mead Simplex</option>
-                            <option value="pt">Parallel Tempering</option>
-                            <option value="ps">Particle Swarm</option>
-                            <option value="rl">Random Lines</option>
-                        </select>
                         <table width="100%">
                             <tr>
                                 <td>Steps:</td>
@@ -73,17 +67,15 @@
                                 <td><input type="number" id="fitting_burn" value="100" steps="10" min="1" style="width: 5em;"></td>
                             </tr>
                         </table>
-                        <hr>
-                        <input id="btnSendPrintStatus" type="button" value="Print Status" onclick="sendPrintStatus()">
+                        <!-- debug
+                            <hr>
+                            <input id="btnSendPrintStatus" type="button" value="Print Status" onclick="sendPrintStatus()">
+                        -->
                     </td>
                     <td valign="top" style="border: 2px solid blue;">
-                        <p style="text-align:center;">
-                        Tag: <input type="text" id="remote_tag" size="15" > <input type="button" value="Generate" onclick="generateTag()">
-                        <hr>
                         <table width="100%"><tr>
                             <td style="text-align:center;"><input type="radio" id="mp_none" onclick="change_multi_processing(this.value)" checked="true" value="none">None</td>
                             <td style="text-align:center;"><input type="radio" id="mp_celery" onclick="change_multi_processing(this.value)" value="celery">Celery</td>
-                            <td style="text-align:center;"><input type="radio" id="mp_slurm" onclick="change_multi_processing(this.value)" value="slurm">Slurm</td>
                         </tr>
                         </table>
                         <div id="slurm_params">
@@ -162,6 +154,13 @@
     <script>
         function clearStatus() {
             document.getElementById('status_line').innerText='';
+            try{
+                cuky = docukemt.cookie;
+                console.log(cuky);
+            }
+            catch (err) {
+                console.log(err);
+            }
         }
         try {
             document.getElementById("problemFile").onchange = load_bumps_problem;
