@@ -196,6 +196,8 @@ class ServerParams():
     database_engine = None
     results_dir     = None
     flask_dir       = None
+
+    celery_count = 0
 #------------------------------------------------------------------------------
     def __init__ (self, db_engine):
         self.database_engine = db_engine
@@ -249,9 +251,11 @@ class ServerParams():
 
 #------------------------------------------------------------------------------
     def kill_celery_process(self, job_id):
+        return 17
         celery_process = self.get_celery_process(job_id)
         if celery_process:
             try:
+                celery_process.join()
                 celery_process.kill()
                 self.listCeleryJobs.remove(celery_process)
             except Exception as e:
@@ -261,5 +265,16 @@ class ServerParams():
         idx = get_job_index(self.listCeleryJobs, celery_fit_job)
         if idx >= 0:
             del self.listCeleryJobs[idx]
+#------------------------------------------------------------------------------
+    def print_celery_jobs(self,title=None):
+        if title:
+            print(f'-----{title}-----')
+        else:
+            print('------------------------')
+        for process in self.listCeleryJobs:
+            if not hasattr (process, 'job_id'):
+                process.job_id = '-1'
+            print(f'process {process.pid} has job id of {process.job_id}')
+        print('------------------------')
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
