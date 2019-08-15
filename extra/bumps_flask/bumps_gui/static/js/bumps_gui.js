@@ -109,6 +109,35 @@ function download(data, filename, type) {
     }
 }
 //-----------------------------------------------------------------------------
+function getCBoxIdFromRow (tbl, row) {
+    var txtID=tbl.rows[row].cells[0].innerHTML;
+    if (txtID.length > 0) {
+        txtID = $(txtID).attr('id');
+        id = parseInt (txtID.substring(4,txtID.length));
+    }
+    else
+        id = 0;
+    return(id);
+}
+//-----------------------------------------------------------------------------
+function checkAllRows (tbl, checked) {
+    var n, id;//, tbl = document.getElementById('tblResults');
+    for (n=1 ; n < tbl.rows.length ; n++) {
+        id = getCBoxIdFromRow (tbl, n);
+        if (id > 0) {
+            cbox_id = compose_cbox_id (id);
+            cbox = document.getElementById(cbox_id);
+            if (cbox != null)
+                cbox.checked = checked;
+        }
+    }
+}
+//-----------------------------------------------------------------------------
+function onJobsIdClick(id) {
+    var cbox = document.getElementById(id);
+    checkAllRows (document.getElementById('tblResults'), cbox.checked);
+}
+//-----------------------------------------------------------------------------
 function getNextCBoxID () {
     var n, id, idMax, tbl = document.getElementById('tblResults');
 
@@ -133,9 +162,14 @@ function getNextCBoxID () {
     return (idMax);
 }
 //-----------------------------------------------------------------------------
+function compose_cbox_id (id) {
+    var cbox_id = 'cbox' + (id);
+    return (cbox_id);
+}
+//-----------------------------------------------------------------------------
 function insertSelectCell (row, idx) {
     var cell = row.insertCell(idx);
-	var cbox_id = 'cbox' + (getNextCBoxID () + 1);
+	var cbox_id = compose_cbox_id (getNextCBoxID () + 1);
     cell.innerHTML = '<input type="checkbox" id="' + cbox_id + '">';
     return (cbox_id);
 }
@@ -180,6 +214,8 @@ function addResultRow (tag)
 {
     var table = document.getElementById('tblResults');
     var row = table.insertRow(table.rows.length);
+    if ((table.rows.length % 2) == 0)
+        row.style.background = "rgb(133, 195, 245)";
     var cell_id = insertSelectCell (row, 0);
     insertTimeCell (table, row, 1);
     insertTagCell (row, tag, 2)
