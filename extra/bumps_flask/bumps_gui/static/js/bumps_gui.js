@@ -55,25 +55,25 @@ function change_multi_processing (value) {
         document.getElementById ("mp_slurm").checked    = true;
         document.getElementById ("mp_celery").checked = false;
         document.getElementById ("mp_none").checked   = false;
-        document.getElementById ("slurm_params").style.visibility    = 'visible';
-        document.getElementById ("celery_params").style.visibility = 'hidden';
-        document.getElementById ("no_mp_params").style.visibility  = 'hidden';
+        //document.getElementById ("slurm_params").style.visibility    = 'visible';
+        //document.getElementById ("celery_params").style.visibility = 'hidden';
+        //document.getElementById ("no_mp_params").style.visibility  = 'hidden';
 }
     else if (value == "none") {
-        document.getElementById ("mp_slurm").checked  = false;
+        //document.getElementById ("mp_slurm").checked  = false;
         document.getElementById ("mp_celery").checked = false;
         document.getElementById ("mp_none").checked     = true;
-        document.getElementById ("slurm_params").style.visibility  = 'hidden';
-        document.getElementById ("celery_params").style.visibility = 'hidden';
-        document.getElementById ("no_mp_params").style.visibility    = 'visible';
+        //document.getElementById ("slurm_params").style.visibility  = 'hidden';
+        //document.getElementById ("celery_params").style.visibility = 'hidden';
+        //document.getElementById ("no_mp_params").style.visibility    = 'visible';
     }
     else if (value == "celery") {
-        document.getElementById ("mp_slurm").checked  = false;
+        //document.getElementById ("mp_slurm").checked  = false;
         document.getElementById ("mp_celery").checked   = true;
         document.getElementById ("mp_none").checked   = false;
-        document.getElementById ("slurm_params").style.visibility  = 'hidden';
-        document.getElementById ("celery_params").style.visibility   = 'visible';
-        document.getElementById ("no_mp_params").style.visibility  = 'hidden';
+        //document.getElementById ("slurm_params").style.visibility  = 'hidden';
+        //document.getElementById ("celery_params").style.visibility   = 'visible';
+        //document.getElementById ("no_mp_params").style.visibility  = 'hidden';
     }
 }
 //-----------------------------------------------------------------------------
@@ -410,7 +410,7 @@ function handle_reply(wsMsg) {
         updateJobsStatus (params);
     }
     else if (command == ServerCommands.GET_RESULTS) {
-        showFitResults (jmsg);
+        fitResultsToHtml (jmsg);
     }
 }
 //-----------------------------------------------------------------------------
@@ -456,32 +456,46 @@ function getResultsDivFromID (id) {
     return (strFitResults);
 }
 //-----------------------------------------------------------------------------
-function showFitResults (jmsg) {
+function fitResultsToHtml (jmsg) {
     var divResults = document.getElementById('fit_results');
     var n, strHtml='', name, ext, id;
 
     if (divResults) {
         id = jmsg['params'].id;
-        //var strFitResults = 'fit_results_' + id.toString();
         var strFitResults = getResultsDivFromID (jmsg['params'].id);
         var divJobRslt = document.getElementById(strFitResults);
         if (divJobRslt == null) {
             divJobRslt = document.createElement('div');
             divJobRslt.setAttribute('id',strFitResults);
             divResults.appendChild(divJobRslt);
+            divJobRslt.innerHTML = '<table width="100%" style="border:0;"><tr><td style="text-align:center;border:none;">Results for job #' + id.toString() + '</td>' +
+                '<td style="text-align:right;border:none;">' +
+                '<button onclick="onTopClick()">Return to Top</button>' +
+                '</td></tr></table><hr style="border-top: dashed 1px;" />';
+            for (n=0 ; n < jmsg['params'].files.length ; n++) {
+                name = jmsg['params'].files[n];
+                ext = getFileExtension (name);
+                if (isPicture(ext))
+                    strHtml += '<br>' + resFileImageLink (name) + '<br>';
+                else
+                    strHtml += resFileLink (name) + ", ";
+            }
+            strHtml += '<hr>';
+            divJobRslt.innerHTML = divJobRslt.innerHTML + strHtml;
+            var row = getRowByDBID (id), tbl = get_results_table();
+            var cell = tbl.rows[row].cells[3];
+            cell.innerHTML = '<a href="#' + strFitResults + '">' + cell.innerText + '</a>';
         }
-        divJobRslt.innerHTML = 'Results for job #' + id.toString() + '<br>';
-        for (n=0 ; n < jmsg['params'].files.length ; n++) {
-            name = jmsg['params'].files[n];
-            ext = getFileExtension (name);
-            if (isPicture(ext))
-                strHtml += '<br>' + resFileImageLink (name) + '<br>';
-            else
-                strHtml += resFileLink (name) + ", ";
-        }
-        strHtml += '<hr>';
-        divJobRslt.innerHTML = divJobRslt.innerHTML + strHtml;
     }
+}
+//-----------------------------------------------------------------------------
+function onTopClick() {
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+}
+//-----------------------------------------------------------------------------
+function get_results_table() {
+    return (document.getElementById('tblResults'));
 }
 //-----------------------------------------------------------------------------
 function get_db_id_from_row (row, tbl=null) {
@@ -571,7 +585,7 @@ function deleteResultsById (id) {
         div.parentNode.removeChild(div);
 }
 //-----------------------------------------------------------------------------
-function sendForFitResults (job_id) {
+function loadServerFitResults (job_id) {
     var res_div = document.getElementById('fit_results')
     var row = getRowByBtnShowID (job_id)
     if (row >= 0)
@@ -582,11 +596,7 @@ function sendForFitResults (job_id) {
     message['command'] = ServerCommands.GET_RESULTS;
     message['params'] = id;
     sendMesssageThroughFlask(message);
-    //sendMessage (JSON.stringify(message));
-
-    res_div.innerHTML = res_div.innerHTML + '<br>' + s + '<hr>';
-    //res_div.innerHTML = res_div.innerHTML + '<table><tr><td>' + job_id.toString() + '</td></tr></table><br><hr><img src="/static/ncnr01.jpg>';
-    //</img>'<img src="http://urbanologia.tau.ac.il/wp-content/uploads/2015/06/20141212-RAHAT-ARAD-262.jpg" width="100" height="100">'
+    //res_div.innerHTML = res_div.innerHTML + '<br>' + s + '<hr>';
     $.post("dashboard");
 }
 //-----------------------------------------------------------------------------
@@ -603,7 +613,7 @@ function updateJobsStatus (params) {
                     tbl.rows[row].cells[3].innerText = params[n].job_status;
                     if (params[n].job_status == 'Completed') {
                         var btnID = 'btnResultsBtn' + job_id.toString(10);
-                        tbl.rows[row].cells[4].innerHTML = '<input type="button" id="' + btnID + '" value="Show" onclick="sendForFitResults(this.id)">';
+                        tbl.rows[row].cells[4].innerHTML = '<input type="button" id="' + btnID + '" value="Load" onclick="loadServerFitResults(this.id)">';
                     }
                 }
                 
@@ -703,22 +713,6 @@ function composeJobSendMessage(txtProblem) {
     message['multi_processing'] = upload_multiprocessing();
     return (message);
 }
-/*
-//-----------------------------------------------------------------------------
-function onSendJobClick() {
-    var txtProblem = $('#problem_text').val().trim();
-
-    if (txtProblem.length > 0) {
-        var message = composeJobSendMessage(txtProblem);
-        var tag = message['tag'];
-        var row_id = addResultRow (tag);
-        message['local_id'] = row_id;
-        sendMessage (JSON.stringify(message));
-    }
-    else
-        alert ('Missing problem definition');
-}
-*/
 //-----------------------------------------------------------------------------
 function sendMesssageThroughFlask(message) {
     $.ajax({

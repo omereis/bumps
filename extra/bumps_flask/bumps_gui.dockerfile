@@ -45,8 +45,8 @@ RUN pip install psutil
 # RUN pip install celery
 
 # Set the environment variables for Flask
-ENV WEBSOCKET_PORT=4567
-ENV BUMPS_MP_PORT=4567
+# ENV WEBSOCKET_PORT=4567
+# ENV BUMPS_MP_PORT=4567
 
 # ENV CELERY_RESULT_BACKEND='amqp'
 # ENV BROKER_URL='amqp://guest@rabbit.local//'
@@ -55,9 +55,6 @@ ENV BUMPS_MP_PORT=4567
 COPY ./ /home/bumps_user/bumps_flask
 COPY ./vimrc /etc/vim/vimrc
 
-#RUN celery -A bumps_celery worker -l info -E
-# RUN pwd
-#ENTRYPOINT ["celery","-A","bumps_celery","worker","-l" "info","-E"]
- 
 # Launch the app
 # CMD ["python","start_all.py"]
+# CMD ["python","gui_run.py"]

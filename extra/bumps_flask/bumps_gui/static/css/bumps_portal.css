@@ -1,7 +1,7 @@
 body{
-    background-color: rgb(125, 203, 255);
+    background-color: rgb(7, 164, 175);
     color:white;
-    border-color:white;
+    border-color:black;
 }
 table, th, td, tr, th {
     border: 1px solid black;
@@ -17,3 +17,22 @@ h3 {
     margin-top: 8px;
     margin-bottom: 8px;
 }
+tr {
+    border: none;
+}
+#topBtn {
+    display: none;
+    position: fixed;
+    border: none;
+    outline: none;
+    background-color: rgb(7, 164, 175);
+    color: white;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+  }
+  
+  #topBtn:hover {
+    background-color: rgb(92, 132, 243);
+  }
+  
