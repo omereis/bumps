@@ -39,10 +39,6 @@ function getGeoData() {
 function clear_file() {
     document.getElementById("problemFile").value = null;
     display_prolem(null);
-//    getGeoData();
-	//$.getJSON('http://gd.geobytes.com/GetCityDetails?callback=?', function(data) {
-	  //console.log(JSON.stringify(data, null, 2));
-	//});
 }
 //-----------------------------------------------------------------------------
 function init_app () {
@@ -55,32 +51,20 @@ function change_multi_processing (value) {
         document.getElementById ("mp_slurm").checked    = true;
         document.getElementById ("mp_celery").checked = false;
         document.getElementById ("mp_none").checked   = false;
-        //document.getElementById ("slurm_params").style.visibility    = 'visible';
-        //document.getElementById ("celery_params").style.visibility = 'hidden';
-        //document.getElementById ("no_mp_params").style.visibility  = 'hidden';
 }
     else if (value == "none") {
-        //document.getElementById ("mp_slurm").checked  = false;
         document.getElementById ("mp_celery").checked = false;
         document.getElementById ("mp_none").checked     = true;
-        //document.getElementById ("slurm_params").style.visibility  = 'hidden';
-        //document.getElementById ("celery_params").style.visibility = 'hidden';
-        //document.getElementById ("no_mp_params").style.visibility    = 'visible';
     }
     else if (value == "celery") {
-        //document.getElementById ("mp_slurm").checked  = false;
         document.getElementById ("mp_celery").checked   = true;
         document.getElementById ("mp_none").checked   = false;
-        //document.getElementById ("slurm_params").style.visibility  = 'hidden';
-        //document.getElementById ("celery_params").style.visibility   = 'visible';
-        //document.getElementById ("no_mp_params").style.visibility  = 'hidden';
     }
 }
 //-----------------------------------------------------------------------------
 function save_model () {
     var model_text = "model text";
     var file_name = "model.py"
-    //saveData(model_text, file_name);
     download(model_text, file_name, 'text/plain');
 }
 //-----------------------------------------------------------------------------
@@ -264,7 +248,6 @@ function getMessageTime() {
     date_json['seconds'] = d.getSeconds();
     date_json['milliseconds'] = d.getMilliseconds();
     return (date_json);
-    //return (JSON.stringify(date_json));
 }
 //-----------------------------------------------------------------------------
 function ip_local() {
@@ -295,7 +278,6 @@ function connectServer() {
     var remoteServer = $('#remote_server').val();
     var remotePort   = $('#remote_port').val();
     g_socket = openWSConnection("ws", remoteServer, remotePort, "");
-//    g_socket = openWSConnection("ws", "NCNR-R9nano.campus.nist.gov", 8765, "");
 }
 //-----------------------------------------------------------------------------
 function disconnectServer() {
@@ -456,6 +438,33 @@ function getResultsDivFromID (id) {
     return (strFitResults);
 }
 //-----------------------------------------------------------------------------
+var fit_results_per_row = 2;
+//-----------------------------------------------------------------------------
+function getNextFitResultsCell (id) {
+    var cell=null, row=null, tblResults = document.getElementById('tbl_fit_results');
+    try {
+        if (tblResults) {
+            if (tblResults.rows.length > 0) {
+                if (tblResults.rows[tblResults.rows.length - 1].cells.length < fit_results_per_row) {
+                    row = tblResults.rows[tblResults.rows.length - 1];
+                }
+            }
+            if (row == null) {
+                row = tblResults.insertRow(tblResults.rows.length);
+            }
+            cell = row.insertCell(row.cells.length);
+            cell.innerHTML = '<p style="text-align: center;">Results for job #' + id.toString() +
+                    '<span style="float:right;">' + 
+                    '<button onclick="onTopClick()">Return to Top</button>' +
+                    '</span>';
+       }
+    }
+    catch {
+        cell = null;
+    }
+    return (cell);
+}
+//-----------------------------------------------------------------------------
 function fitResultsToHtml (jmsg) {
     var divResults = document.getElementById('fit_results');
     var n, strHtml='', name, ext, id;
@@ -465,26 +474,30 @@ function fitResultsToHtml (jmsg) {
         var strFitResults = getResultsDivFromID (jmsg['params'].id);
         var divJobRslt = document.getElementById(strFitResults);
         if (divJobRslt == null) {
-            divJobRslt = document.createElement('div');
-            divJobRslt.setAttribute('id',strFitResults);
-            divResults.appendChild(divJobRslt);
-            divJobRslt.innerHTML = '<table width="100%" style="border:0;"><tr><td style="text-align:center;border:none;">Results for job #' + id.toString() + '</td>' +
-                '<td style="text-align:right;border:none;">' +
-                '<button onclick="onTopClick()">Return to Top</button>' +
-                '</td></tr></table><hr style="border-top: dashed 1px;" />';
-            for (n=0 ; n < jmsg['params'].files.length ; n++) {
-                name = jmsg['params'].files[n];
-                ext = getFileExtension (name);
-                if (isPicture(ext))
-                    strHtml += '<br>' + resFileImageLink (name) + '<br>';
+            try {
+                var cell = getNextFitResultsCell (id);
+                if (cell == null)
+                    divJobRslt = document.createElement('div');
                 else
-                    strHtml += resFileLink (name) + ", ";
+                    divJobRslt = cell;
+                divJobRslt.setAttribute('id',strFitResults);
+                for (n=0 ; n < jmsg['params'].files.length ; n++) {
+                    name = jmsg['params'].files[n];
+                    ext = getFileExtension (name);
+                    if (isPicture(ext))
+                        strHtml += '<br>' + resFileImageLink (name) + '<br>';
+                    else
+                        strHtml += resFileLink (name) + ", ";
+                }
+                strHtml += '<hr>';
+                divJobRslt.innerHTML = divJobRslt.innerHTML + strHtml;
+                var row = getRowByDBID (id), tbl = get_results_table();
+                var cell = tbl.rows[row].cells[3];
+                cell.innerHTML = '<a href="#' + strFitResults + '">' + cell.innerText + '</a>';
             }
-            strHtml += '<hr>';
-            divJobRslt.innerHTML = divJobRslt.innerHTML + strHtml;
-            var row = getRowByDBID (id), tbl = get_results_table();
-            var cell = tbl.rows[row].cells[3];
-            cell.innerHTML = '<a href="#' + strFitResults + '">' + cell.innerText + '</a>';
+            catch (err) {
+                console.log(err);
+            }
         }
     }
 }
@@ -586,7 +599,6 @@ function deleteResultsById (id) {
 }
 //-----------------------------------------------------------------------------
 function loadServerFitResults (job_id) {
-    var res_div = document.getElementById('fit_results')
     var row = getRowByBtnShowID (job_id)
     if (row >= 0)
         id = get_db_id_from_row (row);
@@ -596,8 +608,7 @@ function loadServerFitResults (job_id) {
     message['command'] = ServerCommands.GET_RESULTS;
     message['params'] = id;
     sendMesssageThroughFlask(message);
-    //res_div.innerHTML = res_div.innerHTML + '<br>' + s + '<hr>';
-    $.post("dashboard");
+    //$.post("dashboard");
 }
 //-----------------------------------------------------------------------------
 function updateJobsStatus (params) {

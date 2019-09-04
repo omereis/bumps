@@ -1,6 +1,6 @@
 body{
-    background-color: rgb(7, 164, 175);
-    color:white;
+    background-color: rgb(85, 182, 238);
+    color:black;
     border-color:black;
 }
 table, th, td, tr, th {
@@ -36,3 +36,7 @@ tr {
     background-color: rgb(92, 132, 243);
   }
   
+  #tbl_fit_results {
+      border: 1px solid;
+      width: 100%;
+  }
