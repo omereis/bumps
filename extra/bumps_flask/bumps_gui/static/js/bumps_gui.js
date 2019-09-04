@@ -593,9 +593,19 @@ function deleteRowByDBID (btn_id) {
 }
 //-----------------------------------------------------------------------------
 function deleteResultsById (id) {
-    var div = document.getElementById(getResultsDivFromID(id));
-    if (div)
-        div.parentNode.removeChild(div);
+    var cell = document.getElementById(getResultsDivFromID(id));
+    var row=null, tbl=null, idxRow=null;
+    if (cell) {
+        row = cell.parentNode;
+        if (row.cells.length == 1) {
+            tbl = row.parentNode;
+            idxRow = row.rowIndex;
+        }
+        cell.parentNode.removeChild(cell);
+        if (idxRow != null) {
+            tbl.deleteRow(idxRow);
+        }
+    }
 }
 //-----------------------------------------------------------------------------
 function loadServerFitResults (job_id) {
@@ -644,7 +654,6 @@ function onResultsDeleteClick() {
         var id=$(tbl.rows[n].cells[0].innerHTML).attr('id');
         var chk=document.getElementById(id).checked;
         if (chk)
-            //tbl.deleteRow(n);
             aLinesToDel[idx++] = $(tbl.rows[n].cells[0].innerHTML).attr('db_id');
     }
     composeSendDeleteMessage (aLinesToDel);
