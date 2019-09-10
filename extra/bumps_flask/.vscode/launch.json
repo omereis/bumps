@@ -14,7 +14,7 @@
             "cwd": "${workspaceFolder}",
             "env": {},
             "envFile": "${workspaceFolder}/.env",
-            "args" : ["server.params"],
+            "args" : ["t2"],
             "debugOptions": [
                 "RedirectOutput"
             ]
@@ -30,6 +30,23 @@
             "env": {},
             "envFile": "${workspaceFolder}/.env",
             "args" : ["-v"],
+        },
+        {
+            "name": "Python read json",
+            "type": "python",
+            "request": "launch",
+            "stopOnEntry": true,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${file}",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "envFile": "${workspaceFolder}/.env",
+            "args" : ["t2"],
+            //"args" : ["-y", "--host", "localhost", "--port", "4567", "--tag", "alpha", "curv_fit.py"],
+            //"args" : ["--help", "curv_fit.py"],
+            "debugOptions": [
+                "RedirectOutput"
+            ]
         },
         {
             "name": "Python Bumps Alpha",
