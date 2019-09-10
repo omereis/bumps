@@ -42,7 +42,9 @@ RUN pip install websocket websocket-client
 #required for psutil
 RUN apt install -y python3.7-dev build-essential
 RUN pip install psutil
-# RUN pip install celery
+
+RUN pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-18.04 wxPython
+RUN pip install refl1d
 
 # Set the environment variables for Flask
 # ENV WEBSOCKET_PORT=4567
