@@ -7,8 +7,6 @@ function generateTag() {
     var latest_tag = get_latest_tag();
     if (latest_tag == null)
         latest_tag = random_words();
-    //var rw = random_words()
-    document.getElementById('remote_tag').value = latest_tag;
     return (latest_tag);
 }
 //-----------------------------------------------------------------------------

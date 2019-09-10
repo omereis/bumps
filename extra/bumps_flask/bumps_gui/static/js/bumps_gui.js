@@ -42,7 +42,8 @@ function clear_file() {
 }
 //-----------------------------------------------------------------------------
 function init_app () {
-    generateTag();
+    //generateTag('remote_tag');
+    document.getElementById('remote_tag').value = generateTag();
     change_multi_processing ("none");
 }
 //-----------------------------------------------------------------------------
@@ -213,6 +214,7 @@ function getTag() {
     var tag = document.getElementById('remote_tag').value;
     if (tag == '')
         tag = generateTag();
+        //tag = generateTag('remote_tag');
     return (tag);
 }
 //-----------------------------------------------------------------------------
