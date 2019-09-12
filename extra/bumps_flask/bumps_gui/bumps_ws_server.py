@@ -222,9 +222,12 @@ def HandleFitMessage (cm, server_params, message):
             server_params.append_celery_job(pCelery)
             #server_params.print_celery_jobs('HandleFitMessage')
         else:
-            fit_job.set_standby(db_connection)
-            server_params.append_job (fit_job)
-            scan_jobs_list (server_params)
+            if cm.fitter == 'bumps':
+                fit_job.set_standby(db_connection)
+                server_params.append_job (fit_job)
+                scan_jobs_list (server_params)
+            else:
+                print(f'Fitter: {cm.fitter}')
     except Exception as e:
         print (f'bumps_ws_server.py, HandleFitMessage, bug: {e}')
         job_id = 0
