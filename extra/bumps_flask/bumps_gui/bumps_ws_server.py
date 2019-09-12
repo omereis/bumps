@@ -209,7 +209,6 @@ def send_celery_fit (fit_job, server_params, message):
 #------------------------------------------------------------------------------
 def HandleFitMessage (cm, server_params, message):
     cm.create_results_dir(server_params)
-    cm.save_problem_file()
     fit_job = FitJob (cm)
     try:
         db_connection = server_params.database_engine.connect()
@@ -222,6 +221,7 @@ def HandleFitMessage (cm, server_params, message):
             server_params.append_celery_job(pCelery)
             #server_params.print_celery_jobs('HandleFitMessage')
         else:
+            cm.save_problem_file()
             if cm.fitter == 'bumps':
                 fit_job.set_standby(db_connection)
                 server_params.append_job (fit_job)
@@ -299,6 +299,8 @@ async def HandleStatus (cm, server_params):
         for row in res:
             item = {'job_id': row[0], 'job_status': row[2], 'job_time' : str(row[1])}
             return_params.append(item)
+        if len(return_params) == 0:
+            return_params.append('unknown')
     except Exception as e:
         print (f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}')
     finally:

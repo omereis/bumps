@@ -115,14 +115,19 @@ class FitJob:
         return job_id
 #------------------------------------------------------------------------------
     def prepare_params(self):
+        if self.client_message.fitter == 'bumps':
+            self.params = self.client_message.prepare_bumps_params()
+        elif self.client_message.fitter == 'refl1d':
+            self.params = self.client_message.prepare_refl1d_params()
+        return self.params
+#------------------------------------------------------------------------------
+    def prepare_params(self):
         self.params = self.client_message.prepare_bumps_params()
         return self.params
 #------------------------------------------------------------------------------
     def run_bumps_fit(self, db_connection):
         sys.argv = []
         sys.argv.append('bumps')
-        #for p in params:
-            #sys.argv.append(p)
         print(f'\n\nFitJob, run_bumps_fit\n{sys.argv}')
     #------------------------------------------------------------------------------
     def set_running(self, db_connection):

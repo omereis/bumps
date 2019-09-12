@@ -1,6 +1,6 @@
 from enum import Enum
 from MessageCommand import MessageCommand
-import os, json
+import os, json, zipfile
 try:
     from .oe_debug import print_debug
     from .misc import get_results_dir
@@ -78,6 +78,7 @@ class ClientMessage:
     multi_proc   = None
     local_id     = None
     fitter       = 'bumps'
+    refl1d_params = None
 #------------------------------------------------------------------------------
     def parse_message(self, host_ip, message, results_dir):
         try:
@@ -98,10 +99,11 @@ class ClientMessage:
                 self.job_dir      = self.compose_job_directory_name (results_dir) # just get the name, does not create directory
                 if 'fitter' in message.keys():
                     self.fitter = message['fitter']
+                    self.problem_text = json.loads(message['refl1d_problem'])
                 print(f'parse_message: Fitter: {self.fitter}')
                 parse = True
         except Exception as e:
-            print('message_parser.py, parse_message: {e}')
+            print(f'message_parser.py, parse_message: {e}')
             parse = False
         return parse
 #------------------------------------------------------------------------------
@@ -112,7 +114,7 @@ class ClientMessage:
             base_results_dir = results_dir
             tmp_dir = results_dir = base_results_dir + self.host_ip + "/" + self.tag
         except Exception as e:
-            print(f'message_parser.py, parse_message: {e}')
+            print(f'message_parser.py, compose_job_directory_name: {e}')
             tmp_dir = results_dir = base_results_dir + '/results'
             print(f'using temporary directory: {tmp_dir}')
         n = 1
@@ -133,6 +135,9 @@ class ClientMessage:
         os.chmod(results_dir, 0o7777)
         self.results_dir = results_dir
         return results_dir
+#------------------------------------------------------------------------------
+    def prepare_refl1d_params(self):
+        self.refl1d_params = []
 #------------------------------------------------------------------------------
     def prepare_bumps_params(self):
         self.bumps_params = []
@@ -198,14 +203,44 @@ class ClientMessage:
                 problem_file_name = self.tag + ".py"
         return problem_file_name
 #------------------------------------------------------------------------------
-    def save_problem_file (self):
-        if len(self.job_dir) == 0:
-            self.job_dir = self.compose_job_directory_name ()
+    def save_bumps_problem_file (self):
         problem_file_name = self.job_dir + "/" + self.get_problem_file_name ()
         file = open(problem_file_name, "w+")
         file.write(self.problem_text)
         file.close()
         self.problem_file_name = problem_file_name
+        return problem_file_name
+#------------------------------------------------------------------------------
+    def zip_add_name_data(zip_file, dictIn):
+        zip_file.writestr(dictIn['name'], dictIn['data'])
+#------------------------------------------------------------------------------
+    def save_refl1d_problem_file(self):
+        try:
+            zip_name = self.problem_text['zip']
+            zip_file = zipfile.ZipFile(zip_name, 'w')
+            zip_file.writestr(self.problem_text['json']['name'], str(self.problem_text['json']['data']))
+            zip_file.writestr(self.problem_text['script']['name'], str(self.problem_text['script']['data']))
+            zip_file.writestr(self.problem_text['data']['name'],self.problem_text['data']['data'])
+            zip_file.close()
+            print('-----------------------\n\n')
+        except Exception as e:
+            zip_name = None
+            print(f'zip error: {e}')
+        return zip_name
+#------------------------------------------------------------------------------
+    def is_bumps_fitter(self):
+        return self.fitter == 'bumps'
+#------------------------------------------------------------------------------
+    def is_refl1d_fitter(self):
+        return self.fitter == 'refl1d'
+#------------------------------------------------------------------------------
+    def save_problem_file (self):
+        if len(self.job_dir) == 0:
+            self.job_dir = self.compose_job_directory_name ()
+        if self.is_bumps_fitter():
+            problem_file_name = self.save_bumps_problem_file()
+        elif self.is_refl1d_fitter():
+            problem_file_name = self.save_refl1d_problem_file()
         return problem_file_name
 #------------------------------------------------------------------------------
     def get_param_by_key(self, key, def_val):
