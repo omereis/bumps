@@ -52,6 +52,7 @@ def parse_command (message_command):
     elif message_command == 'get_tags':
         command = MessageCommand.GetTags
     else:
+        print(f'\nMessage command: "{message_command}\n\n')
         command = MessageCommand.Error
     return command
 #------------------------------------------------------------------------------
@@ -76,6 +77,7 @@ class ClientMessage:
     bumps_params = None
     multi_proc   = None
     local_id     = None
+    fitter       = 'bumps'
 #------------------------------------------------------------------------------
     def parse_message(self, host_ip, message, results_dir):
         try:
@@ -94,6 +96,9 @@ class ClientMessage:
                 self.local_id     = getMessageField (message, MessageClientID)
                 self.multi_proc   = getMessageField (message, MessageMultiProc)
                 self.job_dir      = self.compose_job_directory_name (results_dir) # just get the name, does not create directory
+                if 'fitter' in message.keys():
+                    self.fitter = message['fitter']
+                print(f'parse_message: Fitter: {self.fitter}')
                 parse = True
         except Exception as e:
             print('message_parser.py, parse_message: {e}')
