@@ -99,11 +99,16 @@ class FitJob:
             if job_id == None:
                 job_id = 1
             message_date_time = get_message_datetime_string (cm.message_time)
-            sql = 'insert into {} ({},{},{},{},{},{},{}) values ({},"{}","{}","{}","{}","{}","{}");'.format(\
-                        tbl_bumps_jobs,
-                        fld_JobID, fld_SentIP, fld_SentTime, fld_Tag, fld_Message, fld_ResultsDir,fld_ProblemFile,
-                        job_id, cm.host_ip, message_date_time, cm.tag, cm.message, cm.results_dir, cm.problem_file_name)
+            sql = f'insert into {tbl_bumps_jobs} ({fld_JobID}, {fld_SentIP}, {fld_SentTime}, {fld_Tag},{fld_Fitter},{fld_ResultsDir},{fld_ProblemFile}) \
+                        values \
+                        ({job_id}, "{cm.host_ip}", "{message_date_time}", "{cm.tag}","{cm.fitter}","{cm.results_dir}", "{cm.problem_file_name}");'
             res = connection.execute(sql)
+            try:
+                bmsg = str(cm.message).encode('utf-8').hex()
+                sql = f'update {tbl_bumps_jobs} set {fld_blob_message}="{bmsg}" where {fld_JobID}={job_id};'
+                res = connection.execute(sql)
+            except Exception as e:
+                print(f'blob error: {e}')
             self.job_id = job_id
         except Exception as e:
             print ('bumps_ws_server, save_message_to_db, bug: {}'.format(e))
