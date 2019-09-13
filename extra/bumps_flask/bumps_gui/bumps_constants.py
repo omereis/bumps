@@ -1,4 +1,4 @@
-tbl_bumps_jobs             = 't_bumps_jobs'
+tbl_bumps_jobs  = 't_bumps_jobs'
 fld_JobID       = 'job_id'
 fld_SentIP      = 'sent_ip'
 fld_SentTime    = 'sent_time'
