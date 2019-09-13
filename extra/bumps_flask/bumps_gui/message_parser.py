@@ -89,7 +89,6 @@ class ClientMessage:
                 self.message      = message
                 self.tag          = getMessageField (message, MessageTag)
                 self.message_time = getMessageField (message,  MessageTime)
-                self.problem_file_name = getMessageField (message, MessageProblemFile)
                 self.key          = generate_key(self.host_ip, self.message_time)
                 self.command      = parse_command (getMessageField (message, MessageCode))
                 self.problem_text = getMessageField (message, MessageFitProblem)
@@ -99,7 +98,12 @@ class ClientMessage:
                 self.job_dir      = self.compose_job_directory_name (results_dir) # just get the name, does not create directory
                 if 'fitter' in message.keys():
                     self.fitter = message['fitter']
-                    self.problem_text = json.loads(message['refl1d_problem'])
+                    if self.fitter == 'bumps':
+                        self.problem_file_name = getMessageField (message, MessageProblemFile)
+                    elif self.fitter == 'refl1d':
+                        self.problem_text = json.loads(message['refl1d_problem'])
+                        self.problem_file_name = f'{self.job_dir}{os.sep}{self.problem_text["zip"]}'
+                        print(f'problem file name: {self.problem_file_name}')
                 print(f'parse_message: Fitter: {self.fitter}')
                 parse = True
         except Exception as e:
@@ -137,7 +141,15 @@ class ClientMessage:
         return results_dir
 #------------------------------------------------------------------------------
     def prepare_refl1d_params(self):
-        self.refl1d_params = []
+        self.bumps_params = []
+        try:
+            self.bumps_params.append('refl1d')
+            self.bumps_params.append(self.problem_file_name)
+            self.bumps_params.append(f'--store={self.results_dir}')
+            print(f'params: {self.bumps_params}')
+        except Exception as e:
+            print(f'"ClientMessage.prepare_refl1d_params", runtime error: {e}')
+        return self.bumps_params
 #------------------------------------------------------------------------------
     def prepare_bumps_params(self):
         self.bumps_params = []
@@ -216,13 +228,12 @@ class ClientMessage:
 #------------------------------------------------------------------------------
     def save_refl1d_problem_file(self):
         try:
-            zip_name = self.problem_text['zip']
+            zip_name = self.problem_file_name
             zip_file = zipfile.ZipFile(zip_name, 'w')
             zip_file.writestr(self.problem_text['json']['name'], str(self.problem_text['json']['data']))
             zip_file.writestr(self.problem_text['script']['name'], str(self.problem_text['script']['data']))
             zip_file.writestr(self.problem_text['data']['name'],self.problem_text['data']['data'])
             zip_file.close()
-            print('-----------------------\n\n')
         except Exception as e:
             zip_name = None
             print(f'zip error: {e}')

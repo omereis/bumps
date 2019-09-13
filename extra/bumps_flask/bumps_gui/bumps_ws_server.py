@@ -100,11 +100,16 @@ def scan_jobs_list (server_params):
         print(f'"scan_jobs_list" runtime error: {e}')
 #------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
+from refl1d.main import cli as refl1d_cli
 def run_fit_job (fit_job, server_params):
     try:
         sys.argv = fit_job.params
         try:
-            bumps.cli.main()
+            print(f'running fit job for fitter {fit_job.client_message.fitter}')
+            if fit_job.is_bumps():
+                bumps.cli.main()
+            elif fit_job.is_refl1d():
+                refl1d_cli()
         finally:
             server_params.queueJobEnded.put(fit_job)
     except Exception as e:
@@ -222,12 +227,15 @@ def HandleFitMessage (cm, server_params, message):
             #server_params.print_celery_jobs('HandleFitMessage')
         else:
             cm.save_problem_file()
-            if cm.fitter == 'bumps':
-                fit_job.set_standby(db_connection)
-                server_params.append_job (fit_job)
-                scan_jobs_list (server_params)
-            else:
-                print(f'Fitter: {cm.fitter}')
+            fit_job.set_standby(db_connection)
+            server_params.append_job (fit_job)
+            scan_jobs_list (server_params)
+#            if cm.fitter == 'bumps':
+#                fit_job.set_standby(db_connection)
+#                server_params.append_job (fit_job)
+#                scan_jobs_list (server_params)
+#            elif cm.fitter == 'fitter':
+#                print(f'Fitter: {cm.fitter}')
     except Exception as e:
         print (f'bumps_ws_server.py, HandleFitMessage, bug: {e}')
         job_id = 0

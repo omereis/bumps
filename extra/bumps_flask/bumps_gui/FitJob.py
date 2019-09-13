@@ -115,14 +115,10 @@ class FitJob:
         return job_id
 #------------------------------------------------------------------------------
     def prepare_params(self):
-        if self.client_message.fitter == 'bumps':
+        if self.client_message.is_bumps_fitter():
             self.params = self.client_message.prepare_bumps_params()
-        elif self.client_message.fitter == 'refl1d':
+        elif self.client_message.is_refl1d_fitter():
             self.params = self.client_message.prepare_refl1d_params()
-        return self.params
-#------------------------------------------------------------------------------
-    def prepare_params(self):
-        self.params = self.client_message.prepare_bumps_params()
         return self.params
 #------------------------------------------------------------------------------
     def run_bumps_fit(self, db_connection):
@@ -177,6 +173,12 @@ class FitJob:
 #------------------------------------------------------------------------------
     def get_job_dir(self):
         return self.client_message.job_dir
+#------------------------------------------------------------------------------
+    def is_bumps(self):
+        return self.client_message.is_bumps_fitter()
+#------------------------------------------------------------------------------
+    def is_refl1d(self):
+        return self.client_message.is_refl1d_fitter()
 #------------------------------------------------------------------------------
     def delete_job_directory(self):
         try:
