@@ -4,6 +4,7 @@ import nest_asyncio, functools, shutil
 #from mysql.connector import Error
 from sqlalchemy import create_engine, MetaData
 import bumps
+from refl1d.main import cli as refl1d_cli
 #from time import sleep
 try:
     from .oe_debug import print_debug
@@ -100,7 +101,6 @@ def scan_jobs_list (server_params):
         print(f'"scan_jobs_list" runtime error: {e}')
 #------------------------------------------------------------------------------
 #-------- Process: Job Queue Manager ------------------------------------------
-from refl1d.main import cli as refl1d_cli
 def run_fit_job (fit_job, server_params):
     try:
         sys.argv = fit_job.params
@@ -298,11 +298,16 @@ async def HandleStatus (cm, server_params):
     return_params = []
     try:
         db_connection = server_params.database_engine.connect()
-        s = f'SELECT job_id,status_time,status_name FROM t_jobs_status, \
+        sqlSelect = f'SELECT job_id,status_time,status_name'
+        if cm.params:
+            sqlFrom = f'from {tbl_job_status} where {fld_JobID}={cm.params}'
+        else:
+            sqlFrom = f'FROM t_jobs_status, \
 	        (SELECT job_id AS "id",MAX(status_time) AS "latest_status_time" FROM t_jobs_status GROUP BY id) AS t \
 	        WHERE (job_id = id) AND (status_time = latest_status_time) \
-	        AND job_id IN (SELECT job_id FROM t_bumps_jobs WHERE tag="{cm.tag}");'
-        sql = remove_double_blanks (s)
+	        AND job_id IN (SELECT job_id FROM {tbl_bumps_jobs} WHERE tag="{cm.tag}")'
+        sql = f'{sqlSelect} {sqlFrom};'
+        sql = remove_double_blanks (sql)
         res = db_connection.execute(sql)
         for row in res:
             item = {'job_id': row[0], 'job_status': row[2], 'job_time' : str(row[1])}
