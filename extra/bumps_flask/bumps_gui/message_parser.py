@@ -101,10 +101,10 @@ class ClientMessage:
                     if self.fitter == 'bumps':
                         self.problem_file_name = getMessageField (message, MessageProblemFile)
                     elif self.fitter == 'refl1d':
-                        self.problem_text = json.loads(message['refl1d_problem'])
-                        self.problem_file_name = f'{self.job_dir}{os.sep}{self.problem_text["zip"]}'
-                        print(f'problem file name: {self.problem_file_name}')
-                print(f'parse_message: Fitter: {self.fitter}')
+                        message_problem_text = getMessageField (message, 'refl1d_problem')
+                        if message_problem_text:
+                            self.problem_text = json.loads(message['refl1d_problem'])
+                            self.problem_file_name = f'{self.job_dir}{os.sep}{self.problem_text["zip"]}'
                 parse = True
         except Exception as e:
             print(f'message_parser.py, parse_message: {e}')
