@@ -51,6 +51,8 @@ def parse_command (message_command):
         command = MessageCommand.GetDbStatus
     elif message_command == 'get_tags':
         command = MessageCommand.GetTags
+    elif message_command == 'get_refl1d_results':
+        command = MessageCommand.GetRefl1dResults
     else:
         print(f'\nMessage command: "{message_command}\n\n')
         command = MessageCommand.Error

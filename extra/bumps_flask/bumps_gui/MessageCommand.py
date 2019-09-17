@@ -10,4 +10,5 @@ class MessageCommand (Enum):
     GetResults  = 6
     GetDbStatus = 7
     GetTags     = 8
+    GetRefl1dResults = 9
 #------------------------------------------------------------------------------

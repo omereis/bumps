@@ -41,21 +41,3 @@ function save_tag_to_local(tag) {
     return (tag);
 }
 //-----------------------------------------------------------------------------
-function save_tag_to_local(tag) {
-    current_tags = localStorage.getItem('bumps_tags');
-    if (current_tags == null)
-        current_tags = tag;
-    else {
-        all_tags = current_tags.split(';');
-        iTag = all_tags.indexOf(tag);
-        if (iTag >= 0) {
-            if (iTag > 0) {
-                all_tags.splice(iTag,1);
-            }
-        }
-        all_tags.splice(0,1,tag);
-        current_tags = all_tags.join(';');
-    }
-    localStorage.setItem('bumps_tags',current_tags);
-    return (tag);
-}

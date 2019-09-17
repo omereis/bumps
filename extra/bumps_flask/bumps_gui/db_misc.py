@@ -32,3 +32,17 @@ def results_dir_for_job (database_engine, job_id):
         connection.close()
     return res_dir
 #------------------------------------------------------------------------------
+def get_problem_file_name (database_engine, job_id):
+    try:
+        connection = database_engine.connect()
+        strSql = f'select {fld_ProblemFile} from {tbl_bumps_jobs} where {fld_JobID}={job_id};'
+        res = connection.execute(strSql)
+        for row in res:
+            fname = f'{row[0]}'
+    except Exception as e:
+        print(f'Error {e}')
+        fname = None
+    finally:
+        connection.close()
+    return fname
+#------------------------------------------------------------------------------

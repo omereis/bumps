@@ -11,7 +11,7 @@ try:
     from .bumps_constants import *
     from .misc import get_results_dir, get_web_results_dir
     from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
-    from .db_misc import results_dir_for_job
+    from .db_misc import results_dir_for_job, get_problem_file_name
     from .message_parser import ClientMessage, generate_key
     from .get_host_port import get_host_port
     from .MessageCommand import MessageCommand
@@ -21,7 +21,7 @@ except:
     from bumps_constants import *
     from misc import get_results_dir, get_web_results_dir
     from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
-    from db_misc import results_dir_for_job
+    from db_misc import results_dir_for_job, get_problem_file_name
     from message_parser import ClientMessage, MessageCommand, generate_key
     from get_host_port import get_host_port
     from MessageCommand import MessageCommand
@@ -337,6 +337,24 @@ def get_results (cm, server_params):
     return_params = {'id': cm.params, 'files' : files}
     return return_params
 #------------------------------------------------------------------------------
+def get_refl1d_results(cm, server_params):
+    try:
+        results_dir = results_dir_for_job (server_params.database_engine, cm.params)
+        file_path = get_problem_file_name (server_params.database_engine, cm.params)
+        f_split = file_path.split(os.sep)
+        fname = f_split[len(f_split) - 1]
+        if fname.index('.') > 0:
+            fname = fname.split('.')[0]
+        json_name = results_dir + os.sep + os.sep + fname + '-expt.json'
+        #json_name = results_dir + os.sep + 'results' + os.sep + fname + '-expt.json'
+        return_params = {'results directory' : results_dir}
+        return_params = {'results file' : fname}
+        return_params = {'results file' : json_name}
+    except Exception as e:
+        print(f'get_refl1d_results runtime error: {e}')
+        return_params = {'results_directory' : f'Runtime error" {e}'}
+    return (return_params)
+#------------------------------------------------------------------------------
 def get_db_status (cm, server_params):
     params = []
     fmt = '%d %m %Y %H %M %S %f'
@@ -406,6 +424,8 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = get_job_data (cm, server_params)
             elif cm.command == MessageCommand.GetTags:
                 return_params = get_db_tags (cm, server_params)
+            elif cm.command == MessageCommand.GetRefl1dResults:
+                return_params = get_refl1d_results(cm, server_params);
             else:
                 return_params = {'unknown command' : f'{cm.command}'}
         else:
