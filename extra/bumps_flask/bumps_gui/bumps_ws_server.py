@@ -337,7 +337,7 @@ def get_results (cm, server_params):
     return_params = {'id': cm.params, 'files' : files}
     return return_params
 #------------------------------------------------------------------------------
-def get_refl1d_results(cm, server_params):
+def get_refl1d_base_name(cm, server_params):
     try:
         results_dir = results_dir_for_job (server_params.database_engine, cm.params)
         file_path = get_problem_file_name (server_params.database_engine, cm.params)
@@ -345,7 +345,70 @@ def get_refl1d_results(cm, server_params):
         fname = f_split[len(f_split) - 1]
         if fname.index('.') > 0:
             fname = fname.split('.')[0]
-        json_name = results_dir + os.sep + os.sep + fname + '-expt.json'
+        base_name = results_dir + os.sep + os.sep + fname
+    except:
+        print(f'get_refl1d_base_name runtime error: {e}')
+        base_name = None
+    return base_name
+#------------------------------------------------------------------------------
+def read_json_data(json_name):
+    try:
+        f = open(json_name, 'r')
+        file_data = f.read()
+        f.close()
+        json_data = file_data.encode('utf-8').hex()
+    except Exception as e:
+        print(f'json reading runtime error: {e}')
+        json_data = f'{e}'
+    return json_data
+#------------------------------------------------------------------------------
+def read_chi_square(err_name):
+    try:
+        chi_square = 'undefined'
+        f = open (err_name, 'r')
+        err_data = f.read()
+        f.close()
+        strChi = 'chisq='
+        iChi = err_data.index(strChi)
+        iNLLF = err_data.index(', nllf')
+        if (iChi > 0) and (iNLLF > 0):
+            strTmp = err_data[iChi + len(strChi) : iNLLF]
+            iPar = strTmp.index('(')
+            if iPar > 0:
+                chi_square = strTmp[0:iPar]
+            else:
+                chi_square = strTmp
+    except Exception as e:
+        print(f'read_chi_square runtime error: {e}')
+        chi_square = f'{e}'
+    return chi_square
+#------------------------------------------------------------------------------
+def get_refl1d_results(cm, server_params):
+    try:
+        base_name = get_refl1d_base_name(cm, server_params)
+        json_name = base_name + '-expt.json'
+        return_params = {}
+        return_params['json_data'] = read_json_data(json_name)
+        chi_square = read_chi_square(f'{base_name}.err')
+        print(f'chi square: {chi_square}')
+        return_params['chi_square'] = chi_square
+    except Exception as e:
+        print(f'get_refl1d_results runtime error: {e}')
+        return_params = {'results_directory' : f'Runtime error" {e}'}
+    return (return_params) 
+#------------------------------------------------------------------------------
+def get_refl1d_results1(cm, server_params):
+    try:
+        results_dir = results_dir_for_job (server_params.database_engine, cm.params)
+        #file_path = get_problem_file_name (server_params.database_engine, cm.params)
+        #f_split = file_path.split(os.sep)
+        #fname = f_split[len(f_split) - 1]
+        #if fname.index('.') > 0:
+            #fname = fname.split('.')[0]
+        #json_name = results_dir + os.sep + os.sep + fname + '-expt.json'
+        base_name = get_refl1d_base_name(cm, server_params)
+        json_name = base_name + '-expt.json'
+        err_name = base_name + '.err'
         #json_name = results_dir + os.sep + 'results' + os.sep + fname + '-expt.json'
         return_params = {'results directory' : results_dir}
         return_params = {'results file' : fname}
