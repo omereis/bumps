@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 from .celery import app
 import bumps.cli
-from .res_dir import get_results_directory, run_local_bumps
+from .local_fit import get_results_directory, run_local_bumps
 import sys, os, socket, json
 from time import sleep
 #------------------------------------------------------------------------------

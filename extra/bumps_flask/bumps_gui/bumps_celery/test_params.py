@@ -1,5 +1,5 @@
 try:
-    from .res_dir import run_bumps, zip_directory
+    from .local_fit import run_bumps, zip_directory
 except:
     from bumps_celery.res_dir import zip_directory
 import sys
