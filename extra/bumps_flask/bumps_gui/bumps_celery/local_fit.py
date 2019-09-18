@@ -116,10 +116,17 @@ def zip_results(client_message):
         os.chdir(current_dir)
     return zipname
 #------------------------------------------------------------------------------
-def run_local_bumps(message):
+def run_local_fit(message):
     client_message = message_parser.ClientMessage()
     host_ip = socket.gethostbyname(socket.gethostname())
     client_message.parse_message(host_ip, message, None)
+    if client_message.is_bumps_fitter():
+        results = run_local_bumps(client_message)
+    elif client_message.is_refl1d_fitter():
+        results = run_local_rfl1d(client_message)
+    return results
+#------------------------------------------------------------------------------
+def run_local_bumps(client_message):
     work_dir = get_work_dir(client_message.tag)
     client_message.set_job_directory(work_dir)
     save_problem_file (client_message)
@@ -145,4 +152,7 @@ def run_local_bumps(message):
         sys.argv = system_args
         sys.stdout = s_out
     return hex_result
+#------------------------------------------------------------------------------
+def run_local_rfl1d(client_message):
+    return 'client_message'
 #------------------------------------------------------------------------------
