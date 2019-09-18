@@ -397,27 +397,6 @@ def get_refl1d_results(cm, server_params):
         return_params = {'results_directory' : f'Runtime error" {e}'}
     return (return_params) 
 #------------------------------------------------------------------------------
-def get_refl1d_results1(cm, server_params):
-    try:
-        results_dir = results_dir_for_job (server_params.database_engine, cm.params)
-        #file_path = get_problem_file_name (server_params.database_engine, cm.params)
-        #f_split = file_path.split(os.sep)
-        #fname = f_split[len(f_split) - 1]
-        #if fname.index('.') > 0:
-            #fname = fname.split('.')[0]
-        #json_name = results_dir + os.sep + os.sep + fname + '-expt.json'
-        base_name = get_refl1d_base_name(cm, server_params)
-        json_name = base_name + '-expt.json'
-        err_name = base_name + '.err'
-        #json_name = results_dir + os.sep + 'results' + os.sep + fname + '-expt.json'
-        return_params = {'results directory' : results_dir}
-        return_params = {'results file' : fname}
-        return_params = {'results file' : json_name}
-    except Exception as e:
-        print(f'get_refl1d_results runtime error: {e}')
-        return_params = {'results_directory' : f'Runtime error" {e}'}
-    return (return_params)
-#------------------------------------------------------------------------------
 def get_db_status (cm, server_params):
     params = []
     fmt = '%d %m %Y %H %M %S %f'
