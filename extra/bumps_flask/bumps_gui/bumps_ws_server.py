@@ -195,7 +195,7 @@ def send_celery_fit (fit_job, server_params, message):
             dt = datetime.datetime.now() - tStart
         if res.ready():
             fit = str(res.get())
-            print_debug(fit)
+            #print_debug(fit)
         else:
             fit = 'no results. timeout'
         if fit:
