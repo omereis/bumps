@@ -8,7 +8,7 @@ from time import sleep
 from .oe_debug import print_debug
 #------------------------------------------------------------------------------
 @app.task   
-def run_bumps(message):
+def run_celery_fit(message):
     res = run_local_fit (message)
     return res
 #------------------------------------------------------------------------------
