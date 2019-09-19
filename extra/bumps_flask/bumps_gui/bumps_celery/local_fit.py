@@ -112,13 +112,10 @@ def zip_directory (zip_file_name, work_dir):
 def zip_results(client_message):
     try:
         zipname = f'{tempfile.gettempdir()}{os.sep}{ntpath.basename(client_message.job_dir)}.zip'
-        print_debug(f'zip_results, zipname: {zipname}')
         current_dir = os.getcwd()
-        print_debug(f'zip_results, client_message.job_dir: {client_message.job_dir}')
         os.chdir(client_message.job_dir)
         zip_directory (zipname, f'.{os.sep}')
     except Exception as e:
-        print_debug (f'"zip_results" runtime error: {e}')
         print (f'"zip_results" runtime error: {e}')
         zipname = None
     finally:
@@ -142,34 +139,17 @@ def run_local_bumps(client_message):
     params = client_message.prepare_bumps_params()
     try:
         system_args = sys.argv
-        print_debug(f'{params}')
         s_out = sys.stdout
         sys.argv = params
-        #
         bumps.cli.main()
-        #
-        #zipname = zip_results(client_message)
-        #print_debug(f'run_local_bumps, zipname: {zipname}')
-        #f = open(zipname, 'rb')
-        #bin_content = f.read()
-        #f.close()
-        #hex_result = bin_content.hex()
-        hex_result1 = finalize_fit_result_to_hex(client_message)
-        #f = open('bbb.txt', 'w')
-        #f.write('hex_result\n')
-        #f.write(f'{len(hex_result)}\n')
-        #f.write('hex_result1\n')
-        #f.write(f'{len(hex_result1)}\n')
-        #f.close()
-        os.remove(zipname)
-        shutil.rmtree(client_message.job_dir)
+        hex_result = finalize_fit_result_to_hex(client_message)
     except Exception as e:
         print(f'"run_local_bumps" runtime error: {e}')
         hex_result = None
     finally:
         sys.argv = system_args
         sys.stdout = s_out
-    return hex_result1
+    return hex_result
 #------------------------------------------------------------------------------
 def read_json_results(client_message):
     path = ntpath.split(client_message.problem_file_name)
@@ -190,37 +170,22 @@ def read_json_results(client_message):
 #------------------------------------------------------------------------------
 def run_local_rfl1d(client_message):
     work_dir = get_work_dir(client_message.tag, tempfile.gettempdir())
-    print('-------------------------------\n')
-    print(f'run_local_rfl1d, work_dir: "{work_dir}"')
-    print(f'run_local_rfl1d, problem file name: "{client_message.problem_file_name}"')
     client_message.set_job_directory(work_dir)
     client_message.save_refl1d_problem_file()
     params = client_message.prepare_refl1d_params()
-    print(f'run_local_rfl1d, parameters: "{params}"')
     sys.argv = params
     try:
         s_out = sys.stdout
         refl1d_cli()
         sys.stdout = s_out
         hex_result = finalize_fit_result_to_hex(client_message)
-        #zipname = zip_results(client_message)
-        #f = open(zipname, 'rb')
-        #bin_content = f.read()
-        #f.close()
-        #os.remove(zipname)
-        #shutil.rmtree(client_message.job_dir)
-        #hex_result = bin_content.hex()
     except Exception as e:
         print(f'run_local_rfl1d runtime error: {e}')
-    #print(f'run_local_rfl1d, problem file name: "{client_message.problem_file_name}"')
-    print('-------------------------------')
     return hex_result
 #------------------------------------------------------------------------------
 def finalize_fit_result_to_hex(client_message):
     try:
         zipname = zip_results(client_message)
-        print_debug(f'finalize_fit_result_to_hex, zipname: {zipname}')
-        print_debug(f'finalize_fit_result_to_hex, client_message.job_dir: {client_message.job_dir}')
         f = open(zipname, 'rb')
         bin_content = f.read()
         f.close()

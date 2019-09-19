@@ -105,7 +105,6 @@ def run_fit_job (fit_job, server_params):
     try:
         sys.argv = fit_job.params
         try:
-            print(f'running fit job for fitter {fit_job.client_message.fitter}')
             if fit_job.is_bumps():
                 bumps.cli.main()
             elif fit_job.is_refl1d():
@@ -195,7 +194,6 @@ def send_celery_fit (fit_job, server_params, message):
             dt = datetime.datetime.now() - tStart
         if res.ready():
             fit = str(res.get())
-            #print_debug(fit)
         else:
             fit = 'no results. timeout'
         if fit:
@@ -225,18 +223,11 @@ def HandleFitMessage (cm, server_params, message):
             pCelery.start()
             pCelery.job_id = fit_job.job_id
             server_params.append_celery_job(pCelery)
-            #server_params.print_celery_jobs('HandleFitMessage')
         else:
             cm.save_problem_file()
             fit_job.set_standby(db_connection)
             server_params.append_job (fit_job)
             scan_jobs_list (server_params)
-#            if cm.fitter == 'bumps':
-#                fit_job.set_standby(db_connection)
-#                server_params.append_job (fit_job)
-#                scan_jobs_list (server_params)
-#            elif cm.fitter == 'fitter':
-#                print(f'Fitter: {cm.fitter}')
     except Exception as e:
         print (f'bumps_ws_server.py, HandleFitMessage, bug: {e}')
         job_id = 0
@@ -280,7 +271,6 @@ def HandleDelete (cm, server_params):
                 shutil.rmtree(row[0])
         sql = f'delete from t_bumps_jobs where {IDs};'
         db_connection.execute(sql)
-        #remove_from_list_by_id (server_params.listAllJobs, cm.params, db_connection)
     except Exception as e:
         print ('bumps_ws_server.py, HandleDelete, bug: {}'.format(e))
     finally:

@@ -154,7 +154,6 @@ class ClientMessage:
             self.bumps_params.append(f'--store={self.results_dir}')
             self.bumps_params.append(f'--fit=newton')
             self.bumps_params.append(f'--batch')
-            print(f'params: {self.bumps_params}')
         except Exception as e:
             print(f'"ClientMessage.prepare_refl1d_params", runtime error: {e}')
         return self.bumps_params
@@ -206,8 +205,6 @@ class ClientMessage:
                 fExists = os.path.exists(results_dir)
                 n += 1
             self.results_dir = results_dir
-            print(f'set_job_directory, job directory: "{self.job_dir}"')
-            print(f'set_job_directory, results directory: "{self.results_dir}"')
         except Exception as e:
             print(f'Could not create esults directory: {e}')
 #------------------------------------------------------------------------------
@@ -238,19 +235,15 @@ class ClientMessage:
 #------------------------------------------------------------------------------
     def save_refl1d_problem_file(self):
         try:
-            print(f'save_refl1d_problem_file, zip file name: {self.problem_file_name}')
             if self.problem_file_name.index(os.sep) >= 0:
                 path = ntpath.split(self.problem_file_name)[0]
                 if not os.path.exists(path):
                     os.makedirs(path)
             zip_file = zipfile.ZipFile(self.problem_file_name, 'w')
-            print(f'save_refl1d_problem_file, zip file created')
             zip_file.writestr(self.problem_text['json']['name'], str(self.problem_text['json']['data']))
             zip_file.writestr(self.problem_text['script']['name'], str(self.problem_text['script']['data']))
             zip_file.writestr(self.problem_text['data']['name'],self.problem_text['data']['data'])
             zip_file.close()
-            print(f'save_refl1d_problem_file, zip file closed')
-            
         except Exception as e:
             self.problem_file_name = None
             print(f'zip error: {e}')
