@@ -49,9 +49,9 @@ def get_results_directory (params):
         candidate = res_dir
     return candidate
 #------------------------------------------------------------------------------
-def get_work_dir(tag='bumps_results'):
+def get_work_dir(tag='bumps_results', base_dir='.'):
     try:
-        base_dir = "."
+        #base_dir = "."
         n = 1
         work_dir = f'{base_dir}{os.sep}{tag}'
         fExists = os.path.exists(work_dir)
@@ -154,5 +154,14 @@ def run_local_bumps(client_message):
     return hex_result
 #------------------------------------------------------------------------------
 def run_local_rfl1d(client_message):
+    work_dir = get_work_dir(client_message.tag, tempfile.gettempdir())
+    print(f'run_local_rfl1d, work_dir: "{work_dir}"')
+    print(f'run_local_rfl1d, problem file name: "{client_message.problem_file_name}"')
+    client_message.set_job_directory(work_dir)
+    params = client_message.prepare_refl1d_params()
+    print(f'run_local_rfl1d, problem file name: "{client_message.problem_file_name}"')
+    print('-------------------------------')
+    print(f'run_local_rfl1d, parameters: "{params}"')
+    print('-------------------------------')
     return 'client_message'
 #------------------------------------------------------------------------------

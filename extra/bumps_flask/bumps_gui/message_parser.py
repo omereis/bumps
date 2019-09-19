@@ -72,7 +72,8 @@ class ClientMessage:
     message_time = None
     command      = None
     job_dir      = None
-    results_dir  = './results'
+    results_dir  = None
+    #results_dir  = './results'
     problem_text = None
     problem_file_name = None
     params       = None
@@ -98,6 +99,7 @@ class ClientMessage:
                 self.local_id     = getMessageField (message, MessageClientID)
                 self.multi_proc   = getMessageField (message, MessageMultiProc)
                 self.job_dir      = self.compose_job_directory_name (results_dir) # just get the name, does not create directory
+                self.results_dir  = f'{self.job_dir}{os.sep}results'
                 if 'fitter' in message.keys():
                     self.fitter = message['fitter']
                     if self.fitter == 'bumps':
@@ -118,7 +120,9 @@ class ClientMessage:
             if results_dir == None:
                 results_dir = f'.{os.sep}bumps_fit'
             base_results_dir = results_dir
-            tmp_dir = results_dir = base_results_dir + self.host_ip + "/" + self.tag
+            if base_results_dir[len(base_results_dir) - 1] != os.sep:
+                base_results_dir += os.sep
+            tmp_dir = results_dir = base_results_dir + self.host_ip + os.sep + self.tag
         except Exception as e:
             print(f'message_parser.py, compose_job_directory_name: {e}')
             tmp_dir = results_dir = base_results_dir + '/results'
@@ -200,6 +204,8 @@ class ClientMessage:
                 fExists = os.path.exists(results_dir)
                 n += 1
             self.results_dir = results_dir
+            print(f'set_job_directory, job directory: "{self.job_dir}"')
+            print(f'set_job_directory, results directory: "{self.results_dir}"')
         except Exception as e:
             print(f'Could not create esults directory: {e}')
 #------------------------------------------------------------------------------
