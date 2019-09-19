@@ -1,6 +1,6 @@
 from enum import Enum
 from MessageCommand import MessageCommand
-import os, json, zipfile
+import os, json, zipfile, ntpath
 try:
     from .oe_debug import print_debug
     from .misc import get_results_dir
@@ -152,6 +152,8 @@ class ClientMessage:
             self.bumps_params.append('refl1d')
             self.bumps_params.append(self.problem_file_name)
             self.bumps_params.append(f'--store={self.results_dir}')
+            self.bumps_params.append(f'--fit=newton')
+            self.bumps_params.append(f'--batch')
             print(f'params: {self.bumps_params}')
         except Exception as e:
             print(f'"ClientMessage.prepare_refl1d_params", runtime error: {e}')
@@ -236,16 +238,23 @@ class ClientMessage:
 #------------------------------------------------------------------------------
     def save_refl1d_problem_file(self):
         try:
-            zip_name = self.problem_file_name
-            zip_file = zipfile.ZipFile(zip_name, 'w')
+            print(f'save_refl1d_problem_file, zip file name: {self.problem_file_name}')
+            if self.problem_file_name.index(os.sep) >= 0:
+                path = ntpath.split(self.problem_file_name)[0]
+                if not os.path.exists(path):
+                    os.makedirs(path)
+            zip_file = zipfile.ZipFile(self.problem_file_name, 'w')
+            print(f'save_refl1d_problem_file, zip file created')
             zip_file.writestr(self.problem_text['json']['name'], str(self.problem_text['json']['data']))
             zip_file.writestr(self.problem_text['script']['name'], str(self.problem_text['script']['data']))
             zip_file.writestr(self.problem_text['data']['name'],self.problem_text['data']['data'])
             zip_file.close()
+            print(f'save_refl1d_problem_file, zip file closed')
+            
         except Exception as e:
-            zip_name = None
+            self.problem_file_name = None
             print(f'zip error: {e}')
-        return zip_name
+        return self.problem_file_name
 #------------------------------------------------------------------------------
     def is_bumps_fitter(self):
         return self.fitter == 'bumps'
