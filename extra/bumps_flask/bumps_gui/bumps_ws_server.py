@@ -188,13 +188,14 @@ import zipfile
 def send_celery_fit (fit_job, server_params, message):
     try:
         tStart = datetime.datetime.now()
-        res = celery_tasks.run_bumps.delay (message)
+        res = celery_tasks.run_celery_fit.delay (message)
         dt = datetime.datetime.now() - tStart
         while (res.ready() == False) and (dt.seconds < 5 * 60):
             time.sleep(0.1)
             dt = datetime.datetime.now() - tStart
         if res.ready():
             fit = str(res.get())
+            print_debug(fit)
         else:
             fit = 'no results. timeout'
         if fit:
