@@ -3,6 +3,10 @@ import os, sys, socket, shutil
 sys.path.append(os.path.abspath(os.path.join('.', os.pardir)))
 # import message parser from parent
 import message_parser
+import ntpath, tempfile
+from refl1d.main import cli as refl1d_cli
+import sys, bumps, os
+import zipfile
 #------------------------------------------------------------------------------
 def item_from_list (item, src_list):
     try:
@@ -72,7 +76,6 @@ def get_problem_file_name(work_dir, client_message):
         file_name = 'bumps_problem.py'
     return file_name
 #------------------------------------------------------------------------------
-import zipfile
 def zipdir(path, ziph):
     try:
         for root, dirs, files in os.walk(path):
@@ -83,7 +86,6 @@ def zipdir(path, ziph):
     except Exception as e:
         print(f'"zipdir" runtime error: {e}')
 #------------------------------------------------------------------------------
-import sys, bumps, os
 #------------------------------------------------------------------------------
 def save_problem_file (client_message):
     name = client_message.problem_file_name
@@ -100,8 +102,6 @@ def zip_directory (zip_file_name, work_dir):
     zip_file = zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_DEFLATED)
     zipdir(work_dir, zip_file)
     zip_file.close()
-#------------------------------------------------------------------------------
-import ntpath, tempfile
 #------------------------------------------------------------------------------
 def zip_results(client_message):
     try:
@@ -153,15 +153,41 @@ def run_local_bumps(client_message):
         sys.stdout = s_out
     return hex_result
 #------------------------------------------------------------------------------
+def read_json_results(client_message):
+    path = ntpath.split(client_message.problem_file_name)
+    if len(path) > 0:
+        json_file_name = path[1]
+    else:
+        json_file_name = path[0]
+    name = json_file_name.split('.')[0]
+    json_file_path = f'{client_message.results_dir}{os.sep}{name}-expt.json'
+    try:
+        f = open(json_file_path, 'r')
+        content = f.read()
+        f.close()
+    except Exception as e:
+        content = ''
+        print(f'read_json_results runtime error: {e}')
+    return content
+#------------------------------------------------------------------------------
 def run_local_rfl1d(client_message):
     work_dir = get_work_dir(client_message.tag, tempfile.gettempdir())
+    print('-------------------------------')
     print(f'run_local_rfl1d, work_dir: "{work_dir}"')
     print(f'run_local_rfl1d, problem file name: "{client_message.problem_file_name}"')
     client_message.set_job_directory(work_dir)
+    client_message.save_refl1d_problem_file()
     params = client_message.prepare_refl1d_params()
-    print(f'run_local_rfl1d, problem file name: "{client_message.problem_file_name}"')
-    print('-------------------------------')
     print(f'run_local_rfl1d, parameters: "{params}"')
+    sys.argv = params
+    try:
+        s_out = sys.stdout
+        refl1d_cli()
+        sys.stdout = s_out
+        json_results = read_json_results(client_message)
+    except Exception as e:
+        print(f'run_local_rfl1d runtime error: {e}')
+    #print(f'run_local_rfl1d, problem file name: "{client_message.problem_file_name}"')
     print('-------------------------------')
-    return 'client_message'
+    return json_results
 #------------------------------------------------------------------------------
