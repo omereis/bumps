@@ -1,11 +1,11 @@
 import asyncio, websockets, getopt, sys, datetime, time
 import mysql.connector, json, os, multiprocessing
 import nest_asyncio, functools, shutil
-#from mysql.connector import Error
+
 from sqlalchemy import create_engine, MetaData
 import bumps
 from refl1d.main import cli as refl1d_cli
-#from time import sleep
+
 try:
     from .oe_debug import print_debug
     from .bumps_constants import *
@@ -442,7 +442,6 @@ def handle_incoming_message (websocket, message, server_params):
                 if job_id:
                     return_params[str(cm.local_id)] = job_id
             elif cm.command == MessageCommand.Delete:
-                #return_params = asyncio.run(HandleDelete (cm, server_params))
                 return_params = HandleDelete (cm, server_params)
             elif cm.command == MessageCommand.Status:
                 return_params = asyncio.run(HandleStatus (cm, server_params))
