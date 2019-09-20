@@ -193,7 +193,7 @@ def finalize_fit_result_to_hex(client_message):
         shutil.rmtree(client_message.job_dir)
         hex_result = bin_content.hex()
     except Exception as e:
-        hex_result = ''
+        hex_result = f'Error: {e}'
         print(f'run_local_rfl1d runtime error: {e}')
     return hex_result
 #------------------------------------------------------------------------------
