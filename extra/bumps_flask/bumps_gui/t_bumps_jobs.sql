@@ -1,14 +1,14 @@
 CREATE TABLE t_bumps_jobs (
-	job_id		INTEGER NOT NULL PRIMARY KEY,
-	sent_ip		TEXT,
-	sent_time	DATETIME,
-	tag			TEXT,
-	message		TEXT,
-	fitter		TEXT,
-	results_dir	TEXT,
+	job_id			INTEGER NOT NULL PRIMARY KEY,
+	sent_ip			TEXT,
+	sent_time		DATETIME,
+	tag				TEXT,
+	message			TEXT,
+	fitter			TEXT,
+	results_dir		TEXT,
 	problem_file	TEXT,
-	job_status	INTEGER,
-	end_time	DATETIME,
-	blob_message BLOB
+	job_status		INTEGER,
+	end_time		DATETIME,
+	blob_message 	BLOB
 );
-	
+
