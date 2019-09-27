@@ -10,7 +10,8 @@ try:
     from .oe_debug import print_debug
     from .bumps_constants import *
     from .misc import get_results_dir, get_web_results_dir
-    from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
+    from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
+    #from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
     from .db_misc import results_dir_for_job, get_problem_file_name
     from .message_parser import ClientMessage, generate_key
     from .get_host_port import get_host_port
@@ -20,7 +21,8 @@ except:
     from oe_debug import print_debug
     from bumps_constants import *
     from misc import get_results_dir, get_web_results_dir
-    from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id
+    from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
+    #from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
     from db_misc import results_dir_for_job, get_problem_file_name
     from message_parser import ClientMessage, MessageCommand, generate_key
     from get_host_port import get_host_port
@@ -328,20 +330,6 @@ def get_results (cm, server_params):
     return_params = {'id': cm.params, 'files' : files}
     return return_params
 #------------------------------------------------------------------------------
-def get_refl1d_base_name(cm, server_params):
-    try:
-        results_dir = results_dir_for_job (server_params.database_engine, cm.params)
-        file_path = get_problem_file_name (server_params.database_engine, cm.params)
-        f_split = file_path.split(os.sep)
-        fname = f_split[len(f_split) - 1]
-        if fname.index('.') > 0:
-            fname = fname.split('.')[0]
-        base_name = results_dir + os.sep + os.sep + fname
-    except:
-        print(f'get_refl1d_base_name runtime error: {e}')
-        base_name = None
-    return base_name
-#------------------------------------------------------------------------------
 def read_json_data(json_name):
     try:
         f = open(json_name, 'r')
@@ -352,27 +340,6 @@ def read_json_data(json_name):
         print(f'json reading runtime error: {e}')
         json_data = f'{e}'
     return json_data
-#------------------------------------------------------------------------------
-def read_chi_square(err_name):
-    try:
-        chi_square = 'undefined'
-        f = open (err_name, 'r')
-        err_data = f.read()
-        f.close()
-        strChi = 'chisq='
-        iChi = err_data.index(strChi)
-        iNLLF = err_data.index(', nllf')
-        if (iChi > 0) and (iNLLF > 0):
-            strTmp = err_data[iChi + len(strChi) : iNLLF]
-            iPar = strTmp.index('(')
-            if iPar > 0:
-                chi_square = strTmp[0:iPar]
-            else:
-                chi_square = strTmp
-    except Exception as e:
-        print(f'read_chi_square runtime error: {e}')
-        chi_square = f'{e}'
-    return chi_square
 #------------------------------------------------------------------------------
 def get_refl1d_results(cm, server_params):
     try:
@@ -387,6 +354,41 @@ def get_refl1d_results(cm, server_params):
         print(f'get_refl1d_results runtime error: {e}')
         return_params = {'results_directory' : f'Runtime error" {e}'}
     return (return_params) 
+#------------------------------------------------------------------------------
+def get_comm_status(cm, server_params):
+    try:
+        return_params = cm.params
+    except Exception as e:
+        print(f'get_comm_status runtime error: {e}')
+        return_params = {'error' : f'{e}'}
+    return (return_params) 
+#------------------------------------------------------------------------------
+def get_tag_jobs(cm, server_params):
+    return_params = []
+    try:
+        db_connection = server_params.database_engine.connect()
+        sqlSelect = f'SELECT job_id,status_time,status_name'
+        if cm.params:
+            sqlFrom = f'from {tbl_job_status} where {fld_JobID}={cm.params}'
+        else:
+            sqlFrom = f'FROM t_jobs_status, \
+	        (SELECT job_id AS "id",MAX(status_time) AS "latest_status_time" FROM t_jobs_status GROUP BY id) AS t \
+	        WHERE (job_id = id) AND (status_time = latest_status_time) \
+	        AND job_id IN (SELECT job_id FROM {tbl_bumps_jobs} WHERE tag="{cm.tag}")'
+        sql = f'{sqlSelect} {sqlFrom};'
+        sql = remove_double_blanks (sql)
+        res = db_connection.execute(sql)
+        for row in res:
+            item = {'job_id': row[0], 'job_status': row[2], 'job_time' : str(row[1])}
+            return_params.append(item)
+        if len(return_params) == 0:
+            return_params.append('unknown')
+    except Exception as e:
+        print (f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}')
+    finally:
+        if db_connection:
+            db_connection.close()
+    return return_params
 #------------------------------------------------------------------------------
 def get_db_status (cm, server_params):
     params = []
@@ -458,6 +460,10 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = get_db_tags (cm, server_params)
             elif cm.command == MessageCommand.GetRefl1dResults:
                 return_params = get_refl1d_results(cm, server_params);
+            elif cm.command == MessageCommand.CommunicationTest:
+                return_params = get_comm_status(cm, server_params)
+            elif cm.command == MessageCommand.get_tags_jobs:
+                return_params = get_tag_jobs(cm, server_params)
             else:
                 return_params = {'unknown command' : f'{cm.command}'}
         else:

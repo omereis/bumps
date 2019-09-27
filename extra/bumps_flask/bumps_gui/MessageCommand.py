@@ -11,4 +11,6 @@ class MessageCommand (Enum):
     GetDbStatus = 7
     GetTags     = 8
     GetRefl1dResults = 9
+    CommunicationTest = 10;
+    get_tags_jobs = 11;
  #------------------------------------------------------------------------------

@@ -4,12 +4,12 @@ from bumps import cli
 from shutil import rmtree
 try:
     from .bumps_constants import *
-    from .db_misc import get_next_job_id
+    from .db_misc import get_next_job_id, results_dir_for_job, get_problem_file_name
     from .message_parser import get_message_datetime_string
     from .oe_debug import print_debug, print_stack
 except:
     from bumps_constants import *
-    from db_misc import get_next_job_id
+    from db_misc import get_next_job_id, results_dir_for_job, get_problem_file_name
     from message_parser import get_message_datetime_string
     from oe_debug import print_debug, print_stack
 #------------------------------------------------------------------------------
@@ -89,6 +89,7 @@ class FitJob:
     FitType        = None
     params         = None
     job_id         = None
+    chi_square     = None
 #------------------------------------------------------------------------------
     def __init__(self, parsed_message):
         self.client_message = parsed_message
@@ -143,20 +144,25 @@ class FitJob:
 #------------------------------------------------------------------------------
     def set_completed(self, db_connection):
         self.status = JobStatus.Completed
-        self.update_status_in_db(db_connection)
+        print(f'set_completed, fitter is {self.client_message.fitter}')
+        if (self.client_message.fitter == 'refl1d'):
+            base_name = get_refl1d_base_name_from_data(self.client_message.results_dir, self.client_message.problem_file_name)
+            self.chi_square = read_chi_square(f'{base_name}.err')
+        self.update_status_in_db(db_connection, save_chi=True)
 #------------------------------------------------------------------------------
-    def update_status_in_db(self, connection):
+    def update_status_in_db(self, connection, save_chi = False):
         sqlInsert = f'insert into {tbl_job_status} {fld_JobID,fld_StatusTime,fld_StatusName}'.replace("'","")
-        #print_debug(f'"update_status_in_db", sqlInsert: "{sqlInsert}"')
         strSql = f'{sqlInsert} values {self.job_id, str(datetime.datetime.now()), name_of_status(self.status)};'
-        #print(f'sqlInsert: "{sqlInsert}"')
-        #print(f'strSql: "{strSql}"')
-        #print_debug(f'"update_status_in_db", strSql: "{strSql}"')
         try:
             connection.execute(strSql)
         except Exception as e:
             print (f'FitJob.py, update_status_in_db: bug ; {e}\nSQL: "{strSql}"')
-            print_stack ()
+        if (save_chi) and (self.chi_square != None):
+            strSql = f'update {tbl_bumps_jobs} set {fld_chi_sqaue}={self.chi_square} where {fld_JobID}={self.job_id};'
+            try:
+                connection.execute(strSql)
+            except Exception as e:
+                print (f'FitJob.py, update_status_in_db: bug ; {e}\nSQL: "{strSql}"')
 #------------------------------------------------------------------------------
     def get_tag(self):
         return self.client_message.tag
@@ -289,4 +295,49 @@ class ServerParams():
             print(f'process {process.pid} has job id of {process.job_id}')
         print('------------------------')
 #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+def read_chi_square(err_name):
+    try:
+        chi_square = 'undefined'
+        f = open (err_name, 'r')
+        err_data = f.read()
+        f.close()
+        strChi = 'chisq='
+        iChi = err_data.index(strChi)
+        iNLLF = err_data.index(', nllf')
+        if (iChi > 0) and (iNLLF > 0):
+            strTmp = err_data[iChi + len(strChi) : iNLLF]
+            iPar = strTmp.index('(')
+            if iPar > 0:
+                chi_square = strTmp[0:iPar]
+            else:
+                chi_square = strTmp
+    except Exception as e:
+        print(f'read_chi_square runtime error: {e}')
+        chi_square = f'{e}'
+    return chi_square
+#------------------------------------------------------------------------------
+def get_refl1d_base_name_from_data(results_dir, file_path):
+    try:
+        f_split = file_path.split(os.sep)
+        fname = f_split[len(f_split) - 1]
+        if fname.index('.') > 0:
+            fname = fname.split('.')[0]
+        if results_dir[len(results_dir) - 1] != os.sep:
+            results_dir += os.sep
+        base_name = results_dir + fname
+    except:
+        print(f'get_refl1d_base_name runtime error: {e}')
+        base_name = None
+    return base_name
+#------------------------------------------------------------------------------
+def get_refl1d_base_name(cm, server_params):
+    try:
+        results_dir = results_dir_for_job (server_params.database_engine, cm.params)
+        file_path = get_problem_file_name (server_params.database_engine, cm.params)
+        base_name = get_refl1d_base_name_from_data(results_dir, file_path)
+    except Exception as e:
+        print(f'get_refl1d_base_name runtime error: {e}')
+        base_name = None
+    return base_name
 #------------------------------------------------------------------------------

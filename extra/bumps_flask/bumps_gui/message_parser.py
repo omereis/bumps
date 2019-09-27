@@ -53,6 +53,10 @@ def parse_command (message_command):
         command = MessageCommand.GetTags
     elif message_command == 'get_refl1d_results':
         command = MessageCommand.GetRefl1dResults
+    elif message_command == 'communication_text':
+        command = MessageCommand.CommunicationTest
+    elif message_command == 'get_tags_jobs':
+        command = MessageCommand.get_tags_jobs
     else:
         print(f'\nMessage command: "{message_command}\n\n')
         command = MessageCommand.Error
