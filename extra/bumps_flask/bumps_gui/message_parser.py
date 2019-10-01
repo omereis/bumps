@@ -57,6 +57,9 @@ def parse_command (message_command):
         command = MessageCommand.CommunicationTest
     elif message_command == 'get_tags_jobs':
         command = MessageCommand.get_tags_jobs
+    elif message_command == 'get_tag_count':
+        command = MessageCommand.get_tag_count
+
     else:
         print(f'\nMessage command: "{message_command}\n\n')
         command = MessageCommand.Error

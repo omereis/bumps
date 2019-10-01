@@ -13,4 +13,5 @@ class MessageCommand (Enum):
     GetRefl1dResults = 9
     CommunicationTest = 10;
     get_tags_jobs = 11;
+    get_tag_count = 12;
  #------------------------------------------------------------------------------

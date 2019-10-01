@@ -1,6 +1,6 @@
 import asyncio, websockets, getopt, sys, datetime, time
 import mysql.connector, json, os, multiprocessing
-import nest_asyncio, functools, shutil
+import nest_asyncio, functools, shutil, glob
 
 from sqlalchemy import create_engine, MetaData
 import bumps
@@ -237,10 +237,16 @@ def HandleFitMessage (cm, server_params, message):
         db_connection.close()
     return job_id
 #------------------------------------------------------------------------------
-def get_orred_ids (params):
+def get_orred_ids (params, field=None, add_quotes=False):
     astrWhere = []
+    if field == None:
+        field = fld_JobID
     for id in params:
-        astrWhere.append ('(' + fld_JobID + '=' + str(id) + ')')
+        if add_quotes == True:
+            value = f'"{str(id)}"'
+        else:
+            value = str(id)
+        astrWhere.append (f'({field}={value})')
     if len(astrWhere) > 1:
         strWhere = ' or '.join(astrWhere)
     else:
@@ -363,28 +369,67 @@ def get_comm_status(cm, server_params):
         return_params = {'error' : f'{e}'}
     return (return_params) 
 #------------------------------------------------------------------------------
+def get_tag_count(cm, server_params):
+    return_params = []
+    try:
+        if cm.params:
+            db_connection = server_params.database_engine.connect()
+            tags = cm.params.split(',')
+            astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
+            sql = f'select {fld_Tag},COUNT({fld_JobID}) FROM {tbl_bumps_jobs} WHERE {astr} group by {fld_Tag};'
+            #print(f'sql: {sql}')
+            res = db_connection.execute(sql)
+            for row in res:
+                item = {'job_id' : row[0], 'count':row[1]}
+                return_params.append(item)
+    except Exception as e:
+        sErr = f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}'
+        print (sErr)
+        return_params = sErr
+    finally:
+        if db_connection:
+            db_connection.close()
+    return return_params
+#------------------------------------------------------------------------------
 def get_tag_jobs(cm, server_params):
     return_params = []
     try:
-        db_connection = server_params.database_engine.connect()
-        sqlSelect = f'SELECT job_id,status_time,status_name'
         if cm.params:
-            sqlFrom = f'from {tbl_job_status} where {fld_JobID}={cm.params}'
-        else:
-            sqlFrom = f'FROM t_jobs_status, \
-	        (SELECT job_id AS "id",MAX(status_time) AS "latest_status_time" FROM t_jobs_status GROUP BY id) AS t \
-	        WHERE (job_id = id) AND (status_time = latest_status_time) \
-	        AND job_id IN (SELECT job_id FROM {tbl_bumps_jobs} WHERE tag="{cm.tag}")'
-        sql = f'{sqlSelect} {sqlFrom};'
-        sql = remove_double_blanks (sql)
-        res = db_connection.execute(sql)
-        for row in res:
-            item = {'job_id': row[0], 'job_status': row[2], 'job_time' : str(row[1])}
-            return_params.append(item)
-        if len(return_params) == 0:
-            return_params.append('unknown')
+            db_connection = server_params.database_engine.connect()
+            tags = cm.params.split(',')
+            astr = []
+            for n in range(len(tags)):
+                s = f'{fld_Tag}="{tags[n]}"'
+                astr.append(s)
+            if len(astr) > 1:
+                where_tags = ' or '.join(astr)
+            else:
+                where_tags = ' or '.join(astr)
+            sql = f'SELECT {fld_JobID},{fld_SentTime},{fld_Tag},{fld_ResultsDir},{fld_chi_sqaue} FROM {tbl_bumps_jobs} WHERE {where_tags};'
+            print('===================================================')
+            print(f'get_tag_jobs, parameters: :{cm.params}')
+            print(f'get_tag_jobs, parameters type: :{type(cm.params)}')
+            print(f'get_tag_jobs, sql:\n{sql}')
+            res = db_connection.execute(sql)
+            for row in res:
+                results_dir = row[3]
+                fname = glob.glob(f'{results_dir}/*.zip')
+                if len(fname) > 0:
+                    ar = fname.split('/')
+                    fname = ar[len(ar) - 1]
+                    fname = fname.replace('zip','refl')
+                item = {'job_id': row[0], 'sent_time': row[1], 'tag' : row[2], 'file_name': fname, 'chi_square' : row[4]}
+                print(f'get_tag_jobs, item: {item}')
+                return_params.append(item)
+            print('===================================================')
+            #print_debug(blob_content)
+        #if len(return_params) == 0:
+            #return_params.append('unknown')
+            #return_params = cm.params
     except Exception as e:
-        print (f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}')
+        sErr = f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}'
+        print (sErr)
+        return_params = sErr
     finally:
         if db_connection:
             db_connection.close()
@@ -464,6 +509,8 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = get_comm_status(cm, server_params)
             elif cm.command == MessageCommand.get_tags_jobs:
                 return_params = get_tag_jobs(cm, server_params)
+            elif cm.command == MessageCommand.get_tag_count:
+                return_params = get_tag_count(cm, server_params)
             else:
                 return_params = {'unknown command' : f'{cm.command}'}
         else:
