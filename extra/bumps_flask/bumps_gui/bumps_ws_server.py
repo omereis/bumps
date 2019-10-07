@@ -423,8 +423,13 @@ def load_jobs_by_tags(cm, server_params):
             res = db_connection.execute(sql)
             for row in res:
                 d = row[2]
-                strTime = f'{d.month}/{d.day}, {d.year} {d.hour}:{d.minute}'
-                item = {'job_id' : row[0], 'tag':row[1], 'sent_time' : strTime, 'chi_square' : row[3]}
+                strDate = f'{d.month}/{d.day}, {d.year}'
+                strTime = f'{d.hour}:{d.minute}'
+                if row[3] == None:
+                    chi = 'none'
+                else:
+                    chi = row[3];
+                item = {'job_id' : row[0], 'tag':row[1], 'sent_date' : strDate, 'sent_time' : strTime, 'chi_square' : chi}
                 return_params.append(item)
     except Exception as e:
         sErr = f'bumps_ws_server.py, load_jobs_by_tags, runteime error: {e}'
