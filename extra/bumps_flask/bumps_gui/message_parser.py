@@ -59,7 +59,8 @@ def parse_command (message_command):
         command = MessageCommand.get_tags_jobs
     elif message_command == 'get_tag_count':
         command = MessageCommand.get_tag_count
-
+    elif message_command == 'del_by_tag':
+        command = MessageCommand.del_by_tag
     else:
         print(f'\nMessage command: "{message_command}\n\n')
         command = MessageCommand.Error

@@ -14,4 +14,5 @@ class MessageCommand (Enum):
     CommunicationTest = 10;
     get_tags_jobs = 11;
     get_tag_count = 12;
+    del_by_tag = 13;
  #------------------------------------------------------------------------------

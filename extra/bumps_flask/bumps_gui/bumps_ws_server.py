@@ -383,7 +383,27 @@ def get_tag_count(cm, server_params):
                 item = {'job_id' : row[0], 'count':row[1]}
                 return_params.append(item)
     except Exception as e:
-        sErr = f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}'
+        sErr = f'bumps_ws_server.py, get_tag_count, runteime error: {e}'
+        print (sErr)
+        return_params = sErr
+    finally:
+        if db_connection:
+            db_connection.close()
+    return return_params
+#------------------------------------------------------------------------------
+def delete_by_tag(cm, server_params):
+    return_params = []
+    try:
+        if cm.params:
+            db_connection = server_params.database_engine.connect()
+            tags = cm.params.split(',')
+            astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
+            sql = f'delete from {tbl_bumps_jobs} WHERE {astr};'
+            #print(f'sql: {sql}')
+            res = db_connection.execute(sql)
+            return_params.append = tags
+    except Exception as e:
+        sErr = f'bumps_ws_server.py, delete_by_tag, runteime error: {e}'
         print (sErr)
         return_params = sErr
     finally:
@@ -511,6 +531,8 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = get_tag_jobs(cm, server_params)
             elif cm.command == MessageCommand.get_tag_count:
                 return_params = get_tag_count(cm, server_params)
+            elif cm.command == MessageCommand.del_by_tag:
+                return_params = delete_by_tag(cm, server_params)
             else:
                 return_params = {'unknown command' : f'{cm.command}'}
         else:
