@@ -15,4 +15,5 @@ class MessageCommand (Enum):
     get_tags_jobs = 11;
     get_tag_count = 12;
     del_by_tag = 13;
+    load_by_tag = 14;
  #------------------------------------------------------------------------------
