@@ -9,6 +9,7 @@ CREATE TABLE t_bumps_jobs (
 	problem_file	TEXT,
 	job_status		INTEGER,
 	end_time		DATETIME,
+	chi_square		DOUBLE,
 	blob_message 	BLOB
 );
 
