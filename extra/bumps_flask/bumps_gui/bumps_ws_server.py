@@ -403,6 +403,10 @@ def delete_by_tag(cm, server_params):
             res = db_connection.execute(sql)
             return_params.append = tags
     except Exception as e:
+        strErr = f'{e}'
+        print(f'\nError:\n{strErr}\n')
+        s1 = strErr.replace("'",'"')
+        print(f'\nError:\n{s1}\n')
         sErr = f'bumps_ws_server.py, delete_by_tag, runteime error: {e}'
         print (sErr)
         return_params = sErr
@@ -428,11 +432,72 @@ def load_jobs_by_tags(cm, server_params):
                 if row[3] == None:
                     chi = 'none'
                 else:
-                    chi = row[3];
+                    chi = row[3]
                 item = {'job_id' : row[0], 'tag':row[1], 'sent_date' : strDate, 'sent_time' : strTime, 'chi_square' : chi}
                 return_params.append(item)
     except Exception as e:
         sErr = f'bumps_ws_server.py, load_jobs_by_tags, runteime error: {e}'
+        print (sErr)
+        return_params = sErr
+    finally:
+        if db_connection:
+            db_connection.close()
+    return return_params
+#------------------------------------------------------------------------------
+def chi_from_db(db_value):
+    if db_value == None:
+        chi = 'none'
+    else:
+        chi = db_value
+    return chi
+#------------------------------------------------------------------------------
+def zip_file_from_results_dir(results_dir):
+    zip_path = glob.glob(results_dir + os.sep + '*.zip')[0]
+    return zip_path
+#------------------------------------------------------------------------------
+def get_refl1d_zip_name(zip_path):
+    aZip = zip_path.split(os.sep)
+    zip_name = aZip[len(aZip) - 1]
+    return zip_name
+#------------------------------------------------------------------------------
+def get_refl1d_table_data(zip_path):
+    head,tail = os.path.split(zip_path)
+    json_name = head + os.sep + tail.split('.')[0] + '-expt.json'
+    sld_table = read_json_data(json_name)
+    return sld_table
+#------------------------------------------------------------------------------
+def read_zip_data(zip_path):
+    zip_file = zipfile.ZipFile(zip_path)
+    zip_names = zip_file.namelist()
+    data_name = None
+    data = ''
+    for n in range(len(zip_names)):
+        if zip_names[n].endswith('refl'):
+            data_name = zip_names[n];
+    if data_name:
+        f = zip_file.open(data_name)
+        data = f.read()
+        f.close()
+    return data.decode('utf8')
+#------------------------------------------------------------------------------
+def load_jobs_by_id(cm, server_params):
+    return_params = []
+    try:
+        if cm.params:
+            db_connection = server_params.database_engine.connect()
+            id = cm.params
+            sql = f'select {fld_Tag},{fld_chi_sqaue},{fld_ResultsDir} FROM {tbl_bumps_jobs} WHERE {fld_JobID}={id};'
+            res = db_connection.execute(sql)
+            for row in res:
+                zip_path = zip_file_from_results_dir(row[2])
+                zip_name = get_refl1d_zip_name(zip_path)
+                zip_data = read_zip_data(zip_path)
+                refl1d_table = get_refl1d_table_data(zip_path)
+                item = {'job_id' : id, 'tag' : row[0], 'zip_name' : zip_name, 'chi_square' : chi_from_db(row[1]), 'data' : zip_data, 'fit_table': refl1d_table}
+                return_params.append(item)
+    except Exception as e:
+        sErr = f'bumps_ws_server.py, load_jobs_by_tags, runteime error: {e}'
+        sErr = sErr.replace("'", '"');
         print (sErr)
         return_params = sErr
     finally:
@@ -564,6 +629,8 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = delete_by_tag(cm, server_params)
             elif cm.command == MessageCommand.load_by_tag:
                 return_params = load_jobs_by_tags(cm, server_params)
+            elif cm.command == MessageCommand.job_data_by_id:
+                return_params = load_jobs_by_id(cm, server_params)
             else:
                 return_params = {'unknown command' : f'{cm.command}'}
         else:
