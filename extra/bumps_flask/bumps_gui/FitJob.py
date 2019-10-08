@@ -1,5 +1,5 @@
 from enum import Enum
-import asyncio, sys, multiprocessing, datetime, os
+import asyncio, sys, multiprocessing, datetime, os, glob
 from bumps import cli
 from shutil import rmtree
 try:
@@ -148,9 +148,18 @@ class FitJob:
         if (self.client_message.fitter == 'refl1d'):
             base_name = get_refl1d_base_name_from_data(self.client_message.results_dir, self.client_message.problem_file_name)
             self.chi_square = read_chi_square(f'{base_name}.err')
-        self.update_status_in_db(db_connection, save_chi=True)
+            if os.path.exists(self.client_message.results_dir):
+                json_name = glob.glob(f'{self.client_message.results_dir}{os.sep}*json')
+                if (len(json_name)):
+                    fjson = open(json_name[0], 'r')
+                    strJson = fjson.read()
+                    fjson.close()
+                else:
+                    strJson = None
+            print(f'set_completed, results directory:\n{self.client_message.results_dir}\n')
+        self.update_status_in_db(db_connection, save_chi=True, jsonResults=strJson)
 #------------------------------------------------------------------------------
-    def update_status_in_db(self, connection, save_chi = False):
+    def update_status_in_db(self, connection, save_chi = False, jsonResults=None):
         sqlInsert = f'insert into {tbl_job_status} {fld_JobID,fld_StatusTime,fld_StatusName}'.replace("'","")
         strSql = f'{sqlInsert} values {self.job_id, str(datetime.datetime.now()), name_of_status(self.status)};'
         try:
@@ -159,6 +168,13 @@ class FitJob:
             print (f'FitJob.py, update_status_in_db: bug ; {e}\nSQL: "{strSql}"')
         if (save_chi) and (self.chi_square != None):
             strSql = f'update {tbl_bumps_jobs} set {fld_chi_sqaue}={self.chi_square} where {fld_JobID}={self.job_id};'
+            try:
+                connection.execute(strSql)
+            except Exception as e:
+                print (f'FitJob.py, update_status_in_db: bug ; {e}\nSQL: "{strSql}"')
+        if (jsonResults):
+            jsonResults = jsonResults.replace('"','""')
+            strSql = f'update {tbl_bumps_jobs} set {fld_json_results}="{jsonResults}" where  {fld_JobID}={self.job_id};'
             try:
                 connection.execute(strSql)
             except Exception as e:

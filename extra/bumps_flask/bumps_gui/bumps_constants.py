@@ -11,6 +11,7 @@ fld_JobStatus    = 'job_status'
 fld_EndTime      = 'end_time'
 fld_chi_sqaue    =  'chi_square'
 fld_blob_message = 'blob_message'
+fld_json_results = 'json_results'
 
 tbl_job_status      = 't_jobs_status'
 fld_StatusTime = 'status_time'

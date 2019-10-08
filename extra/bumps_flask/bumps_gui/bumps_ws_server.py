@@ -314,7 +314,7 @@ async def HandleStatus (cm, server_params):
         if len(return_params) == 0:
             return_params.append('unknown')
     except Exception as e:
-        print (f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}')
+        print (f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}\nSQL:\n{sql}')
     finally:
         if db_connection:
             db_connection.close()
@@ -401,10 +401,10 @@ def delete_by_tag(cm, server_params):
             sql = f'delete from {tbl_bumps_jobs} WHERE {astr};'
             #print(f'sql: {sql}')
             res = db_connection.execute(sql)
-            return_params.append = tags
+            return_params = tags
     except Exception as e:
         strErr = f'{e}'
-        print(f'\nError:\n{strErr}\n')
+        print(f'\ndelete_by_tag Error:\n{strErr}\n')
         s1 = strErr.replace("'",'"')
         print(f'\nError:\n{s1}\n')
         sErr = f'bumps_ws_server.py, delete_by_tag, runteime error: {e}'
@@ -496,7 +496,7 @@ def load_jobs_by_id(cm, server_params):
                 item = {'job_id' : id, 'tag' : row[0], 'zip_name' : zip_name, 'chi_square' : chi_from_db(row[1]), 'data' : zip_data, 'fit_table': refl1d_table}
                 return_params.append(item)
     except Exception as e:
-        sErr = f'bumps_ws_server.py, load_jobs_by_tags, runteime error: {e}'
+        sErr = f'bumps_ws_server.py, load_jobs_by_id, runteime error: {e}'
         sErr = sErr.replace("'", '"');
         print (sErr)
         return_params = sErr

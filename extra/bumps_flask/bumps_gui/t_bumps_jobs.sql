@@ -10,6 +10,7 @@ CREATE TABLE t_bumps_jobs (
 	job_status		INTEGER,
 	end_time		DATETIME,
 	chi_square		DOUBLE,
-	blob_message 	BLOB
+	blob_message 	BLOB,
+	json_results	TEXT
 );
 
