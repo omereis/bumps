@@ -65,6 +65,8 @@ def parse_command (message_command):
         command = MessageCommand.load_by_tag
     elif message_command == 'job_data_by_id':
         command = MessageCommand.job_data_by_id
+    elif message_command == 'get_all_tag_count':
+        command = MessageCommand.get_all_tag_count
     else:
         print(f'\nMessage command: "{message_command}\n\n')
         command = MessageCommand.Error

@@ -370,16 +370,18 @@ def get_comm_status(cm, server_params):
 def get_tag_count(cm, server_params):
     return_params = []
     try:
-        if cm.params:
-            db_connection = server_params.database_engine.connect()
+        db_connection = server_params.database_engine.connect()
+        sql = f'select {fld_Tag},COUNT({fld_JobID}) FROM {tbl_bumps_jobs} WHERE ({fld_Fitter}="refl1d")'
+        if (cm.params != None) and (len(cm.params) > 0):
             tags = cm.params.split(',')
             astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
-            sql = f'select {fld_Tag},COUNT({fld_JobID}) FROM {tbl_bumps_jobs} WHERE {astr} group by {fld_Tag};'
-            #print(f'sql: {sql}')
-            res = db_connection.execute(sql)
-            for row in res:
-                item = {'job_id' : row[0], 'count':row[1]}
-                return_params.append(item)
+            sql += f' AND ({astr})'
+        sql += f' group by {fld_Tag};'
+        #print(f'sql: {sql}')
+        res = db_connection.execute(sql)
+        for row in res:
+            item = {'job_id' : row[0], 'count':row[1]}
+            return_params.append(item)
     except Exception as e:
         sErr = f'bumps_ws_server.py, get_tag_count, runteime error: {e}'
         print (sErr)
@@ -387,6 +389,15 @@ def get_tag_count(cm, server_params):
     finally:
         if db_connection:
             db_connection.close()
+    return return_params
+#------------------------------------------------------------------------------
+def get_all_tag_count(cm, server_params):
+    try:
+        return_params = get_tag_count(cm, server_params)
+    except Exception as e:
+        sErr = f'bumps_ws_server.py, get_tag_count, runteime error: {e}'
+        print (sErr)
+        return_params = sErr
     return return_params
 #------------------------------------------------------------------------------
 def delete_by_tag(cm, server_params):
@@ -642,6 +653,8 @@ def handle_incoming_message (websocket, message, server_params):
                 return_params = load_jobs_by_tags(cm, server_params)
             elif cm.command == MessageCommand.job_data_by_id:
                 return_params = load_jobs_by_id(cm, server_params)
+            elif cm.command == MessageCommand.get_all_tag_count:
+                return_params = get_all_tag_count(cm, server_params)
             else:
                 return_params = {'unknown command' : f'{cm.command}'}
         else:
