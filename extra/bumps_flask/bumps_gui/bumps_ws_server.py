@@ -1,7 +1,7 @@
 import asyncio, websockets, getopt, sys, datetime, time
 import mysql.connector, json, os, multiprocessing
 import nest_asyncio, functools, shutil, glob
-
+from pathlib import Path
 from sqlalchemy import create_engine, MetaData
 import bumps
 from refl1d.main import cli as refl1d_cli
@@ -11,7 +11,6 @@ try:
     from .bumps_constants import *
     from .misc import get_results_dir, get_web_results_dir
     from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
-    #from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
     from .db_misc import results_dir_for_job, get_problem_file_name
     from .message_parser import ClientMessage, generate_key
     from .get_host_port import get_host_port
@@ -22,7 +21,6 @@ except:
     from bumps_constants import *
     from misc import get_results_dir, get_web_results_dir
     from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
-    #from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
     from db_misc import results_dir_for_job, get_problem_file_name
     from message_parser import ClientMessage, MessageCommand, generate_key
     from get_host_port import get_host_port
@@ -422,18 +420,20 @@ def load_jobs_by_tags(cm, server_params):
             db_connection = server_params.database_engine.connect()
             tags = cm.params.split(',')
             astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
-            sql = f'select {fld_JobID}, {fld_Tag}, {fld_SentTime}, {fld_chi_sqaue} FROM {tbl_bumps_jobs} WHERE {astr} order by {fld_Tag};'
+            sql = f'select {fld_JobID}, {fld_Tag}, {fld_SentTime}, {fld_chi_sqaue}, {fld_ProblemFile} FROM {tbl_bumps_jobs} WHERE {astr} order by {fld_Tag};'
             #print(f'sql: {sql}')
             res = db_connection.execute(sql)
             for row in res:
                 d = row[2]
                 strDate = f'{d.month}/{d.day}, {d.year}'
-                strTime = f'{d.hour}:{d.minute}'
+                strMin = str(d.minute).rjust(2,'0')
+                strTime = f'{d.hour}:{strMin}'#{d.minute}
                 if row[3] == None:
                     chi = 'none'
                 else:
                     chi = row[3]
-                item = {'job_id' : row[0], 'tag':row[1], 'sent_date' : strDate, 'sent_time' : strTime, 'chi_square' : chi}
+                fname = get_problem_name (row[4])
+                item = {'job_id' : row[0], 'tag':row[1], 'sent_date' : strDate, 'sent_time' : strTime, 'chi_square' : chi, 'problem_name' : fname}
                 return_params.append(item)
     except Exception as e:
         sErr = f'bumps_ws_server.py, load_jobs_by_tags, runteime error: {e}'
@@ -480,20 +480,31 @@ def read_zip_data(zip_path):
         f.close()
     return data.decode('utf8')
 #------------------------------------------------------------------------------
+def get_problem_name (db_name):
+    basename = os.path.basename(db_name)
+    name = basename.replace('.zip', '.refl')
+    return name
+#------------------------------------------------------------------------------
 def load_jobs_by_id(cm, server_params):
     return_params = []
     try:
         if cm.params:
             db_connection = server_params.database_engine.connect()
             id = cm.params
-            sql = f'select {fld_Tag},{fld_chi_sqaue},{fld_ResultsDir} FROM {tbl_bumps_jobs} WHERE {fld_JobID}={id};'
+            sql = f'select {fld_Tag},{fld_chi_sqaue},{fld_ResultsDir},{fld_ProblemFile} FROM {tbl_bumps_jobs} WHERE {fld_JobID}={id};'
             res = db_connection.execute(sql)
             for row in res:
-                zip_path = zip_file_from_results_dir(row[2])
-                zip_name = get_refl1d_zip_name(zip_path)
-                zip_data = read_zip_data(zip_path)
-                refl1d_table = get_refl1d_table_data(zip_path)
-                item = {'job_id' : id, 'tag' : row[0], 'zip_name' : zip_name, 'chi_square' : chi_from_db(row[1]), 'data' : zip_data, 'fit_table': refl1d_table}
+                base_name = get_refl1d_base_name(cm, server_params)
+                results_dir = str(Path(base_name).parent)
+                if os.path.exists(results_dir):
+                    zip_path = zip_file_from_results_dir(row[2])
+                    zip_name = get_refl1d_zip_name(zip_path)
+                    zip_data = read_zip_data(zip_path)
+                    refl1d_table = get_refl1d_table_data(zip_path)
+                    fname = get_problem_name (row[3])
+                    item = {'job_id' : id, 'tag' : row[0], 'zip_name' : zip_name, 'chi_square' : chi_from_db(row[1]), 'data' : zip_data, 'fit_table': refl1d_table, 'problem_name' : fname}
+                else:
+                    item = {'job_id' : id, 'error' : 'missing files'}
                 return_params.append(item)
     except Exception as e:
         sErr = f'bumps_ws_server.py, load_jobs_by_id, runteime error: {e}'
