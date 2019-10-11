@@ -354,6 +354,7 @@ def get_refl1d_results(cm, server_params):
         chi_square = read_chi_square(f'{base_name}.err')
         print(f'chi square: {chi_square}')
         return_params['chi_square'] = chi_square
+        return_params['job_id'] = cm.params # feedback
     except Exception as e:
         print(f'get_refl1d_results runtime error: {e}')
         return_params = {'results_directory' : f'Runtime error" {e}'}
