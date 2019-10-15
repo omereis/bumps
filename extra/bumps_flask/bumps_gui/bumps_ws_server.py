@@ -425,10 +425,21 @@ def delete_by_tag(cm, server_params):
             db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
+def is_broken_pipe_err(e):
+    strErr = f'{e}'
+    return (strErr.find('32') > 0) and (strErr.find('BrokenPipeError') > 0)
+#------------------------------------------------------------------------------
+load_job_by_tag_counter = 0;
+#------------------------------------------------------------------------------
 def load_jobs_by_tags(cm, server_params):
+    global load_job_by_tag_counter
     return_params = []
     try:
         if cm.params:
+            if 'load_job_by_tag_counter' in locals():
+                load_job_by_tag_counter += 1
+            else:
+                load_job_by_tag_counter = 1
             db_connection = server_params.database_engine.connect()
             tags = cm.params.split(',')
             astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
@@ -448,9 +459,14 @@ def load_jobs_by_tags(cm, server_params):
                 item = {'job_id' : row[0], 'tag':row[1], 'sent_date' : strDate, 'sent_time' : strTime, 'chi_square' : chi, 'problem_name' : fname}
                 return_params.append(item)
     except Exception as e:
-        sErr = f'bumps_ws_server.py, load_jobs_by_tags, runteime error: {e}'
-        print (sErr)
-        return_params = sErr
+        if (is_broken_pipe_err(e) and (load_job_by_tag_counter < 5)):
+            load_job_by_tag_counter += 1
+            time.sleep(0.1)
+            return load_jobs_by_tags(cm, server_params)
+        else:
+            sErr = f'bumps_ws_server.py, load_jobs_by_tags, runteime error: {e}'
+            print (sErr)
+            return_params = sErr
     finally:
         if db_connection:
             db_connection.close()
