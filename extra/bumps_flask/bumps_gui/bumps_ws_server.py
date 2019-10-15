@@ -350,11 +350,14 @@ def get_refl1d_results(cm, server_params):
         base_name = get_refl1d_base_name(cm, server_params)
         json_name = base_name + '-expt.json'
         return_params = {}
+        problem_name = get_problem_name_from_blob_field(cm.params, server_params)
+        #jsonMsg = json_from_blob(res_buffer[4])
         return_params['json_data'] = read_json_data(json_name)
         chi_square = read_chi_square(f'{base_name}.err')
         print(f'chi square: {chi_square}')
         return_params['chi_square'] = chi_square
         return_params['job_id'] = cm.params # feedback
+        return_params['problem_name'] = problem_name
     except Exception as e:
         print(f'get_refl1d_results runtime error: {e}')
         return_params = {'results_directory' : f'Runtime error" {e}'}
@@ -513,27 +516,64 @@ def get_problem_name (db_name):
     name = basename.replace('.zip', '.refl')
     return name
 #------------------------------------------------------------------------------
+def json_from_blob(blob):
+    try:
+        msg_data = bytes.fromhex(blob.decode('utf-8')).decode('utf-8')
+        #print(f'message data. type: {type(msg_data)}, length: {len(msg_data)}')
+        #f = open('msg.txt', 'w')
+        #f.write(msg_data)
+        #f.close()
+        #print('closed')
+        jmsg = json.loads(msg_data.replace('"','\\\"').replace("'",'"'))
+    except Exception as e:
+        print(f'get_refl1d_results runtime error: {e}')
+        jmsg = {}
+    return jmsg
+#------------------------------------------------------------------------------
+def get_problem_name_from_blob_field(job_id, server_params):
+    db_connection = None
+    try:
+        db_connection = server_params.database_engine.connect()
+        sql = f'select {fld_blob_message} from {tbl_bumps_jobs} where {fld_JobID}="{job_id}";'
+        res = db_connection.execute(sql)
+        bufs = res.fetchone()
+        buf = bufs[0]
+        jmsg = json_from_blob(buf)
+        problem_name = jmsg['problem_name']
+    except Exception as e:
+        print(f'get_refl1d_results runtime error: {e}')
+        problem_name = ''
+    finally:
+        if db_connection:
+            db_connection.close()
+    return (problem_name) 
+#------------------------------------------------------------------------------
 def load_jobs_by_id(cm, server_params):
+    #get_problem_name_from_blob_field(cm.params, server_params);
     return_params = []
     try:
         if cm.params:
             db_connection = server_params.database_engine.connect()
             id = cm.params
-            sql = f'select {fld_Tag},{fld_chi_sqaue},{fld_ResultsDir},{fld_ProblemFile} FROM {tbl_bumps_jobs} WHERE {fld_JobID}={id};'
+            sql = f'select {fld_Tag},{fld_chi_sqaue},{fld_ResultsDir},{fld_ProblemFile},{fld_blob_message} FROM {tbl_bumps_jobs} WHERE {fld_JobID}={id};'
+            print(f'sql:\n{sql}')
             res = db_connection.execute(sql)
-            for row in res:
-                base_name = get_refl1d_base_name(cm, server_params)
-                results_dir = str(Path(base_name).parent)
-                if os.path.exists(results_dir):
-                    zip_path = zip_file_from_results_dir(row[2])
-                    zip_name = get_refl1d_zip_name(zip_path)
-                    zip_data = read_zip_data(zip_path)
-                    refl1d_table = get_refl1d_table_data(zip_path)
-                    fname = get_problem_name (row[3])
-                    item = {'job_id' : id, 'tag' : row[0], 'zip_name' : zip_name, 'chi_square' : chi_from_db(row[1]), 'data' : zip_data, 'fit_table': refl1d_table, 'problem_name' : fname}
-                else:
-                    item = {'job_id' : id, 'error' : 'missing files'}
-                return_params.append(item)
+            res_buffer = res.fetchone()
+            base_name = get_refl1d_base_name(cm, server_params)
+            results_dir = str(Path(base_name).parent)
+            if os.path.exists(results_dir):
+                zip_path = zip_file_from_results_dir(res_buffer[2])
+                zip_name = get_refl1d_zip_name(zip_path)
+                zip_data = read_zip_data(zip_path)
+                refl1d_table = get_refl1d_table_data(zip_path)
+                    #fname = get_problem_name (res_buffer[3])
+                jsonMsg = json_from_blob(res_buffer[4])
+                problem_name = jsonMsg['problem_name']
+                item = {'job_id' : id, 'tag' : res_buffer[0], 'zip_name' : zip_name, 'chi_square' : chi_from_db(res_buffer[1]), 'data' : zip_data, 'fit_table': refl1d_table, 'problem_name' : problem_name}
+            else:
+                get_problem_name_from_blob_field(cm.params, server_params);
+                item = {'job_id' : id, 'error' : 'missing files'}
+            return_params.append(item)
     except Exception as e:
         sErr = f'bumps_ws_server.py, load_jobs_by_id, runteime error: {e}'
         sErr = sErr.replace("'", '"');
