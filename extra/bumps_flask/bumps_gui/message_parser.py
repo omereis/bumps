@@ -96,6 +96,7 @@ class ClientMessage:
     local_id     = None
     fitter       = 'bumps'
     refl1d_params = None
+    refl1d_file_data = None
 #------------------------------------------------------------------------------
     def parse_message(self, host_ip, message, results_dir):
         try:
@@ -119,10 +120,16 @@ class ClientMessage:
                     if self.fitter == 'bumps':
                         self.problem_file_name = getMessageField (message, MessageProblemFile)
                     elif self.fitter == 'refl1d':
-                        message_problem_text = getMessageField (message, 'refl1d_problem')
-                        if message_problem_text:
-                            self.problem_text = json.loads(message['refl1d_problem'])
+                        if 'refl1d_problem' in message.keys():
+                            #message_problem = message['refl1d_problem']
+                            self.problem_text = message['refl1d_problem']#json.loads(message['refl1d_problem'])
                             self.problem_file_name = f'{self.job_dir}{os.sep}{self.problem_text["zip"]}'
+                            #data = self.problem_text['data']
+                            self.refl1d_file_data = self.problem_text['data']['data']
+                        #message_problem_text = getMessageField (message, 'refl1d_problem')
+                        #if message_problem_text:
+                            #self.problem_text = json.loads(message['refl1d_problem'])
+                            #self.problem_file_name = f'{self.job_dir}{os.sep}{self.problem_text["zip"]}'
                 parse = True
         except Exception as e:
             print(f'message_parser.py, parse_message: {e}')

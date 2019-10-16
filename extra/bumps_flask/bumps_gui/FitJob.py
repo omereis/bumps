@@ -110,6 +110,13 @@ class FitJob:
                 res = connection.execute(sql)
             except Exception as e:
                 print(f'blob error: {e}')
+            try:
+                if cm.refl1d_file_data != None:
+                #bmsg = str(cm.message).encode('utf-8').hex()
+                    sql = f'update {tbl_bumps_jobs} set {fld_refl1d_data}="{cm.refl1d_file_data.encode("utf-8").hex()}" where {fld_JobID}={job_id};'
+                    res = connection.execute(sql)
+            except Exception as e:
+                print(f'blob error: {e}')
             self.job_id = job_id
         except Exception as e:
             print ('bumps_ws_server, save_message_to_db, bug: {}'.format(e))
@@ -143,21 +150,24 @@ class FitJob:
         self.update_status_in_db(db_connection)
 #------------------------------------------------------------------------------
     def set_completed(self, db_connection):
-        self.status = JobStatus.Completed
-        print(f'set_completed, fitter is {self.client_message.fitter}')
-        if (self.client_message.fitter == 'refl1d'):
-            base_name = get_refl1d_base_name_from_data(self.client_message.results_dir, self.client_message.problem_file_name)
-            self.chi_square = read_chi_square(f'{base_name}.err')
-            if os.path.exists(self.client_message.results_dir):
-                json_name = glob.glob(f'{self.client_message.results_dir}{os.sep}*json')
-                if (len(json_name)):
-                    fjson = open(json_name[0], 'r')
-                    strJson = fjson.read()
-                    fjson.close()
-                else:
-                    strJson = None
-            print(f'set_completed, results directory:\n{self.client_message.results_dir}\n')
-        self.update_status_in_db(db_connection, save_chi=True, jsonResults=strJson)
+        try:
+            self.status = JobStatus.Completed
+            print(f'set_completed, fitter is {self.client_message.fitter}')
+            if (self.client_message.fitter == 'refl1d'):
+                base_name = get_refl1d_base_name_from_data(self.client_message.results_dir, self.client_message.problem_file_name)
+                self.chi_square = read_chi_square(f'{base_name}.err')
+                if os.path.exists(self.client_message.results_dir):
+                    json_name = glob.glob(f'{self.client_message.results_dir}{os.sep}*json')
+                    if (len(json_name)):
+                        fjson = open(json_name[0], 'r')
+                        strJson = fjson.read()
+                        fjson.close()
+                    else:
+                        strJson = None
+                print(f'set_completed, results directory:\n{self.client_message.results_dir}\n')
+            self.update_status_in_db(db_connection, save_chi=True, jsonResults=strJson)
+        except Exception as e:
+            print (f'FitJob.py, set_completed runtime error: {e}')
 #------------------------------------------------------------------------------
     def update_status_in_db(self, connection, save_chi = False, jsonResults=None):
         sqlInsert = f'insert into {tbl_job_status} {fld_JobID,fld_StatusTime,fld_StatusName}'.replace("'","")
