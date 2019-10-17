@@ -173,7 +173,8 @@ class ClientMessage:
             self.bumps_params.append('refl1d')
             self.bumps_params.append(self.problem_file_name)
             self.bumps_params.append(f'--store={self.results_dir}')
-            self.bumps_params.append(f'--fit=newton')
+            #self.bumps_params.append(f'--fit=newton')
+            self.bumps_params.append(f'--fit=amoeba')
             self.bumps_params.append(f'--batch')
         except Exception as e:
             print(f'"ClientMessage.prepare_refl1d_params", runtime error: {e}')
