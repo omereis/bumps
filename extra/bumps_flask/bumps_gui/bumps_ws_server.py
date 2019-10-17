@@ -556,7 +556,7 @@ def load_jobs_by_id(cm, server_params):
             db_connection = server_params.database_engine.connect()
             id = cm.params
             sql = f'select {fld_Tag},{fld_chi_sqaue},{fld_ResultsDir},{fld_ProblemFile},{fld_blob_message} FROM {tbl_bumps_jobs} WHERE {fld_JobID}={id};'
-            print(f'sql:\n{sql}')
+            #print(f'sql:\n{sql}')
             res = db_connection.execute(sql)
             res_buffer = res.fetchone()
             base_name = get_refl1d_base_name(cm, server_params)
@@ -599,10 +599,10 @@ def get_tag_jobs(cm, server_params):
             else:
                 where_tags = ' or '.join(astr)
             sql = f'SELECT {fld_JobID},{fld_SentTime},{fld_Tag},{fld_ResultsDir},{fld_chi_sqaue} FROM {tbl_bumps_jobs} WHERE {where_tags};'
-            print('===================================================')
-            print(f'get_tag_jobs, parameters: :{cm.params}')
-            print(f'get_tag_jobs, parameters type: :{type(cm.params)}')
-            print(f'get_tag_jobs, sql:\n{sql}')
+            #print('===================================================')
+            #print(f'get_tag_jobs, parameters: :{cm.params}')
+            #print(f'get_tag_jobs, parameters type: :{type(cm.params)}')
+            #print(f'get_tag_jobs, sql:\n{sql}')
             res = db_connection.execute(sql)
             for row in res:
                 results_dir = row[3]
@@ -612,9 +612,9 @@ def get_tag_jobs(cm, server_params):
                     fname = ar[len(ar) - 1]
                     fname = fname.replace('zip','refl')
                 item = {'job_id': row[0], 'sent_time': row[1], 'tag' : row[2], 'file_name': fname, 'chi_square' : row[4]}
-                print(f'get_tag_jobs, item: {item}')
+                #print(f'get_tag_jobs, item: {item}')
                 return_params.append(item)
-            print('===================================================')
+            #print('===================================================')
             #print_debug(blob_content)
         #if len(return_params) == 0:
             #return_params.append('unknown')
