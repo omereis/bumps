@@ -763,7 +763,14 @@ function sendMesssageThroughFlask(message) {
 }
 //-----------------------------------------------------------------------------
 function onSendFitJobClick() {
-    var txtProblem = $('#problem_text').val().trim();
+    var txtProblem;
+    try {
+        txtProblem = $('#problem_text').val().trim();
+    }
+    catch (err) {
+        console.log(err);
+        txtProblem = document.getElementById('problem_text').value;
+    }
 
     if (txtProblem.length > 0) {
         var message = composeJobSendMessage(txtProblem);
