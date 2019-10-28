@@ -1,5 +1,6 @@
 # Using the latest long-term-support Ubuntu OS
 FROM ubuntu:18.04
+
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y man vim git tree
 
@@ -13,12 +14,12 @@ ENV HOME=/home/bumps_user/bumps_flask/bumps_gui
 WORKDIR /home/bumps_user/bumps_flask/bumps_gui
 
 RUN apt-get install -y iputils-ping
-# RUN apt install -y python3.7
+
 RUN apt install -y software-properties-common
 RUN add-apt-repository -y ppa:deadsnakes/ppa
 RUN apt install -y python3.7
 RUN ln -s /usr/bin/python3.7 /usr/bin/python
-# RUN apt install -y systemd
+
 RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
 RUN apt-get install -y tzdata
 RUN dpkg-reconfigure --frontend noninteractive tzdata
@@ -27,9 +28,6 @@ COPY get-pip.py /tmp
 RUN python /tmp/get-pip.py
 RUN rm -rf /tmp/*
 
-#RUN pip install git+https://github.com/omereis/bumps.git
-
-# Make the 4000 port available from outside the container
 EXPOSE 4000
 
 RUN pip install websockets sqlalchemy pymysql
