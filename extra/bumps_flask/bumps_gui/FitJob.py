@@ -151,6 +151,7 @@ class FitJob:
 #------------------------------------------------------------------------------
     def set_completed(self, db_connection):
         try:
+            strJson = None
             self.status = JobStatus.Completed
             print(f'set_completed, fitter is {self.client_message.fitter}')
             if (self.client_message.fitter == 'refl1d'):
@@ -162,8 +163,6 @@ class FitJob:
                         fjson = open(json_name[0], 'r')
                         strJson = fjson.read()
                         fjson.close()
-                    else:
-                        strJson = None
                 print(f'set_completed, results directory:\n{self.client_message.results_dir}\n')
             self.update_status_in_db(db_connection, save_chi=True, jsonResults=strJson)
         except Exception as e:
