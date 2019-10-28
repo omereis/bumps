@@ -54,13 +54,28 @@
                             </td></tr>
                         </table>
                         <table width="100%">
-                            <tr>
+                            <tr style="border:1px solid blue;">
                                 <td class="no_border" style="text-align: right;">Steps:</td>
                                 <td class="no_border"><input type="number" id="fitting_steps" value="100" steps="10" min="1" style="width: 5em;"></td>
-                            </tr>
-                            <tr>
+                            <!--</tr>
+                            <tr>-->
                                 <td class="no_border" style="text-align: right;">Burn:</td>
                                 <td class="no_border"><input type="number" id="fitting_burn" value="100" steps="10" min="1" style="width: 5em;"></td>
+                            </tr>
+                            <tr>
+                                <td  colspan="4" style="align-content: center;text-align: center;">
+                                Fitting Algorithm<br>
+                                    <select id="algorithm" selected="lm">
+                                        <option value="lm">Levenberg Marquardt</option>
+                                        <option value="newton">Quasi-Newton BFGS</option>
+                                        <option value="de">Differential Evolution</option>
+                                        <option value="dream">DREAM</option>
+                                        <option value="amoeba">Nelder-Mead Simplex</option>
+                                        <option value="pt">Parallel Tempering</option>
+                                        <option value="ps">Particle Swarm</option>
+                                        <option value="rl">Random Lines</option>
+                                    </select>
+                                </td>
                             </tr>
                         </table>
                     </td>
