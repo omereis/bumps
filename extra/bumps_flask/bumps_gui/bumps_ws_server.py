@@ -383,9 +383,12 @@ def get_tag_count(cm, server_params):
         sql += f' group by {fld_Tag};'
         #print(f'sql: {sql}')
         res = db_connection.execute(sql)
-        for row in res:
-            item = {'job_id' : row[0], 'count':row[1]}
-            return_params.append(item)
+        if res.rowcount > 0:
+            for row in res:
+                item = {'job_id' : row[0], 'count':row[1]}
+                return_params.append(item)
+        else:
+            return_params.append({'job_id' : '', 'count':''})
     except Exception as e:
         sErr = f'bumps_ws_server.py, get_tag_count, runteime error: {e}'
         print (sErr)
