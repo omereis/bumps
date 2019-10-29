@@ -703,7 +703,7 @@ async def bumps_server(websocket, path, server_params):
         msg = message.replace("'",'"')
         jmsg = json.loads(msg)
     strTime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    save_message(strTime + ':\n\n'+ message + '\n')
+    #save_message(strTime + ':\n\n'+ message + '\n')
     return_params = handle_incoming_message (websocket, jmsg, server_params)
 
     try:
