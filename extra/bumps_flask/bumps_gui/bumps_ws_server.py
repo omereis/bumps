@@ -6,26 +6,14 @@ from sqlalchemy import create_engine, MetaData
 import bumps
 from refl1d.main import cli as refl1d_cli
 
-try:
-    from .oe_debug import print_debug
-    from .bumps_constants import *
-    from .misc import get_results_dir, get_web_results_dir
-    from .FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
-    from .db_misc import results_dir_for_job, get_problem_file_name
-    from .message_parser import ClientMessage, generate_key
-    from .get_host_port import get_host_port
-    from .MessageCommand import MessageCommand
-    from .misc import zip_directory
-except:
-    from oe_debug import print_debug
-    from bumps_constants import *
-    from misc import get_results_dir, get_web_results_dir
-    from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
-    from db_misc import results_dir_for_job, get_problem_file_name
-    from message_parser import ClientMessage, MessageCommand, generate_key
-    from get_host_port import get_host_port
-    from MessageCommand import MessageCommand
-    from misc import zip_directory
+from oe_debug import print_debug
+from bumps_constants import *
+from misc import get_results_dir, get_web_results_dir, zip_directory
+from FitJob import FitJob, JobStatus, name_of_status, ServerParams, find_job_by_id, get_refl1d_base_name, read_chi_square
+from db_misc import results_dir_for_job, get_problem_file_name
+from message_parser import ClientMessage, MessageCommand, generate_key
+from get_host_port import get_host_port
+from MessageCommand import MessageCommand
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 host = 'NCNR-R9nano.campus.nist.gov'
@@ -522,11 +510,6 @@ def get_problem_name (db_name):
 def json_from_blob(blob):
     try:
         msg_data = bytes.fromhex(blob.decode('utf-8')).decode('utf-8')
-        #print(f'message data. type: {type(msg_data)}, length: {len(msg_data)}')
-        #f = open('msg.txt', 'w')
-        #f.write(msg_data)
-        #f.close()
-        #print('closed')
         jmsg = json.loads(msg_data.replace('"','\\\"').replace("'",'"'))
     except Exception as e:
         print(f'get_refl1d_results runtime error: {e}')
@@ -552,7 +535,6 @@ def get_problem_name_from_blob_field(job_id, server_params):
     return (problem_name) 
 #------------------------------------------------------------------------------
 def load_jobs_by_id(cm, server_params):
-    #get_problem_name_from_blob_field(cm.params, server_params);
     return_params = []
     try:
         if cm.params:
@@ -602,10 +584,6 @@ def get_tag_jobs(cm, server_params):
             else:
                 where_tags = ' or '.join(astr)
             sql = f'SELECT {fld_JobID},{fld_SentTime},{fld_Tag},{fld_ResultsDir},{fld_chi_sqaue} FROM {tbl_bumps_jobs} WHERE {where_tags};'
-            #print('===================================================')
-            #print(f'get_tag_jobs, parameters: :{cm.params}')
-            #print(f'get_tag_jobs, parameters type: :{type(cm.params)}')
-            #print(f'get_tag_jobs, sql:\n{sql}')
             res = db_connection.execute(sql)
             for row in res:
                 results_dir = row[3]
@@ -615,13 +593,7 @@ def get_tag_jobs(cm, server_params):
                     fname = ar[len(ar) - 1]
                     fname = fname.replace('zip','refl')
                 item = {'job_id': row[0], 'sent_time': row[1], 'tag' : row[2], 'file_name': fname, 'chi_square' : row[4]}
-                #print(f'get_tag_jobs, item: {item}')
                 return_params.append(item)
-            #print('===================================================')
-            #print_debug(blob_content)
-        #if len(return_params) == 0:
-            #return_params.append('unknown')
-            #return_params = cm.params
     except Exception as e:
         sErr = f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}'
         print (sErr)
