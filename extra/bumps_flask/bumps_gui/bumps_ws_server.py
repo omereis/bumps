@@ -736,13 +736,26 @@ def set_server_params(database_engine, flask_dir):
 
     return server_params
 #------------------------------------------------------------------------------
+def get_env_db_server():
+    try:
+        database_server = os.getenv('DATABASE_SERVER')
+    except Exception as e:
+        database_server = 'localhost'
+        print(f'get_env_db_server runtime error: {e}')
+        print(f'Database server set to default: {database_server}')
+    return database_server 
+#------------------------------------------------------------------------------
 def ws_server_main(serverHost='0.0.0.0', serverPort='4567', flask_dir='/home/app_user/bumps_flask/bumps_flask'):
     print_intro(serverHost, serverPort)
     try:
         connection = None
         if flask_dir[len(flask_dir) - 1] != '/':
             flask_dir += '/'
-        database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
+        database_server = get_env_db_server()
+        database_link = f'mysql+pymysql://bumps:bumps_dba@{database_server}:3306/bumps_db'
+        print(f'database link: {database_link}')
+        database_engine = create_engine(database_link)
+        #database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
         server_params = set_server_params(database_engine, flask_dir)
         connection = database_engine.connect()
     except Exception as e:

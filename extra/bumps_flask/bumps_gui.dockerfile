@@ -58,3 +58,7 @@ COPY ./vimrc /etc/vim/vimrc
 # Launch the app
 # CMD ["python","start_all.py"]
 # CMD ["python","gui_run.py"]
+
+# database server
+# ENV DATABASE_SERVER='NCNR-R9nano.campus.`nist`.gov'
+ENV DATABASE_SERVER=bumps_mysql 
