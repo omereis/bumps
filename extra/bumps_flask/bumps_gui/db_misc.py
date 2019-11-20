@@ -46,3 +46,31 @@ def get_problem_file_name (database_engine, job_id):
         connection.close()
     return fname
 #------------------------------------------------------------------------------
+def get_env_value(key, default_value):
+    v = os.getenv(key)
+    if v == None:
+        v = default_value
+    return v
+#------------------------------------------------------------------------------
+from sqlalchemy import create_engine, MetaData
+#------------------------------------------------------------------------------
+def read_file(file_name):
+    f = open(file_name, 'r')
+    content = f.read()
+    f.close()
+    return content
+#------------------------------------------------------------------------------
+def run_sql_file(sql_filename):
+    try:
+        if os.path.isdir('sql'):
+            sql = read_file('sql/create_user.sql')
+            print(f'SQL: {sql}')
+            connection.execute(sql)
+            exec = True
+        else:
+            exec = False
+    except:
+        exec = False
+    return exec
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
