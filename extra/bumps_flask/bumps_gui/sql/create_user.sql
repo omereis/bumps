@@ -1,0 +1,1 @@
+GRANT ALL PRIVILEGES ON bumps_db.* TO 'bumps'@'%' IDENTIFIED BY 'bumps_dba';
