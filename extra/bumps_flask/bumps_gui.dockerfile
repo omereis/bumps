@@ -3,6 +3,7 @@ FROM ubuntu:18.04
 
 # Update the apt-get index and then install project dependencies
 RUN apt-get update && apt-get install -y man vim git tree
+RUN apt install -y mysql-client
 
 # Create the home directory for the new app user.
 RUN mkdir -p /home/bumps_user/bumps_flask
@@ -60,5 +61,8 @@ COPY ./vimrc /etc/vim/vimrc
 # CMD ["python","gui_run.py"]
 
 # database server
-# ENV DATABASE_SERVER='NCNR-R9nano.campus.`nist`.gov'
-ENV DATABASE_SERVER=bumps_mysql 
+ENV DATABASE_SERVER=${DB_SERVER}
+ENV MYSQL_ROOT_PASSWORD=bumps_root
+# RUN chmod a+x /home/bumps_user/bumps_flask/make_bumps_db.sh
+# RUN mysql -h bumps_mysql -u root -pbumps_root -e "CREATE DATABASE if not exists bumps_db;"
+#  RUN /home/bumps_user/bumps_flask/make_bumps_db.sh
