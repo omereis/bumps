@@ -54,7 +54,7 @@ RUN pip install refl1d
 
 # Copy app files to the container
 COPY ./ /home/bumps_user/bumps_flask
-COPY ./vimrc /etc/vim/vimrc
+# COPY ./vimrc /etc/vim/vimrc
 
 # Launch the app
 # CMD ["python","start_all.py"]
