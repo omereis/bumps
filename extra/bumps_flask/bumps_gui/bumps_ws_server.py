@@ -15,9 +15,6 @@ from message_parser import ClientMessage, MessageCommand, generate_key
 from get_host_port import get_host_port
 from MessageCommand import MessageCommand
 #------------------------------------------------------------------------------
-#------------------------------------------------------------------------------
-host = 'NCNR-R9nano.campus.nist.gov'
-port = 8765
 database_engine = None
 connection = None
 nest_asyncio.apply()
@@ -27,13 +24,6 @@ def save_message (message):
     file = open ("messages.txt", "a+")
     file.write (message + "\n")
     file.close()
-#------------------------------------------------------------------------------
-def connect_to_db ():
-    connect = mysql.connector.connect(host='localhost',
-                                       database='bumps_db',
-                                       user='bumps',
-                                       password='bumps_dba')
-    return (connect)
 #------------------------------------------------------------------------------
 def check_header(json_message):
     err = ''
@@ -339,7 +329,6 @@ def get_refl1d_results(cm, server_params):
         json_name = base_name + '-expt.json'
         return_params = {}
         problem_name = get_problem_name_from_blob_field(cm.params, server_params)
-        #jsonMsg = json_from_blob(res_buffer[4])
         return_params['json_data'] = read_json_data(json_name)
         chi_square = read_chi_square(f'{base_name}.err')
         print(f'chi square: {chi_square}')
@@ -369,7 +358,6 @@ def get_tag_count(cm, server_params):
             astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
             sql += f' AND ({astr})'
         sql += f' group by {fld_Tag};'
-        #print(f'sql: {sql}')
         res = db_connection.execute(sql)
         if res.rowcount > 0:
             for row in res:
@@ -403,7 +391,6 @@ def delete_by_tag(cm, server_params):
             tags = cm.params.split(',')
             astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
             sql = f'delete from {tbl_bumps_jobs} WHERE {astr};'
-            #print(f'sql: {sql}')
             res = db_connection.execute(sql)
             return_params = tags
     except Exception as e:
@@ -438,7 +425,6 @@ def load_jobs_by_tags(cm, server_params):
             tags = cm.params.split(',')
             astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
             sql = f'select {fld_JobID}, {fld_Tag}, {fld_SentTime}, {fld_chi_sqaue}, {fld_ProblemFile} FROM {tbl_bumps_jobs} WHERE {astr} order by {fld_Tag};'
-            #print(f'sql: {sql}')
             res = db_connection.execute(sql)
             for row in res:
                 d = row[2]
@@ -541,7 +527,6 @@ def load_jobs_by_id(cm, server_params):
             db_connection = server_params.database_engine.connect()
             id = cm.params
             sql = f'select {fld_Tag},{fld_chi_sqaue},{fld_ResultsDir},{fld_ProblemFile},{fld_blob_message} FROM {tbl_bumps_jobs} WHERE {fld_JobID}={id};'
-            #print(f'sql:\n{sql}')
             res = db_connection.execute(sql)
             res_buffer = res.fetchone()
             base_name = get_refl1d_base_name(cm, server_params)
@@ -551,7 +536,6 @@ def load_jobs_by_id(cm, server_params):
                 zip_name = get_refl1d_zip_name(zip_path)
                 zip_data = read_zip_data(zip_path)
                 refl1d_table = get_refl1d_table_data(zip_path)
-                    #fname = get_problem_name (res_buffer[3])
                 jsonMsg = json_from_blob(res_buffer[4])
                 problem_name = jsonMsg['problem_name']
                 item = {'job_id' : id, 'tag' : res_buffer[0], 'zip_name' : zip_name, 'chi_square' : chi_from_db(res_buffer[1]), 'data' : zip_data, 'fit_table': refl1d_table, 'problem_name' : problem_name}
@@ -739,8 +723,10 @@ def set_server_params(database_engine, flask_dir):
 def get_env_db_server():
     try:
         database_server = os.getenv('DATABASE_SERVER')
+        if len(database_server) == 0:
+            database_server = 'bumps_db'
     except Exception as e:
-        database_server = 'localhost'
+        database_server = 'bumps_db'
         print(f'get_env_db_server runtime error: {e}')
         print(f'Database server set to default: {database_server}')
     return database_server 
@@ -753,14 +739,11 @@ def ws_server_main(serverHost='0.0.0.0', serverPort='4567', flask_dir='/home/app
             flask_dir += '/'
         database_server = get_env_db_server()
         database_link = f'mysql+pymysql://bumps:bumps_dba@{database_server}:3306/bumps_db'
-        print(f'database link: {database_link}')
         database_engine = create_engine(database_link)
-        #database_engine = create_engine('mysql+pymysql://bumps:bumps_dba@NCNR-R9nano.campus.nist.gov:3306/bumps_db')
         server_params = set_server_params(database_engine, flask_dir)
         connection = database_engine.connect()
     except Exception as e:
-        print("Error while connecting to database bumps_db in NCNR-R9nano.campus.nist.gov:3306:")
-        print("{}".format(e))
+        print(f'ws_server_main runtime error: {e}')
         exit(1)
     finally:
         if connection:
