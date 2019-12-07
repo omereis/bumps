@@ -45,32 +45,12 @@ RUN pip install psutil
 RUN pip install -U -f https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-18.04 wxPython
 RUN pip install refl1d
 RUN pip install cryptography
-
-# Set the environment variables for Flask
-# ENV WEBSOCKET_PORT=4567
-# ENV BUMPS_MP_PORT=4567
-
-# ENV CELERY_RESULT_BACKEND='amqp'
-# ENV BROKER_URL='amqp://guest@rabbit.local//'
+RUN pip install flower
 
 # Copy app files to the container
 COPY ./ /home/bumps_user/bumps_flask
 # COPY ./vimrc /etc/vim/vimrc
 
 # Launch the app
-# CMD ["celery","-A","bumps_celery","worker","-l","info","-E"]
-# CMD ["python","start_all.py"]
-# ENTRYPOINT ["python","start_all.py"]
-# CMD ["python","app_bumps.py","--server","0.0.0.0","--port","4000","--mp_port","4567"]
-# ENTRYPOINT ["python","app_bumps.py","--server","0.0.0.0","--port","4000","--mp_port","4567"]
-#  ENTRYPOINT  ["run_all.py"]
-
-# CMD ["python","gui_run.py"]
 ENTRYPOINT ["/bin/sh","/home/bumps_user/bumps_flask/bumps_gui/run_all.sh"]
 
-# database server
-# ENV DATABASE_SERVER=${DB_SERVER}
-# ENV MYSQL_ROOT_PASSWORD=bumps_root
-# RUN chmod a+x /home/bumps_user/bumps_flask/make_bumps_db.sh
-# RUN mysql -h bumps_mysql -u root -pbumps_root -e "CREATE DATABASE if not exists bumps_db;"
-#  RUN /home/bumps_user/bumps_flask/make_bumps_db.sh
