@@ -2,6 +2,7 @@ from enum import Enum
 import asyncio, sys, multiprocessing, datetime, os, glob
 from bumps import cli
 from shutil import rmtree
+#import sqlite3 as sqlite
 try:
     from .bumps_constants import *
     from .db_misc import get_next_job_id, results_dir_for_job, get_problem_file_name
@@ -104,6 +105,7 @@ class FitJob:
                         values \
                         ({job_id}, "{cm.host_ip}", "{message_date_time}", "{cm.tag}","{cm.fitter}","{cm.results_dir}", "{cm.problem_file_name}");'
             res = connection.execute(sql)
+            #connection.commit()
             try:
                 bmsg = str(cm.message).encode('utf-8').hex()
                 sql = f'update {tbl_bumps_jobs} set {fld_blob_message}="{bmsg}" where {fld_JobID}={job_id};'
@@ -237,12 +239,14 @@ class ServerParams():
 
     db_connection   = None
     database_engine = None
+#    database_file   = None
     results_dir     = None
     flask_dir       = None
 
     celery_count = 0
 #------------------------------------------------------------------------------
     def __init__ (self, db_engine):
+#        self.database_file = db_file
         self.database_engine = db_engine
 #------------------------------------------------------------------------------
     def run_job (self, idx, db_connection):
@@ -253,10 +257,10 @@ class ServerParams():
 #------------------------------------------------------------------------------
     def get_connection(self):
         try:
-            if self.database_engine:
-                connection = self.database_engine.connect()
-        except:
+            connection = self.database_engine.connect()
+        except Exception as e:
             connection = None
+            print(f'get_connection runtime error: {e}')
         finally:
             self.db_connection = connection
         return connection
@@ -264,6 +268,7 @@ class ServerParams():
     def close_connection(self):
         try:
             if self.db_connection:
+                #self.db_connection.commit()
                 self.db_connection.close()
                 self.db_connection = None
         except Exception as e:
