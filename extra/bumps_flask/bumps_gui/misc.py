@@ -24,16 +24,19 @@ def get_files_list(lst_files, dir):
             lst_files.append(full_name)
 #------------------------------------------------------------------------------
 def zip_directory(zip_name, dir):
-    full_zip = f'{dir}{os.path.sep}{zip_name}'
-    zip_file = zipfile.ZipFile(full_zip, 'w')
-    lst_files = []
-    if os.path.exists(dir):
-        if os.path.isdir(dir):
-            get_files_list(lst_files, dir)
-            for file_name in lst_files:
-                if full_zip != file_name:
+    try:
+        full_zip = f'{dir}{os.path.sep}{zip_name}'
+        zip_file = zipfile.ZipFile(full_zip, 'w')
+        lst_files = []
+        if os.path.exists(dir):
+            if os.path.isdir(dir):
+                get_files_list(lst_files, dir)
+                for file_name in lst_files:
+                    if full_zip != file_name:
                     #print(f'zipping {file_name}')
-                    zip_file.write(file_name)
-    zip_file.close()
+                        zip_file.write(file_name)
+        zip_file.close()
+    except Exception as e:
+        print(f'zip_directory runtime error: {e}')
     print(f'zip done {full_zip}')
 #------------------------------------------------------------------------------
