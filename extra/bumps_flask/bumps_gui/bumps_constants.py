@@ -18,3 +18,4 @@ tbl_job_status      = 't_jobs_status'
 fld_StatusTime = 'status_time'
 fld_StatusName = 'status_name'
 
+jobs_status_view = 'v_bumps_jobs_status'
