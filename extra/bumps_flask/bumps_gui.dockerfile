@@ -52,5 +52,5 @@ COPY ./ /home/bumps_user/bumps_flask
 # COPY ./vimrc /etc/vim/vimrc
 
 # Launch the app
-ENTRYPOINT ["/bin/sh","/home/bumps_user/bumps_flask/bumps_gui/run_all.sh"]
+# ENTRYPOINT ["/bin/sh","/home/bumps_user/bumps_flask/bumps_gui/run_all.sh"]
 
