@@ -21,6 +21,15 @@ def generate_key (client_host, time_string):
     key = client_host.replace('.','_') + '_' + str(time_string)
     return key
 #------------------------------------------------------------------------------
+def add_dir_to_path (path, dir):
+    if len(path) == 0:
+        path = dir
+    else:
+        if path[len(path) - 1] != os.sep:
+            path += os.sep
+        path += dir
+    return path
+#------------------------------------------------------------------------------
 def extract_problem_file_name(filename):
     try:
         name = filename
@@ -121,15 +130,9 @@ class ClientMessage:
                         self.problem_file_name = getMessageField (message, MessageProblemFile)
                     elif self.fitter == 'refl1d':
                         if 'refl1d_problem' in message.keys():
-                            #message_problem = message['refl1d_problem']
                             self.problem_text = message['refl1d_problem']#json.loads(message['refl1d_problem'])
                             self.problem_file_name = f'{self.job_dir}{os.sep}{self.problem_text["zip"]}'
-                            #data = self.problem_text['data']
                             self.refl1d_file_data = self.problem_text['data']['data']
-                        #message_problem_text = getMessageField (message, 'refl1d_problem')
-                        #if message_problem_text:
-                            #self.problem_text = json.loads(message['refl1d_problem'])
-                            #self.problem_file_name = f'{self.job_dir}{os.sep}{self.problem_text["zip"]}'
                 parse = True
         except Exception as e:
             print(f'message_parser.py, parse_message: {e}')
@@ -143,7 +146,9 @@ class ClientMessage:
             base_results_dir = results_dir
             if base_results_dir[len(base_results_dir) - 1] != os.sep:
                 base_results_dir += os.sep
-            tmp_dir = results_dir = base_results_dir + self.host_ip + os.sep + self.tag
+            tmp_dir = results_dir = base_results_dir# + os.sep + self.host_ip# + os.sep + self.tag
+            tmp_dir = add_dir_to_path (tmp_dir, f'{self.host_ip}{os.sep}{self.tag}')
+            #tmp_dir = add_dir_to_path (tmp_dir, self.tag)
         except Exception as e:
             print(f'message_parser.py, compose_job_directory_name: {e}')
             tmp_dir = results_dir = base_results_dir + '/results'
