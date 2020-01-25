@@ -3,6 +3,7 @@ import mysql.connector, json, os, multiprocessing
 import nest_asyncio, functools, shutil, glob
 from pathlib import Path
 from sqlalchemy import create_engine, MetaData
+# import sqlite3 as sqlite
 import bumps
 from refl1d.main import cli as refl1d_cli
 
@@ -68,7 +69,9 @@ def scan_jobs_list (server_params):
             n_running_jobs = count_running_jobs(server_params.listAllJobs)
             fit_job = server_params.listAllJobs[n]
             if fit_job.status == JobStatus.Parsed:
-                fit_job.set_standby(server_params.db_connection)
+                server_params.close_connection()
+                fit_job.set_standby(server_params.get_connection())
+                #fit_job.set_standby(server_params.db_connection)
             elif fit_job.status == JobStatus.StandBy:
                 if n_running_jobs < n_cpus:
                     fit_job.prepare_params()
@@ -182,9 +185,11 @@ def send_celery_fit (fit_job, server_params, message):
             f.close()
             with zipfile.ZipFile(zip_name, 'r') as zip_ref:
                 zip_ref.extractall(fit_job.client_message.job_dir)
-            db_connection = server_params.database_engine.connect()
+            db_connection = server_params.get_connection()
+#            db_connection = server_params.database_engine.connect()
             fit_job.set_completed(db_connection)
-            db_connection.close()
+            server_params.close_connection()
+#            db_connection.close()
             server_params.print_celery_jobs('send_celery_fit')
     except Exception as e:
         print(f'{__file__},send_celery_fit runtime error: {e}')
@@ -193,7 +198,8 @@ def HandleFitMessage (cm, server_params, message):
     cm.create_results_dir(server_params)
     fit_job = FitJob (cm)
     try:
-        db_connection = server_params.database_engine.connect()
+        db_connection = server_params.get_connection()
+#        db_connection = server_params.database_engine.connect()
         job_id = fit_job.save_message_to_db (cm, db_connection)
         if cm.multi_proc == 'celery':
             fit_job.set_celery(db_connection)
@@ -206,6 +212,7 @@ def HandleFitMessage (cm, server_params, message):
             fit_job.set_standby(db_connection)
             server_params.append_job (fit_job)
             scan_jobs_list (server_params)
+        server_params.close_connection()
     except Exception as e:
         print (f'bumps_ws_server.py, HandleFitMessage, bug: {e}')
         job_id = 0
@@ -246,7 +253,8 @@ def HandleDelete (cm, server_params):
     return_params = cm.params
     db_connection = None
     try:
-        db_connection = server_params.database_engine.connect()
+#        db_connection = server_params.database_engine.connect()
+        db_connection = server_params.get_connection()
         IDs = get_orred_ids (cm.params)
         sql = f'select results_dir from t_bumps_jobs where {IDs};'
         res = db_connection.execute(sql)
@@ -258,8 +266,9 @@ def HandleDelete (cm, server_params):
     except Exception as e:
         print ('bumps_ws_server.py, HandleDelete, bug: {}'.format(e))
     finally:
-        if db_connection:
-            db_connection.close()
+        server_params.close_connection()
+#        if db_connection:
+#            db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
 def remove_double_blanks(s):
@@ -272,7 +281,8 @@ def remove_double_blanks(s):
 async def HandleStatus (cm, server_params):
     return_params = []
     try:
-        db_connection = server_params.database_engine.connect()
+#        db_connection = server_params.database_engine.connect()
+        db_connection = server_params.get_connection()
         sqlSelect = f'SELECT job_id,status_time,status_name'
         if cm.params:
             sqlFrom = f'from {tbl_job_status} where {fld_JobID}={cm.params}'
@@ -292,23 +302,26 @@ async def HandleStatus (cm, server_params):
     except Exception as e:
         print (f'bumps_ws_server.py, get_db_jobs_status, runteime error: {e}\nSQL:\n{sql}')
     finally:
+        server_params.close_connection()
         if db_connection:
             db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
 def get_results (cm, server_params):
     try:
-        results_dir = results_dir_for_job (server_params.database_engine, cm.params)
-        flask_dir = server_params.flask_dir
-        final_dir = results_dir[len(flask_dir) - 1 : ]
+        db_connection = server_params.get_connection()
+        results_dir = results_dir_for_job (db_connection, cm.params)
+        final_dir = results_dir[len(os.getcwd()) : ]
         files_list = os.listdir(results_dir)
         files = []
         for file in files_list:
-            file = final_dir + '/' + file
+            file = final_dir + os.sep + file
             files.append(file)
     except Exception as e:
         print(f'Error in "get_results": {e}')
         files = {e}
+    finally:
+        server_params.close_connection()
     return_params = {'id': cm.params, 'files' : files}
     return return_params
 #------------------------------------------------------------------------------
@@ -351,7 +364,8 @@ def get_comm_status(cm, server_params):
 def get_tag_count(cm, server_params):
     return_params = []
     try:
-        db_connection = server_params.database_engine.connect()
+#        db_connection = server_params.database_engine.connect()
+        db_connection = server_params.get_connection()
         sql = f'select {fld_Tag},COUNT({fld_JobID}) FROM {tbl_bumps_jobs} WHERE ({fld_Fitter}="refl1d")'
         if (cm.params != None) and (len(cm.params) > 0):
             tags = cm.params.split(',')
@@ -370,8 +384,9 @@ def get_tag_count(cm, server_params):
         print (sErr)
         return_params = sErr
     finally:
-        if db_connection:
-            db_connection.close()
+        server_params.close_connection()
+#        if db_connection:
+#            db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
 def get_all_tag_count(cm, server_params):
@@ -386,8 +401,10 @@ def get_all_tag_count(cm, server_params):
 def delete_by_tag(cm, server_params):
     return_params = []
     try:
+        db_connection = None
         if cm.params:
-            db_connection = server_params.database_engine.connect()
+#            db_connection = server_params.database_engine.connect()
+            db_connection = server_params.get_connection()
             tags = cm.params.split(',')
             astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
             sql = f'delete from {tbl_bumps_jobs} WHERE {astr};'
@@ -403,7 +420,8 @@ def delete_by_tag(cm, server_params):
         return_params = sErr
     finally:
         if db_connection:
-            db_connection.close()
+            server_params.close_connection()
+#            db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
 def is_broken_pipe_err(e):
@@ -421,7 +439,8 @@ def load_jobs_by_tags(cm, server_params):
                 load_job_by_tag_counter += 1
             else:
                 load_job_by_tag_counter = 1
-            db_connection = server_params.database_engine.connect()
+#            db_connection = server_params.database_engine.connect()
+            db_connection = server_params.get_connection()
             tags = cm.params.split(',')
             astr = get_orred_ids(tags, field=fld_Tag, add_quotes=True)
             sql = f'select {fld_JobID}, {fld_Tag}, {fld_SentTime}, {fld_chi_sqaue}, {fld_ProblemFile} FROM {tbl_bumps_jobs} WHERE {astr} order by {fld_Tag};'
@@ -449,7 +468,8 @@ def load_jobs_by_tags(cm, server_params):
             return_params = sErr
     finally:
         if db_connection:
-            db_connection.close()
+            server_params.close_connection()
+#            db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
 def chi_from_db(db_value):
@@ -505,7 +525,8 @@ def json_from_blob(blob):
 def get_problem_name_from_blob_field(job_id, server_params):
     db_connection = None
     try:
-        db_connection = server_params.database_engine.connect()
+#        db_connection = server_params.database_engine.connect()
+        db_connection = server_params.get_connection()
         sql = f'select {fld_blob_message} from {tbl_bumps_jobs} where {fld_JobID}="{job_id}";'
         res = db_connection.execute(sql)
         bufs = res.fetchone()
@@ -517,14 +538,16 @@ def get_problem_name_from_blob_field(job_id, server_params):
         problem_name = ''
     finally:
         if db_connection:
-            db_connection.close()
+            server_params.close_connection()
+#            db_connection.close()
     return (problem_name) 
 #------------------------------------------------------------------------------
 def load_jobs_by_id(cm, server_params):
     return_params = []
     try:
         if cm.params:
-            db_connection = server_params.database_engine.connect()
+#            db_connection = server_params.database_engine.connect()
+            db_connection = server_params.get_connection()
             id = cm.params
             sql = f'select {fld_Tag},{fld_chi_sqaue},{fld_ResultsDir},{fld_ProblemFile},{fld_blob_message} FROM {tbl_bumps_jobs} WHERE {fld_JobID}={id};'
             res = db_connection.execute(sql)
@@ -550,14 +573,16 @@ def load_jobs_by_id(cm, server_params):
         return_params = sErr
     finally:
         if db_connection:
-            db_connection.close()
+            server_params.close_connection()
+#            db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
 def get_tag_jobs(cm, server_params):
     return_params = []
     try:
         if cm.params:
-            db_connection = server_params.database_engine.connect()
+ #           db_connection = server_params.database_engine.connect()
+            db_connection = server_params.get_connection()
             tags = cm.params.split(',')
             astr = []
             for n in range(len(tags)):
@@ -583,8 +608,9 @@ def get_tag_jobs(cm, server_params):
         print (sErr)
         return_params = sErr
     finally:
-        if db_connection:
-            db_connection.close()
+        server_params.close_connection()
+        #if db_connection:
+#            db_connection.close()
     return return_params
 #------------------------------------------------------------------------------
 def get_db_status (cm, server_params):
@@ -594,17 +620,21 @@ def get_db_status (cm, server_params):
     if cm.tag:
         sqlIn = f'select distinct {fld_JobID} from {tbl_bumps_jobs} where {fld_Tag}="{cm.tag}" order by {fld_JobID}'
         sqlSelect = f'select {fld_JobID},{fld_StatusTime},{fld_StatusName} from {tbl_job_status} where {fld_JobID} in ({sqlIn});'
-        db_connection = server_params.database_engine.connect()
+#        db_connection = server_params.database_engine.connect()
+        db_connection = server_params.get_connection()
         results = db_connection.execute(sqlSelect)
         for row in results:
             item = {'job_id': str(row[0]), 'status time': row[1].strftime(fmt), 'status': row[2]}
             params.append(item)
+        server_params.close_connection()
     return params
 #------------------------------------------------------------------------------
 def get_job_data (cm, server_params):
     params = []
     if cm.tag:
-        db_connection = server_params.database_engine.connect()
+#        db_connection = server_params.database_engine.connect()
+        db_connection = server_params.get_connection()
+#
         sql = f'select {fld_JobID},{fld_ResultsDir} from {tbl_bumps_jobs} where {fld_Tag} = "{cm.tag}";'
         results = db_connection.execute(sql)
         for row in results:
@@ -616,16 +646,19 @@ def get_job_data (cm, server_params):
             string_content = bin_content.hex()
             item = {str(row[0]) : string_content}
             params.append(item)
+        server_params.close_connection()
     return params
 #------------------------------------------------------------------------------
 def get_db_tags (cm, server_params):
     params = []
     try:
-        db_connection = server_params.database_engine.connect()
+#        db_connection = server_params.database_engine.connect()
+        db_connection = server_params.get_connection()
         sql = f'select distinct {fld_Tag} from {tbl_bumps_jobs} order by {fld_Tag};'
         results = db_connection.execute(sql)
         for row in results:
             params.append(row[0])
+        server_params.close_connection()
     except Exception as e:
         print('"get_db_tags" runtime error: {e}')
         params = [e]
@@ -709,15 +742,16 @@ def print_intro(serverHost, serverPort):
     print(f'Results directory: "{get_results_dir()}"')
     print(f'Current directory: "{os.getcwd()}"')
 #------------------------------------------------------------------------------
-def set_server_params(database_engine, flask_dir):
-    server_params = ServerParams(database_engine)
+def set_server_params(database_file, flask_dir):
+    server_params = ServerParams(database_file)
     server_params.queueJobEnded = multiprocessing.Queue() # reciever to manager queue 
     server_params.queueRunJobs = multiprocessing.Queue() # run fit job on local machine 
     server_params.listAllJobs = multiprocessing.Manager().list()
     server_params.listCeleryJobs = []
     server_params.flask_dir = flask_dir
+    if flask_dir[len(flask_dir) - 1] != os.sep:
+        flask_dir += os.sep
     server_params.results_dir = flask_dir + 'static/'
-
     return server_params
 #------------------------------------------------------------------------------
 def get_env_db_server():
@@ -731,26 +765,89 @@ def get_env_db_server():
         print(f'Database server set to default: {database_server}')
     return database_server 
 #------------------------------------------------------------------------------
-def ws_server_main(serverHost='0.0.0.0', serverPort='4567', flask_dir='/home/app_user/bumps_flask/bumps_flask'):
-    print_intro(serverHost, serverPort)
+def read_sql_script(sql_file):
     try:
-        connection = None
-        if flask_dir[len(flask_dir) - 1] != '/':
-            flask_dir += '/'
+        f = open(sql_file, 'r')
+        script = f.read()
+        f.close()
+    except Exception as e:
+        print('Can not find SQL file {sql_file}.\nAborting\n{e}')
+        exit(1)
+    return script
+#------------------------------------------------------------------------------
+def create_database_tables (con):
+    sql_path = os.getcwd() + os.path.sep + 'sql' + os.path.sep
+    cursor = con.cursor()
+    cursor.executescript(read_sql_script(sql_path + 't_bumps_jobs.sql'))
+    cursor.executescript(read_sql_script(sql_path + 't_job_status.sql'))
+    cursor.executescript(read_sql_script(sql_path + 'v_jobs_status.sql'))
+#------------------------------------------------------------------------------
+def test_database_schema(database_file):
+    entities = [tbl_bumps_jobs, tbl_job_status, jobs_status_view]
+    sql = 'select * from sqlite_master;'
+    con = sqlite.connect(database_file)
+    cursor = con.cursor()
+    res = cursor.execute(sql).fetchall()
+    con.close()
+    items = []
+    for row in res:
+        items.append(row[1])
+    for e in entities:
+        try:
+            idx = items.index(e)
+        except:
+            idx = -1
+        if idx < 0:
+            return False
+    return True
+#------------------------------------------------------------------------------
+def create_database(database_file):
+    con = sqlite.connect(database_file)
+    create_database_tables (con)
+    con.close()
+#------------------------------------------------------------------------------
+def init_database ():
+    try:
         database_server = get_env_db_server()
         database_link = f'mysql+pymysql://bumps:bumps_dba@{database_server}:3306/bumps_db'
         database_engine = create_engine(database_link)
-        server_params = set_server_params(database_engine, flask_dir)
+    except Exception as e:
+        print('Error iitiating database.\nAborting\n{e}')
+        exit(1)
+    return database_engine
+#------------------------------------------------------------------------------
+def init_sqlite_database ():
+    try:
+        database_file = os.getcwd() + os.path.sep + 'bumps_jobs.sqlite'
+        if not os.path.exists(database_file):
+            create_database(database_file)
+        else:
+            if not test_database_schema(database_file):
+                os.remove(database_file)
+                create_database(database_file)
+    except Exception as e:
+        print('Error iitiating database.\nAborting\n{e}')
+        exit(1)
+    return database_file
+#------------------------------------------------------------------------------
+def ws_server_main(serverHost='0.0.0.0', serverPort='4567', flask_dir='/home/app_user/bumps_flask/bumps_flask'):
+    print_intro(serverHost, serverPort)
+    try:
+        #database_server = get_env_db_server()
+        #database_link = f'mysql+pymysql://bumps:bumps_dba@{database_server}:3306/bumps_db'
+        #database_engine = create_engine(database_link)
+        database_engine = init_database()
+        # test database connection
         connection = database_engine.connect()
+        connection.close()
+        server_params = set_server_params(database_engine, flask_dir)
+
+        #database_file = init_database ()
+        #server_params = set_server_params(database_file, flask_dir)
+        print('Database initialiazed')
     except Exception as e:
         print(f'ws_server_main runtime error: {e}')
         exit(1)
-    finally:
-        if connection:
-            connection.close()
-        else:
-            print("Fatal error. Aborting :-(")
-            exit(1)
     try:
         pRunner = multiprocessing.Process(name='jobs runner', target=jobs_runner_process, args=(server_params,))
         pRunner.start()
