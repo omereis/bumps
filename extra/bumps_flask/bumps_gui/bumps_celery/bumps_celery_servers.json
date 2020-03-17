@@ -1,0 +1,9 @@
+{
+    'Broker': {
+        'type': 'rabbit',
+        'address': 'rabbit-server'
+    },
+     'backend': {
+         'type': 'redis', 'address':'redis-server'
+    }
+}
