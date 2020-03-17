@@ -1,0 +1,78 @@
+<html>
+    <head>
+        <!-- Constatnts and Globals. MUST be first -->
+        <!--<script src="{{ url_for ('static', filename='js/const.js') }}" charset="utf-8"></script>
+            <script src="{{ url_for ('static', filename='js/local_tags.js') }}" charset="utf-8"></script>
+            <script src="{{ url_for ('static', filename='js/bumps_gui.js') }}" charset="utf-8"></script>
+        <script src="{{ url_for ('static', filename='js/random_words.js') }}" charset="utf-8"></script>-->
+
+        <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>-->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_gui.css') }}"/>
+        <!--<link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_portal.css') }}"/>-->
+        <script>
+            function onCeleryTestClick() {
+                var text = $(this).text();
+                console.log('btnCeleryTest');
+                $.ajax({
+                    url: "/test_celery",
+                    //url: "/suggestions",
+                    type: "get",
+                    data: {jsdata: text},
+                    success: function(response) {
+                        document.getElementById('celery_test_result').innerText = response;
+                        //$("#place_for_suggestions").html(response);
+                    },
+                    error: function(xhr) {
+                        //str = f'runtimer error: {xhr}'
+                        console.log('runtime error: ' + xhr);
+                    }
+                });
+            }
+        </script>
+    </head>
+            <title>Bumps Celery Setup</title>
+    <!--<body onload="init_app()">-->
+    <body>
+        <h3 style="text-align: center;">Bumps Celery Setup</h3>
+        <p>Python Parameter: {{ dir }}</p>
+        <table class="celery_setup_table">
+            <tr>
+                <th>Function</th>
+                <th>Server Type</th>
+                <th>Server Address</th>
+                <th>Connection String</th>
+            </tr>
+            <tr>
+                <td>Broker</td>
+                <td>
+                    <select id="broker_type">
+                        <option value="rabbit">RabbitMQ</option>
+                        <option value="redis">Redis</option>
+                    </select>
+                </td>
+                <td><input type="text" id="txtBroker" value="rabbit-server"></td>
+                <td><input type="text" id="txtBrokerConnection" value="amqp://rabbit-server"></td>
+            </tr>
+            <tr>
+                <td>Backend</td>
+                <td>
+                    <select id="broker_type">
+                        <option value="rabbit">RabbitMQ</option>
+                        <option value="redis">Redis</option>
+                    </select>
+                </td>
+                <td><input type="text" id="txtBackend" value="redis-server"></td>
+                <td><input type="text" id="txtBkendConnection" value="redis://redis-server"></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input type="button" id="btnCeleryTest" onclick="onCeleryTestClick()" value="Test Connection">
+                </td>
+                <td>
+                    <div id="celery_test_result"></div>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
