@@ -12,7 +12,17 @@
     </head>
             <title>Bumps Distribution Server</title>
     <body onload="init_app()">
-            <h3><b>Bumps</b> Multi Processing User Interface</h3>
+        <table width="100%">
+            <tr>
+                <td>
+                    <h3 style="text-align:left"><b>Bumps</b> Multi Processing User Interface</h3>
+                </td>
+                <td>
+                    <a href="{{ url_for('show_celery_params') }} " target="_blank">Celery Setup</a>
+                    <span style="text-align:right"></span>
+                </td>
+            </tr>
+        </table>
 			<table width="100%">
 				<tr>
 					<th>
