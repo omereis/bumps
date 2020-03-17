@@ -36,7 +36,33 @@ def on_send_fit_job():
 #------------------------------------------------------------------------------
 @app.route('/')
 def index():
-        return render_template('bumps_mp_gui.html')
+    return render_template('bumps_mp_gui.html')
+#------------------------------------------------------------------------------
+@app.route('/test_celery')
+def test_celery():
+    suggestions_list = []
+    suggestions_list.append('try it!')
+    return 'Here are Celery results'
+    #return render_template('suggestions.html', suggestions=suggestions_list)
+#------------------------------------------------------------------------------
+def read_servers():
+    dir = {}
+    f = None
+    try:
+        f = open ('bumps_celery/bumps_celery_servers.json', 'r')
+        s = f.read()
+        dir = json.loads(s.replace("'",'"'))
+    except Exception as e:
+        dir = f'{e}'
+    finally:
+        if f:
+            f.close()
+    return dir
+#------------------------------------------------------------------------------
+@app.route('/celery_params')
+def show_celery_params():
+    dir_servers = read_servers()
+    return render_template('bumps_celery_setup.html', dir=dir_servers)
 #------------------------------------------------------------------------------
 def get_cli_params():
     bumps_params = BumpsParams()
