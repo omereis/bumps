@@ -36,12 +36,50 @@
     <body>
         <h3 style="text-align: center;">Bumps Celery Setup</h3>
         <p>Python Parameter: {{ dir }}</p>
+        <table>
+            <tr>
+                <th>Function</th>
+                <th>Broker</th>
+                <th>Backend</th>
+            </tr>
+            <tr>
+                <th>Server Type</th>
+                <td>
+                    <select id="broker_type">
+                        <option value="rabbit">RabbitMQ</option>
+                        <option value="redis">Redis</option>
+                    </select>
+                </td>
+                <td>
+                    <select id="backend_type">
+                        <option value="rabbit">RabbitMQ</option>
+                        <option value="redis">Redis</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>Server Type</th>
+                <td><input type="text" id="txtBroker" value="rabbit-server"></td>
+                <td><input type="text" id="txtBackend" value="redis-server"></td>
+            </tr>
+            <tr>
+                <th>Connection String</th>
+                <td><input type="text" id="txtBrokerConnection" value="amqp://rabbit-server"></td>
+                <td><input type="text" id="txtBkendConnection" value="redis://redis-server"></td>
+            </tr>
+            <tr>
+                <th>Test</th>
+                <td>Broker Test</td>
+                <td>Backend Test</td>
+            </tr>
+    </table>
         <table class="celery_setup_table">
             <tr>
                 <th>Function</th>
                 <th>Server Type</th>
                 <th>Server Address</th>
                 <th>Connection String</th>
+                <th>test Results</th>
             </tr>
             <tr>
                 <td>Broker</td>
