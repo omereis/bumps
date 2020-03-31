@@ -15,6 +15,9 @@ from db_misc import results_dir_for_job, get_problem_file_name
 from message_parser import ClientMessage, MessageCommand, generate_key
 from get_host_port import get_host_port
 from MessageCommand import MessageCommand
+
+from bumps_celery import tasks as celery_tasks
+import zipfile
 #------------------------------------------------------------------------------
 database_engine = None
 connection = None
@@ -161,9 +164,6 @@ def print_celery_jobs(server_params):
     for process in server_params.listCeleryJobs:
         print(f'{datetime.datetime.now()}: process {process.pid} job id {process.job_id}')
     time.sleep(20)
-#------------------------------------------------------------------------------
-from bumps_celery import tasks as celery_tasks
-import zipfile
 #------------------------------------------------------------------------------
 def send_celery_fit (fit_job, server_params, message):
     try:

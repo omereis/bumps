@@ -1,9 +1,11 @@
 from flask import Flask, render_template, request
 from bumps_params import BumpsParams
 import json, sys, getopt, os, multiprocessing
+import websocket, redis
 from bumps_ws_server import ws_server_main
 from bumps_params import read_y_n
-import websocket
+from bumps_celery import bumps_celery_setup, celery
+
 #------------------------------------------------------------------------------
 # Source:
 # https://stackoverflow.com/questions/40963401/flask-dynamic-data-update-without-reload-page
@@ -19,11 +21,6 @@ def on_send_fit_job():
         res = request.args['message']
         cm = json.loads(res)
         msg = json.dumps(cm)
-#        print(f'cm = {cm}')
-#       print(f'Message:\n{msg}')
-#        print('++++++++++++++++++++++++++++++++++++++++++++++')
-#        print(f'bumps parameters:\n{bumps_params.to_string()}')
-#        print('++++++++++++++++++++++++++++++++++++++++++++++')
         ws = websocket.create_connection(f'ws://{bumps_params.server}:{bumps_params.mp_port}')
 #        print ('websocket connected')
         ws.send(msg)
@@ -38,12 +35,61 @@ def on_send_fit_job():
 def index():
     return render_template('bumps_mp_gui.html')
 #------------------------------------------------------------------------------
+def test_rabbit(strBroker):
+    return (False)
+#------------------------------------------------------------------------------
+def test_redis(strBroker):
+    return (False)
+#------------------------------------------------------------------------------
+def test_broker_setup(dictSetup, dictResults):
+    sResult = ''
+    try:
+        jsonServers = bumps_celery_setup.get_servers_string()
+        strBroker = jsonServers[jsonSetup[bumps_celery_setup.BROKER]
+        if dictSetup[bumps_celery_setup.TYPE] == bumps_celery_setup.RABBIT:
+            fTest = test_rabbit(strBroker)
+            sResult = 'RabbitMQ OK'
+        elif dictSetup[bumps_celery_setup.TYPE] == bumps_celery_setup.REDIS:
+            fTest = test_redis(strBroker)
+            sResult = 'Redis OK'
+        else
+            fTest = False
+            sResult = f'Type "{dictSetup[bumps_celery_setup.TYPE]}" not supported'
+        dictResults['results'] = fTest
+        dictResults['message'] = sResult
+        print(f'broker string: "{strBroker}"')
+    except Exception as e:
+        print(f'Test Broker runtime error:\n{e}')
+        dictResults['results'] = False
+        dictResults['message'] = f'{e}'
+    return strBroker
+#------------------------------------------------------------------------------
+@app.route('/test_broker')
+def test_broker():
+    dictResults = {}
+    try:
+        jsonSetup = bumps_celery_setup.read_setup()
+        print(f'test_broker, jsonSetup: {str(jsonSetup)}')
+        jsonServers = bumps_celery_setup.get_servers_string()
+        print(f'test_broker, jsonServers: {str(jsonServers)}')
+        fBrokerTest = test_broker_setup(jsonSetup[bumps_celery_setup.BROKER], dictResults)
+        #appTest = celery.appTest(jsonServers)
+        #dictResults['results'] = 'OK'
+        #dictResults['message'] = 'Suceess'
+    except Exception as e:
+        print (f'Broker testing run time error:\n{e}')
+        dictResults['results'] = fBrokerTest
+        dictResults['message'] = f'{e}'
+    #appTest.start()
+    return str(dictResults)
+    #return jsonServers
+#------------------------------------------------------------------------------
 @app.route('/test_celery')
 def test_celery():
-    suggestions_list = []
-    suggestions_list.append('try it!')
-    return 'Here are Celery results'
-    #return render_template('suggestions.html', suggestions=suggestions_list)
+    jsonServers = bumps_celery_setup.get_servers_string()
+    appTest = celery.appTest(jsonServers)
+    #appTest.start()
+    return jsonServers
 #------------------------------------------------------------------------------
 def read_servers():
     dir = {}

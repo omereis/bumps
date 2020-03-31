@@ -11,11 +11,13 @@
         <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_gui.css') }}"/>
         <!--<link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_portal.css') }}"/>-->
         <script>
-            function onCeleryTestClick() {
+            function onBrokerTestClick() {
                 var text = $(this).text();
-                console.log('btnCeleryTest');
+                //console.log('btnCeleryTest');
+                console.log('btnBrokerTest');
                 $.ajax({
-                    url: "/test_celery",
+                    url: "/test_broker",
+                    //url: "/test_celery",
                     //url: "/suggestions",
                     type: "get",
                     data: {jsdata: text},
@@ -69,47 +71,14 @@
             </tr>
             <tr>
                 <th>Test</th>
-                <td>Broker Test</td>
+                <!--<td><input type="button" id="btnCeleryTest" onclick="onCeleryTestClick()" value="Test Connection"></td>-->
+                <td><input type="button" id="btnBrokerTest" onclick="onBrokerTestClick()" value="Test Broker"></td>
                 <td>Backend Test</td>
             </tr>
-    </table>
-        <table class="celery_setup_table">
             <tr>
-                <th>Function</th>
-                <th>Server Type</th>
-                <th>Server Address</th>
-                <th>Connection String</th>
-                <th>test Results</th>
-            </tr>
-            <tr>
-                <td>Broker</td>
-                <td>
-                    <select id="broker_type">
-                        <option value="rabbit">RabbitMQ</option>
-                        <option value="redis">Redis</option>
-                    </select>
-                </td>
-                <td><input type="text" id="txtBroker" value="rabbit-server"></td>
-                <td><input type="text" id="txtBrokerConnection" value="amqp://rabbit-server"></td>
-            </tr>
-            <tr>
-                <td>Backend</td>
-                <td>
-                    <select id="broker_type">
-                        <option value="rabbit">RabbitMQ</option>
-                        <option value="redis">Redis</option>
-                    </select>
-                </td>
-                <td><input type="text" id="txtBackend" value="redis-server"></td>
-                <td><input type="text" id="txtBkendConnection" value="redis://redis-server"></td>
-            </tr>
-            <tr>
-                <td colspan="2">
-                    <input type="button" id="btnCeleryTest" onclick="onCeleryTestClick()" value="Test Connection">
-                </td>
-                <td>
-                    <div id="celery_test_result"></div>
-                </td>
+                <th>Results</th>
+                <td>Broker Results</td>
+                <td>Backend Results</td>
             </tr>
         </table>
     </body>
