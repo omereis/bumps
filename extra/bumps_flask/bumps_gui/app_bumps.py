@@ -5,6 +5,7 @@ import websocket, redis
 from bumps_ws_server import ws_server_main
 from bumps_params import read_y_n
 from bumps_celery import bumps_celery_setup, celery
+from oe_debug import print_debug
 
 #------------------------------------------------------------------------------
 # Source:
@@ -35,50 +36,78 @@ def on_send_fit_job():
 def index():
     return render_template('bumps_mp_gui.html')
 #------------------------------------------------------------------------------
-def test_rabbit(strBroker):
-    return (False)
+import pika
 #------------------------------------------------------------------------------
-def test_redis(strBroker):
+def test_rabbit(strRabbit, lstResult):
+    print(f'test_rabbit, rabbit string: {strRabbit}')
+    fRabbit = False
+    sResult = ''
+    try:
+        #print_debug(str(dir(request)))
+        con = pika.BlockingConnection(pika.ConnectionParameters(strRabbit))
+        con.close()
+        fRabbit = True
+        sResult = 'RabbitMQ OK'
+    except Exception as e:
+        fRabbit = False
+        print(f'"test_rabbit" runtime error:\n{e}')
+        sResult = f'{e}'
+    lstResult[0] = sResult
+    return (fRabbit)
+#------------------------------------------------------------------------------
+def test_redis(strRedis):
+    print(f'test_redis, redis string: {strRedis}')
     return (False)
 #------------------------------------------------------------------------------
 def test_broker_setup(dictSetup, dictResults):
-    sResult = ''
     try:
-        jsonServers = bumps_celery_setup.get_servers_string()
-        strBroker = jsonServers[jsonSetup[bumps_celery_setup.BROKER]
+        strBroker = dictSetup[bumps_celery_setup.ADDRESS]
+        lstResult = ['0']
         if dictSetup[bumps_celery_setup.TYPE] == bumps_celery_setup.RABBIT:
-            fTest = test_rabbit(strBroker)
-            sResult = 'RabbitMQ OK'
+            if test_rabbit(strBroker, lstResult):
+                fTest = "1"
+            else:
+                fTest = "0"
+            sResult = lstResult[0]
         elif dictSetup[bumps_celery_setup.TYPE] == bumps_celery_setup.REDIS:
             fTest = test_redis(strBroker)
             sResult = 'Redis OK'
-        else
-            fTest = False
+        else:
+            fTest = "0"
             sResult = f'Type "{dictSetup[bumps_celery_setup.TYPE]}" not supported'
-        dictResults['results'] = fTest
-        dictResults['message'] = sResult
-        print(f'broker string: "{strBroker}"')
     except Exception as e:
-        print(f'Test Broker runtime error:\n{e}')
-        dictResults['results'] = False
-        dictResults['message'] = f'{e}'
-    return strBroker
+        print(f'Test Broker Setup runtime error:\n{e}')
+        fTest = "0"
+        sResult = f'Broker Setup runtime error:\n{e}'
+    finally:
+        dictResults['result'] = fTest
+        dictResults['message'] = sResult
+    return sResult
 #------------------------------------------------------------------------------
 @app.route('/test_broker')
 def test_broker():
     dictResults = {}
     try:
+        client_args = request.args.to_dict()['jsdata']
+        #print_debug(f'request args:\n{str(request.args)}')
+        #print_debug(f'request args content:\n{request.args[0][1]}')
+        #dctArgs = request.args.to_dict()
+        #print_debug(f'request dictionary:\n{str(dctArgs)}')
+        print_debug(f'request jsdata:\n{client_args}')
+        jsonArgs = json.parse(client_args)
         jsonSetup = bumps_celery_setup.read_setup()
-        print(f'test_broker, jsonSetup: {str(jsonSetup)}')
-        jsonServers = bumps_celery_setup.get_servers_string()
-        print(f'test_broker, jsonServers: {str(jsonServers)}')
+        print_debug(f'jsonArgs:\n{str(jsonArgs)}')
+        print_debug(f'jsonSetup:\n{str(jsonSetup)}')
+        #print(f'test_broker, jsonSetup: {str(jsonSetup)}')
+        #jsonServers = bumps_celery_setup.get_servers_string()
+        #print(f'test_broker, jsonServers: {str(jsonServers)}')
         fBrokerTest = test_broker_setup(jsonSetup[bumps_celery_setup.BROKER], dictResults)
         #appTest = celery.appTest(jsonServers)
         #dictResults['results'] = 'OK'
         #dictResults['message'] = 'Suceess'
     except Exception as e:
         print (f'Broker testing run time error:\n{e}')
-        dictResults['results'] = fBrokerTest
+        dictResults['results'] = False
         dictResults['message'] = f'{e}'
     #appTest.start()
     return str(dictResults)

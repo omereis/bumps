@@ -8,21 +8,35 @@
 
         <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>-->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="{{ url_for ('static', filename='js/celery_setup.js') }}" charset="utf-8"></script>
         <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_gui.css') }}"/>
         <!--<link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_portal.css') }}"/>-->
         <script>
             function onBrokerTestClick() {
-                var text = $(this).text();
-                //console.log('btnCeleryTest');
-                console.log('btnBrokerTest');
+                var jsnParams = getServersParams();
+                var text = JSON.stringify(jsnParams);
                 $.ajax({
                     url: "/test_broker",
-                    //url: "/test_celery",
-                    //url: "/suggestions",
                     type: "get",
                     data: {jsdata: text},
                     success: function(response) {
-                        document.getElementById('celery_test_result').innerText = response;
+                        try {
+                            jsonResponse = JSON.parse(response.replace(/\'/g,'"'));
+                            if (jsonResponse.result) {
+                                document.getElementById('broker_test_result').innerText = 'OK';
+                                document.getElementById('broker_test_message').innerText = jsonResponse.message;
+                            }
+                            else {
+                                document.getElementById('broker_test_result').innerText = 'Fail';
+                                document.getElementById('broker_test_message').innerText = jsonResponse.message;
+                            }
+                            console.log(jsonResponse.toString());
+                        }
+                        catch (e) {
+                            var err_msg = 'response ' + respones + 'can not be handled' + '\n' + e.message;
+                            alert (err_msg);
+                        }
+                        //document.getElementById('celery_test_result').innerText = response;
                         //$("#place_for_suggestions").html(response);
                     },
                     error: function(xhr) {
@@ -77,8 +91,21 @@
             </tr>
             <tr>
                 <th>Results</th>
-                <td>Broker Results</td>
-                <td>Backend Results</td>
+                <td><div class="celery_result" id="broker_test_result">Broker Results</div></td>
+                <td><div class="celery_class" id="backend_test_result">Broker Message</div></td>
+            </tr>
+            <tr>
+                <th>Test Messages</th>
+                <td><div id="broker_test_message">Backend Results</div></td>
+                <!--style="text-align: center;"-->
+                <td><div id="backend_test_message">Backend Message</div></td>
+            </tr>
+        </table>
+        <div class="myclass">This is my class</div>
+        <table>
+            <tr>
+                <td class="myclass">Cell #1</td>
+                <td>Cell #2</td>
             </tr>
         </table>
     </body>
