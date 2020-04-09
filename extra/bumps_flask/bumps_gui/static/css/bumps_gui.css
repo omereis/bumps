@@ -17,3 +17,50 @@ label {
     letter-spacing: 1px;
     /*text-align: center;*/
 }
+.celery_setup_table {
+    width: 100%;
+    border: 1px solid black;
+    padding: 10;
+}
+
+body{
+    background-color: rgb(70, 149, 240);
+    color:black;
+    border-color:black;
+}
+
+/*
+table, td, tr, th {
+    border: 1px solid black;
+}
+
+th {
+    text-align: center;
+    background-color: rgb(100, 131, 216);
+}
+*/
+
+th, td, tr, th {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th {
+    text-align: center;
+    background-color: rgb(100, 131, 216);
+}
+.myclass {
+    text-align: center;
+    background-color: rgb(23, 50, 124);
+    color: rgb(45, 231, 76);
+}
+.celery_result {
+    text-align: center;
+    color: rgb(0, 250, 0);;
+    font-weight: bold;
+    background-color: rgb(150, 155, 225);
+}
+.celery_class {
+    text-align: left;
+    color: rgb(0, 0, 0);
+    background-color: rgb(23, 50, 124);
+}

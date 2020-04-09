@@ -41,9 +41,7 @@ def test_rabbit(strRabbit, lstResult):
     fRabbit = False
     sResult = ''
     try:
-        #print_debug(f'test_rabbit, strRabbit:\n{strRabbit}')
         con = pika.BlockingConnection(pika.ConnectionParameters(strRabbit))
-        #print_debug(f'test_rabbit, connected')
         con.close()
         fRabbit = True
         sResult = 'RabbitMQ OK'
@@ -52,27 +50,25 @@ def test_rabbit(strRabbit, lstResult):
         sResult = f"test_rabbit, connection error.\nConnection String: {strRabbit}\nError: {sErr}"
         fRabbit = False
     lstResult[0] = sResult
-    #print_debug(f'"test_rabbit" lstResult[0]:\n{lstResult[0]}')
     return (fRabbit)
 #------------------------------------------------------------------------------
 def test_redis(strRedis, lstResult):
     try:
         rdb = redis.StrictRedis(host=strRedis)
-        sResult = f'Redius OK\ntest_redis, redis string: {strRedis}'
+        sResult = f'Redis OK'
         print(sResult)
         rdb.close()
         fRedis = True
     except Exception as e:
         sErr = f'"test_redis" runtime error:\n{e}'
         print(sErr)
-        #print_debug(sErr)
         fRedis = False
     lstResult[0] = sResult
     return (fRedis)
 #------------------------------------------------------------------------------
-def test_broker_setup(dictSetup, dictResults):
+def test_server_setup(dictSetup):
+    dictResults = {}
     try:
-        #print_debug(f'test_broker_setup, dictSetup:\n{str(dictSetup)}')
         strBroker = dictSetup[bumps_celery_setup.ADDRESS]
         lstResult = ['0']
         if dictSetup[bumps_celery_setup.TYPE] == bumps_celery_setup.RABBIT:
@@ -80,15 +76,12 @@ def test_broker_setup(dictSetup, dictResults):
                 fTest = 1
             else:
                 fTest = 0
-            #print_debug(f'test_broker_setup, lstResult[0]:\n{lstResult[0]}')
             sResult = lstResult[0]
         elif dictSetup[bumps_celery_setup.TYPE] == bumps_celery_setup.REDIS:
-            #print_debug(f'test_broker_setup, address:\n{dictSetup[bumps_celery_setup.ADDRESS]}')
             if test_redis(dictSetup[bumps_celery_setup.ADDRESS], lstResult):
                 fTest = 1
             else:
                 fTest = 0
-            #print_debug(f'test_broker_setup, lstResult[0]:\n{lstResult[0]}')
             sResult = lstResult[0]
         else:
             fTest = 0
@@ -101,22 +94,16 @@ def test_broker_setup(dictSetup, dictResults):
     finally:
         dictResults['result'] = fTest
         dictResults['message'] = sResult
-    return sResult
+    return dictResults
 #------------------------------------------------------------------------------
-@app.route('/test_broker')
-def test_broker():
+@app.route('/test_server')
+def test_server():
     dctResults = {}
-    dctBroker = {}
-    dctBackend = {}
     try:
         client_args = request.args.to_dict()['jsdata']
-        #print_debug(f'request jsdata:\n{client_args}')
         jsonSetup = json.loads(client_args)
-        #print_debug(f'jsonSetup:\n{str(jsonSetup)}')
-        test_broker_setup(jsonSetup[bumps_celery_setup.BROKER], dctBroker)
-        test_broker_setup(jsonSetup[bumps_celery_setup.BACKEND], dctBackend)
-        dctResults[bumps_celery_setup.BROKER] = dctBroker
-        dctResults[bumps_celery_setup.BACKEND] = dctBackend
+        dctResults[bumps_celery_setup.BROKER] = test_server_setup(jsonSetup[bumps_celery_setup.BROKER])
+        dctResults[bumps_celery_setup.BACKEND] = test_server_setup(jsonSetup[bumps_celery_setup.BACKEND])
     except Exception as e:
         print (f'Broker testing run time error:\n{e}')
         dctResults['results'] = "0"
@@ -147,7 +134,18 @@ def read_servers():
 @app.route('/celery_params')
 def show_celery_params():
     dir_servers = read_servers()
-    return render_template('bumps_celery_setup.html', dir=dir_servers)
+    servers = str(read_servers()).lower()
+    #jsonServers = bumps_celery_setup.get_servers_string()
+    return render_template('bumps_celery_setup.html', dir=dir_servers, servers=servers)
+#------------------------------------------------------------------------------
+@app.route('/read_celery_params')
+def read_celery_params():
+    #dir_servers = read_servers()
+    #jsonServers = bumps_celery_setup.get_servers_string()
+    strServers = str(read_servers()).lower()
+    return strServers
+    #return read_servers()
+    #render_template('bumps_celery_setup.html', dir=dir_servers, servers=jsonServers)
 #------------------------------------------------------------------------------
 def get_cli_params():
     bumps_params = BumpsParams()

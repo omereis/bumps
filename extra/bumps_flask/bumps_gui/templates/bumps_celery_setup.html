@@ -16,7 +16,7 @@
                 var jsnParams = getServersParams();
                 var text = JSON.stringify(jsnParams);
                 $.ajax({
-                    url: "/test_broker",
+                    url: "/test_server",
                     type: "get",
                     data: {jsdata: text},
                     success: function(response) {
@@ -37,13 +37,54 @@
                     }
                 });
             }
+            function onServersReloadClick() {
+                $.ajax({
+                    url: "/read_celery_params",
+                    type: "get",
+                    //data: {jsdata: text},
+                    success: function(response) {
+                        try {
+                            console.log(response);
+                            /*jsonResponse = JSON.parse(response.replace(/\'/g,'"'));
+                            displayBrokerResults(jsonResponse.broker);
+                            displayBackendResults(jsonResponse.backend);
+                            console.log(jsonResponse.toString());*/
+                        }
+                        catch (e) {
+                            var err_msg = 'response ' + response + 'can not be handled' + '\n' + e.message;
+                            alert (err_msg);
+                        }
+                    },
+                    error: function(xhr) {
+                        //str = f'runtimer error: {xhr}'
+                        console.log('runtime error: ' + xhr);
+                    }
+                });
+            }
+            function onServersExportClick() {
+                var text = JSON.stringify(getServersParams());
+                console.log(text);
+            }
         </script>
     </head>
             <title>Bumps Celery Setup</title>
     <!--<body onload="init_app()">-->
-    <body>
+    <body onload="init_celery_setup({{ servers }})">
         <h3 style="text-align: center;">Bumps Celery Setup</h3>
-        <p>Python Parameter: {{ dir }}</p>
+        <table>
+            <tr>
+                <td>Python Parameter:</td><td>{{ dir }}</td>
+            </tr>
+            <tr>
+                <td style="align-items: center;">
+                    <input type="button" value="Reload" onclick="onServersReloadClick()">
+                </td>
+                <td style="align-items: center;">
+                    <input type="button" value="Export..." onclick="onServersExportClick()">
+                </td>
+            </tr>
+        </table>
+        
         <table>
             <tr>
                 <th>Function</th>
@@ -77,28 +118,26 @@
             </tr>
             <tr>
                 <th>Test</th>
-                <!--<td><input type="button" id="btnCeleryTest" onclick="onCeleryTestClick()" value="Test Connection"></td>-->
                 <td><input type="button" id="btnBrokerTest" onclick="onBrokerTestClick()" value="Test Broker"></td>
                 <td>Backend Test</td>
             </tr>
             <tr>
                 <th>Results</th>
                 <td><div class="celery_result" id="broker_test_result">Broker Results</div></td>
-                <td><div class="celery_class" id="backend_test_result">Broker Message</div></td>
+                <td><div class="celery_result" id="backend_test_result">Broker Message</div></td>
             </tr>
             <tr>
                 <th>Test Messages</th>
                 <td><div id="broker_test_message">Backend Results</div></td>
-                <!--style="text-align: center;"-->
                 <td><div id="backend_test_message">Backend Message</div></td>
             </tr>
         </table>
-        <div class="myclass">This is my class</div>
+        <!--<div class="myclass">This is my class</div>
         <table>
             <tr>
                 <td class="myclass">Cell #1</td>
                 <td>Cell #2</td>
             </tr>
-        </table>
+        </table>-->
     </body>
 </html>
