@@ -22,22 +22,14 @@
                     success: function(response) {
                         try {
                             jsonResponse = JSON.parse(response.replace(/\'/g,'"'));
-                            if (jsonResponse.result) {
-                                document.getElementById('broker_test_result').innerText = 'OK';
-                                document.getElementById('broker_test_message').innerText = jsonResponse.message;
-                            }
-                            else {
-                                document.getElementById('broker_test_result').innerText = 'Fail';
-                                document.getElementById('broker_test_message').innerText = jsonResponse.message;
-                            }
+                            displayBrokerResults(jsonResponse.broker);
+                            displayBackendResults(jsonResponse.backend);
                             console.log(jsonResponse.toString());
                         }
                         catch (e) {
-                            var err_msg = 'response ' + respones + 'can not be handled' + '\n' + e.message;
+                            var err_msg = 'response ' + response + 'can not be handled' + '\n' + e.message;
                             alert (err_msg);
                         }
-                        //document.getElementById('celery_test_result').innerText = response;
-                        //$("#place_for_suggestions").html(response);
                     },
                     error: function(xhr) {
                         //str = f'runtimer error: {xhr}'

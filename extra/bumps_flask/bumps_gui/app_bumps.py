@@ -23,11 +23,9 @@ def on_send_fit_job():
         cm = json.loads(res)
         msg = json.dumps(cm)
         ws = websocket.create_connection(f'ws://{bumps_params.server}:{bumps_params.mp_port}')
-#        print ('websocket connected')
         ws.send(msg)
         ret = ws.recv()
         ws.close()
-#        print (f'websocket disconnected, return value: {ret}')
     except Exception as e:
         print (f'run time error in on_send_fit_job: {e}')
     return ret
@@ -39,46 +37,67 @@ def index():
 import pika
 #------------------------------------------------------------------------------
 def test_rabbit(strRabbit, lstResult):
-    print(f'test_rabbit, rabbit string: {strRabbit}')
+    print(f'test_rabbit, rabbit stri`ng: {strRabbit}')
     fRabbit = False
     sResult = ''
     try:
-        #print_debug(str(dir(request)))
+        #print_debug(f'test_rabbit, strRabbit:\n{strRabbit}')
         con = pika.BlockingConnection(pika.ConnectionParameters(strRabbit))
+        #print_debug(f'test_rabbit, connected')
         con.close()
         fRabbit = True
         sResult = 'RabbitMQ OK'
     except Exception as e:
+        sErr = f'{e.args[0].exception.args[1]}'.replace('"',"'")
+        sResult = f"test_rabbit, connection error.\nConnection String: {strRabbit}\nError: {sErr}"
         fRabbit = False
-        print(f'"test_rabbit" runtime error:\n{e}')
-        sResult = f'{e}'
     lstResult[0] = sResult
+    #print_debug(f'"test_rabbit" lstResult[0]:\n{lstResult[0]}')
     return (fRabbit)
 #------------------------------------------------------------------------------
-def test_redis(strRedis):
-    print(f'test_redis, redis string: {strRedis}')
-    return (False)
+def test_redis(strRedis, lstResult):
+    try:
+        rdb = redis.StrictRedis(host=strRedis)
+        sResult = f'Redius OK\ntest_redis, redis string: {strRedis}'
+        print(sResult)
+        rdb.close()
+        fRedis = True
+    except Exception as e:
+        sErr = f'"test_redis" runtime error:\n{e}'
+        print(sErr)
+        #print_debug(sErr)
+        fRedis = False
+    lstResult[0] = sResult
+    return (fRedis)
 #------------------------------------------------------------------------------
 def test_broker_setup(dictSetup, dictResults):
     try:
+        #print_debug(f'test_broker_setup, dictSetup:\n{str(dictSetup)}')
         strBroker = dictSetup[bumps_celery_setup.ADDRESS]
         lstResult = ['0']
         if dictSetup[bumps_celery_setup.TYPE] == bumps_celery_setup.RABBIT:
             if test_rabbit(strBroker, lstResult):
-                fTest = "1"
+                fTest = 1
             else:
-                fTest = "0"
+                fTest = 0
+            #print_debug(f'test_broker_setup, lstResult[0]:\n{lstResult[0]}')
             sResult = lstResult[0]
         elif dictSetup[bumps_celery_setup.TYPE] == bumps_celery_setup.REDIS:
-            fTest = test_redis(strBroker)
-            sResult = 'Redis OK'
+            #print_debug(f'test_broker_setup, address:\n{dictSetup[bumps_celery_setup.ADDRESS]}')
+            if test_redis(dictSetup[bumps_celery_setup.ADDRESS], lstResult):
+                fTest = 1
+            else:
+                fTest = 0
+            #print_debug(f'test_broker_setup, lstResult[0]:\n{lstResult[0]}')
+            sResult = lstResult[0]
         else:
-            fTest = "0"
+            fTest = 0
             sResult = f'Type "{dictSetup[bumps_celery_setup.TYPE]}" not supported'
     except Exception as e:
         print(f'Test Broker Setup runtime error:\n{e}')
-        fTest = "0"
-        sResult = f'Broker Setup runtime error:\n{e}'
+        fTest = 0
+        strErr = f'e'.replace('"',"'")
+        sResult = f'Broker Setup runtime error:\n{strErr}'
     finally:
         dictResults['result'] = fTest
         dictResults['message'] = sResult
@@ -86,32 +105,23 @@ def test_broker_setup(dictSetup, dictResults):
 #------------------------------------------------------------------------------
 @app.route('/test_broker')
 def test_broker():
-    dictResults = {}
+    dctResults = {}
+    dctBroker = {}
+    dctBackend = {}
     try:
         client_args = request.args.to_dict()['jsdata']
-        #print_debug(f'request args:\n{str(request.args)}')
-        #print_debug(f'request args content:\n{request.args[0][1]}')
-        #dctArgs = request.args.to_dict()
-        #print_debug(f'request dictionary:\n{str(dctArgs)}')
-        print_debug(f'request jsdata:\n{client_args}')
-        jsonArgs = json.parse(client_args)
-        jsonSetup = bumps_celery_setup.read_setup()
-        print_debug(f'jsonArgs:\n{str(jsonArgs)}')
-        print_debug(f'jsonSetup:\n{str(jsonSetup)}')
-        #print(f'test_broker, jsonSetup: {str(jsonSetup)}')
-        #jsonServers = bumps_celery_setup.get_servers_string()
-        #print(f'test_broker, jsonServers: {str(jsonServers)}')
-        fBrokerTest = test_broker_setup(jsonSetup[bumps_celery_setup.BROKER], dictResults)
-        #appTest = celery.appTest(jsonServers)
-        #dictResults['results'] = 'OK'
-        #dictResults['message'] = 'Suceess'
+        #print_debug(f'request jsdata:\n{client_args}')
+        jsonSetup = json.loads(client_args)
+        #print_debug(f'jsonSetup:\n{str(jsonSetup)}')
+        test_broker_setup(jsonSetup[bumps_celery_setup.BROKER], dctBroker)
+        test_broker_setup(jsonSetup[bumps_celery_setup.BACKEND], dctBackend)
+        dctResults[bumps_celery_setup.BROKER] = dctBroker
+        dctResults[bumps_celery_setup.BACKEND] = dctBackend
     except Exception as e:
         print (f'Broker testing run time error:\n{e}')
-        dictResults['results'] = False
-        dictResults['message'] = f'{e}'
-    #appTest.start()
-    return str(dictResults)
-    #return jsonServers
+        dctResults['results'] = "0"
+        dctResults['message'] = f'{e}'
+    return str(dctResults)
 #------------------------------------------------------------------------------
 @app.route('/test_celery')
 def test_celery():
