@@ -13,8 +13,32 @@
         <!--<link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_portal.css') }}"/>-->
         <script>
             function onBrokerTestClick() {
-                var jsnParams = getServersParams();
-                var text = JSON.stringify(jsnParams);
+                var text = getParamsAsText ();
+                $.ajax({
+                    url: "/test_server",
+                    type: "get",
+                    data: {jsdata: text},
+                    success: function(response) {
+                        console.log(response);
+                        try {
+                            jsonResponse = JSON.parse(response.replace(/\'/g,'"'));
+                            displayBrokerResults(jsonResponse.broker);
+                            displayBackendResults(jsonResponse.backend);
+                        }
+                        catch (e) {
+                            var err_msg = 'response ' + response + 'can not be handled' + '\n' + e.message;
+                            alert (err_msg);
+                        }
+                    },
+                    error: function(xhr) {
+                        //str = f'runtimer error: {xhr}'
+                        console.log('runtime error: ' + xhr);
+                    }
+                });
+            }
+/*
+            function onServersSaveClick() {
+                var text = getParamsAsText ();
                 $.ajax({
                     url: "/test_server",
                     type: "get",
@@ -37,6 +61,7 @@
                     }
                 });
             }
+*/
             function onServersReloadClick() {
                 $.ajax({
                     url: "/read_celery_params",
@@ -44,11 +69,7 @@
                     //data: {jsdata: text},
                     success: function(response) {
                         try {
-                            console.log(response);
-                            /*jsonResponse = JSON.parse(response.replace(/\'/g,'"'));
-                            displayBrokerResults(jsonResponse.broker);
-                            displayBackendResults(jsonResponse.backend);
-                            console.log(jsonResponse.toString());*/
+                            init_celery_setup( JSON.parse(response.replace(/\'/g,'"')));
                         }
                         catch (e) {
                             var err_msg = 'response ' + response + 'can not be handled' + '\n' + e.message;
@@ -56,7 +77,6 @@
                         }
                     },
                     error: function(xhr) {
-                        //str = f'runtimer error: {xhr}'
                         console.log('runtime error: ' + xhr);
                     }
                 });
@@ -68,7 +88,6 @@
         </script>
     </head>
             <title>Bumps Celery Setup</title>
-    <!--<body onload="init_app()">-->
     <body onload="init_celery_setup({{ servers }})">
         <h3 style="text-align: center;">Bumps Celery Setup</h3>
         <table>
@@ -76,6 +95,9 @@
                 <td>Python Parameter:</td><td>{{ dir }}</td>
             </tr>
             <tr>
+                <td style="align-items: center;">
+                    <input type="button" value="Save" onclick="onServersSaveClick()">
+                </td>
                 <td style="align-items: center;">
                     <input type="button" value="Reload" onclick="onServersReloadClick()">
                 </td>
@@ -85,7 +107,7 @@
             </tr>
         </table>
         
-        <table>
+        <table id="tblParams">
             <tr>
                 <th>Function</th>
                 <th>Broker</th>

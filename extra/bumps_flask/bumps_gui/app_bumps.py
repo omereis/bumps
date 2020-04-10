@@ -12,6 +12,9 @@ from oe_debug import print_debug
 # https://stackoverflow.com/questions/40963401/flask-dynamic-data-update-without-reload-page
 # websocket source:
 # https://github.com/websocket-client/websocket-client/blob/master/examples/echo_client.py
+#------------------------------------------------------------------------------
+servers_file_name = 'bumps_celery/bumps_celery_servers.json'
+#------------------------------------------------------------------------------
 app = Flask(__name__)
 #------------------------------------------------------------------------------
 @app.route('/onsendfitjob')
@@ -55,13 +58,15 @@ def test_rabbit(strRabbit, lstResult):
 def test_redis(strRedis, lstResult):
     try:
         rdb = redis.StrictRedis(host=strRedis)
+        rdb.mset({'bumps' : 'test'})
+        rdb.delete ('bumps')
         sResult = f'Redis OK'
         print(sResult)
         rdb.close()
         fRedis = True
     except Exception as e:
-        sErr = f'"test_redis" runtime error:\n{e}'
-        print(sErr)
+        sResult = f"test_redis runtime error:\n{e}"
+        print(sResult)
         fRedis = False
     lstResult[0] = sResult
     return (fRedis)
@@ -117,11 +122,28 @@ def test_celery():
     #appTest.start()
     return jsonServers
 #------------------------------------------------------------------------------
+@app.route('/save_server_setup')
+def save_server_setup():
+    f = None
+    try:
+        client_args = request.args.to_dict()['jsdata']
+        f = open (servers_file_name, 'w+')
+        f.write(client_args)
+        f.close()
+        servers = str(read_servers()).lower()
+    except Exception as e:
+        servers = f'Error:\nCould not save servers parameters:\n{e}'
+    finally:
+        if f:
+            f.close()
+    return servers
+    
+#------------------------------------------------------------------------------
 def read_servers():
     dir = {}
     f = None
     try:
-        f = open ('bumps_celery/bumps_celery_servers.json', 'r')
+        f = open (servers_file_name, 'r')
         s = f.read()
         dir = json.loads(s.replace("'",'"'))
     except Exception as e:
