@@ -8,10 +8,9 @@
         <script>
         </script>
     </head>
-            <title>Bumps Celery Setup</title>
+            <title>Bumps Celery Servers Setup</title>
     <body onload="display_celery_setup({{ servers }})">
-        <h3 style="text-align: center;">Bumps Celery Setup</h3>
-        <!--<div>Servers:<br>servers: {{ servers }}<br>dir: {{ dir }}</div>-->
+        <h3 style="text-align: center;">Bumps Celery Servers Setup</h3>
     <table style="width: 100%;">
             <tr>
                 <td style="align-items: center;">
@@ -55,17 +54,11 @@
                 <td><input type="text" id="txtBroker" value="rabbit-server"></td>
                 <td><input type="text" id="txtBackend" value="redis-server"></td>
             </tr>
-<!-- -->
             <tr>
                 <th>Connection String</th>
                 <td><div id="divBrokerConnection"></div></td>
                 <td><div id="divBackendConnection"></div></td>
-<!--
-                <td><input type="text" id="txtBrokerConnection" value="amqp://rabbit-server" readonly></td>
-                <td><input type="text" id="txtBkendConnection" value="redis://redis-server" readonly></td>
--->
             </tr>
-<!-- -->
             <tr>
                 <th>Test</th>
                 <td style="text-align:center;" colspan="2">
@@ -91,7 +84,8 @@
         </div>
           
           <!-- Link to open the modal -->
-          <p><a href="#ex1" rel="modal:open">Open Modal</a></p>
+          <!-- saved for future use -->
+          <!--<p><a href="#ex1" rel="modal:open">Open Modal</a></p>-->
         <hr>
     </body>
 </html>

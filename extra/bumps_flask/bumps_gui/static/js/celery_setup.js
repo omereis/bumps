@@ -39,6 +39,19 @@ function getServerGuiParams(idType, idAddress) {
     return (jsnParam);
 }
 //-----------------------------------------------------------------------------
+function clearResultsDisplay() {
+    try {
+        document.getElementById('broker_test_result').innerText  = '';
+        document.getElementById('broker_test_message').innerText = '';
+        document.getElementById('backend_test_result').innerText  = '';
+        document.getElementById('backend_test_message').innerText = '';
+    }
+    catch (e) {
+        console.log(e);
+    }
+
+}
+//-----------------------------------------------------------------------------
 function displayServerResults(jsonResponse, txtResult, txtMessage) {
     try {
         var res = document.getElementById(txtResult);
@@ -133,6 +146,7 @@ function onServersSaveClick() {
 }
 //-----------------------------------------------------------------------------
 function onServersReloadClick() {
+    clearResultsDisplay();
     $.ajax({
         url: "/read_celery_params", type: "get",
         success: function(response) {
@@ -152,14 +166,13 @@ function onServersReloadClick() {
 }
 //-----------------------------------------------------------------------------
 function onServersDefaultClick() {
+    clearResultsDisplay();
     var txtParams = getParamsAsText ();
     $.ajax({
         url: "/get_servers_default", type: "get", data: {jsdata: txtParams},
         success: function(response) {
             console.log(response);
             try {
-                //jsonResponse = JSON.parse(response.replace(/\'/g,'"'));
-                //display_celery_setup (jsonResponse);
                 display_celery_setup (response);
                 document.getElementById('divMsg').innerHTML="Default Loaded<br><b>Note:</b><u>Default setup is only displayed, not loaded</u>";
             }
