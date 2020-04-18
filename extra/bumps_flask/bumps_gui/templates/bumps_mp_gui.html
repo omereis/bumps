@@ -1,10 +1,13 @@
 <html>
     <head>
         <!-- Constatnts and Globals. MUST be first -->
-            <script src="{{ url_for ('static', filename='js/const.js') }}" charset="utf-8"></script>
-            <script src="{{ url_for ('static', filename='js/local_tags.js') }}" charset="utf-8"></script>
-            <script src="{{ url_for ('static', filename='js/bumps_gui.js') }}" charset="utf-8"></script>
-            <script src="{{ url_for ('static', filename='js/random_words.js') }}" charset="utf-8"></script>
+        <script src="{{ url_for ('static', filename='js/const.js') }}" charset="utf-8"></script>
+        <script src="{{ url_for ('static', filename='js/local_tags.js') }}" charset="utf-8"></script>
+        <script src="{{ url_for ('static', filename='js/bumps_gui.js') }}" charset="utf-8"></script>
+        <script src="{{ url_for ('static', filename='js/random_words.js') }}" charset="utf-8"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.css" />
 
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
         <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_gui.css') }}"/>
@@ -12,6 +15,24 @@
     </head>
             <title>Bumps Distribution Server</title>
     <body onload="init_app()">
+        <div id="celery_setup" class="modal">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="align-items: center;">
+                        <input type="button" value="Save" onclick="onServersSaveClick()">
+                    </td>
+                    <td style="align-items: center;">
+                        <input type="button" value="Reload" onclick="onServersReloadClick()">
+                    </td>
+                    <td style="align-items: center;">
+                        <input type="button" value="Export..." onclick="onServersExportClick()">
+                    </td>
+                    <td style="align-items: center;">
+                        <input type="button" value="Default..." onclick="onServersDefaultClick()">
+                    </td>
+                </tr>
+            </table>
+        </div>
         <table width="100%">
             <tr>
                 <td>
@@ -20,6 +41,10 @@
                 <td>
                     <a href="{{ url_for('show_celery_params') }} " target="_blank">Celery Setup</a>
                     <span style="text-align:right"></span>
+                </td>
+                <td>
+                    Try Modal<br>
+                    <a href="#celery_setup" rel="modal:open">Open Modal</a>
                 </td>
             </tr>
         </table>

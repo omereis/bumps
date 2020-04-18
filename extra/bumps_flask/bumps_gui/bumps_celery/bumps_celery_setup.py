@@ -8,6 +8,7 @@ REDIS   = 'redis'
 ADDRESS = 'address'
 MESSAGE = 'message'
 ERROR   = 'error'
+STRING  = 'string'
 #------------------------------------------------------------------------------
 def read_file_setup (file_name, content):
     file = None
@@ -28,14 +29,12 @@ def read_file_setup (file_name, content):
 def read_setup():
     file_content=[]
     if read_file_setup ('bumps_celery/bumps_celery_servers.json', file_content):
-        #print(f'File content:\n{file_content[0]}')
         sJson = file_content[0].lower().replace("\n","").replace("'",'"')
-        jsonSetup = json.loads(sJson)
-        #print(f'JSON Setup: {str(jsonSetup)}')
+        dctSetup = json.loads(sJson)
     else:
-        jsonSetup = {}
+        dctSetup = {}
         print(f'reading fail:\n{file_content}')
-    return jsonSetup
+    return dctSetup
 #------------------------------------------------------------------------------
 def get_server_type_string(strType):
     if strType == RABBIT:
@@ -46,13 +45,10 @@ def get_server_type_string(strType):
         strType = ''
     return strType
 #------------------------------------------------------------------------------
-def get_server_string(dictBroker):
+def get_server_string(dctSrerver):
     try:
-        #print(f'get_server_string, dictBroker: {str(dictBroker)}')
-        strType = get_server_type_string(dictBroker[TYPE])
-        #print(f'get_server_string, strType: {strType}')
-        strServer = dictBroker[ADDRESS]
-        #print(f'get_server_string, strType: {strServer}')
+        strType = get_server_type_string(dctSrerver[TYPE])
+        strServer = dctSrerver[ADDRESS]
         strBroker = f'{strType}://{strServer}'
     except Exception as e:
         strBroker = ''
@@ -60,34 +56,36 @@ def get_server_string(dictBroker):
     return strBroker
 #------------------------------------------------------------------------------
 def get_servers_string():
-    jsonSetup = read_setup()
-    jsonSetupString={}
+    dctSetup = read_setup()
+    return get_servers_string_from_dict(dctSetup)
+#------------------------------------------------------------------------------
+def get_servers_string_from_dict(dctSetup):
+    dctSetupString={}
     fServersStringOK = False
     strErr = ''
 
     try:
-        if (BROKER in jsonSetup.keys()) and (BACKEND in jsonSetup.keys()):
-            strBrokerServer = get_server_string(jsonSetup[BROKER])
-            strBackendServer = get_server_string(jsonSetup[BACKEND])
-            jsonSetupString[BROKER]  = strBrokerServer
-            jsonSetupString[BACKEND] = strBackendServer
+        if (BROKER in dctSetup.keys()) and (BACKEND in dctSetup.keys()):
+            strBrokerServer = get_server_string(dctSetup[BROKER])
+            strBackendServer = get_server_string(dctSetup[BACKEND])
+            dctSetupString[BROKER]  = strBrokerServer
+            dctSetupString[BACKEND] = strBackendServer
             fServersStringOK = True
         else:
-            if BROKER not in jsonSetup.keys():
+            if BROKER not in dctSetup.keys():
                 strErr = 'Could not find broker'
-            if BACKEND not in jsonSetup.keys():
-                print(str(jsonSetup.keys()))
+            if BACKEND not in dctSetup.keys():
+                print(str(dctSetup.keys()))
                 strErr = 'Could not find backend'
             fServersStringOK = False
     except Exception as e:
         fServersStringOK = False
         strErr = f'{e}'
     if not fServersStringOK:
-        jsonSetupString[BROKER]  = 'amqp://rabbit-server'
-        jsonSetupString[BACKEND] = 'redis://redis-server'
-        jsonSetupString[ERROR] = strErr
-    return jsonSetupString
-
+        dctSetupString[BROKER]  = 'amqp://rabbit-server'
+        dctSetupString[BACKEND] = 'redis://redis-server'
+        dctSetupString[ERROR] = strErr
+    return dctSetupString
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 if __name__ == '__main__':

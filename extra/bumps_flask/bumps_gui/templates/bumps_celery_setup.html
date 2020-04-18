@@ -1,99 +1,18 @@
 <html>
     <head>
-        <!-- Constatnts and Globals. MUST be first -->
-        <!--<script src="{{ url_for ('static', filename='js/const.js') }}" charset="utf-8"></script>
-            <script src="{{ url_for ('static', filename='js/local_tags.js') }}" charset="utf-8"></script>
-            <script src="{{ url_for ('static', filename='js/bumps_gui.js') }}" charset="utf-8"></script>
-        <script src="{{ url_for ('static', filename='js/random_words.js') }}" charset="utf-8"></script>-->
-
-        <!--<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>-->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
         <script src="{{ url_for ('static', filename='js/celery_setup.js') }}" charset="utf-8"></script>
-        <link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_gui.css') }}"/>
-        <!--<link rel="stylesheet" href="{{ url_for ('static', filename='css/bumps_portal.css') }}"/>-->
+        <link rel="stylesheet" href="{{ url_for ('static', filename='css/celery_setup.css') }}"/>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.js"></script>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.css" />
         <script>
-            function onBrokerTestClick() {
-                var text = getParamsAsText ();
-                $.ajax({
-                    url: "/test_server",
-                    type: "get",
-                    data: {jsdata: text},
-                    success: function(response) {
-                        console.log(response);
-                        try {
-                            jsonResponse = JSON.parse(response.replace(/\'/g,'"'));
-                            displayBrokerResults(jsonResponse.broker);
-                            displayBackendResults(jsonResponse.backend);
-                        }
-                        catch (e) {
-                            var err_msg = 'response ' + response + 'can not be handled' + '\n' + e.message;
-                            alert (err_msg);
-                        }
-                    },
-                    error: function(xhr) {
-                        //str = f'runtimer error: {xhr}'
-                        console.log('runtime error: ' + xhr);
-                    }
-                });
-            }
-/*
-            function onServersSaveClick() {
-                var text = getParamsAsText ();
-                $.ajax({
-                    url: "/test_server",
-                    type: "get",
-                    data: {jsdata: text},
-                    success: function(response) {
-                        try {
-                            jsonResponse = JSON.parse(response.replace(/\'/g,'"'));
-                            displayBrokerResults(jsonResponse.broker);
-                            displayBackendResults(jsonResponse.backend);
-                            console.log(jsonResponse.toString());
-                        }
-                        catch (e) {
-                            var err_msg = 'response ' + response + 'can not be handled' + '\n' + e.message;
-                            alert (err_msg);
-                        }
-                    },
-                    error: function(xhr) {
-                        //str = f'runtimer error: {xhr}'
-                        console.log('runtime error: ' + xhr);
-                    }
-                });
-            }
-*/
-            function onServersReloadClick() {
-                $.ajax({
-                    url: "/read_celery_params",
-                    type: "get",
-                    //data: {jsdata: text},
-                    success: function(response) {
-                        try {
-                            init_celery_setup( JSON.parse(response.replace(/\'/g,'"')));
-                        }
-                        catch (e) {
-                            var err_msg = 'response ' + response + 'can not be handled' + '\n' + e.message;
-                            alert (err_msg);
-                        }
-                    },
-                    error: function(xhr) {
-                        console.log('runtime error: ' + xhr);
-                    }
-                });
-            }
-            function onServersExportClick() {
-                var text = JSON.stringify(getServersParams());
-                console.log(text);
-            }
         </script>
     </head>
             <title>Bumps Celery Setup</title>
-    <body onload="init_celery_setup({{ servers }})">
+    <body onload="display_celery_setup({{ servers }})">
         <h3 style="text-align: center;">Bumps Celery Setup</h3>
-        <table>
-            <tr>
-                <td>Python Parameter:</td><td>{{ dir }}</td>
-            </tr>
+        <!--<div>Servers:<br>servers: {{ servers }}<br>dir: {{ dir }}</div>-->
+    <table style="width: 100%;">
             <tr>
                 <td style="align-items: center;">
                     <input type="button" value="Save" onclick="onServersSaveClick()">
@@ -104,10 +23,13 @@
                 <td style="align-items: center;">
                     <input type="button" value="Export..." onclick="onServersExportClick()">
                 </td>
+                <td style="align-items: center;">
+                    <input type="button" value="Default..." onclick="onServersDefaultClick()">
+                </td>
             </tr>
         </table>
-        
-        <table id="tblParams">
+        <hr>
+        <table border="1">
             <tr>
                 <th>Function</th>
                 <th>Broker</th>
@@ -133,33 +55,43 @@
                 <td><input type="text" id="txtBroker" value="rabbit-server"></td>
                 <td><input type="text" id="txtBackend" value="redis-server"></td>
             </tr>
+<!-- -->
             <tr>
                 <th>Connection String</th>
-                <td><input type="text" id="txtBrokerConnection" value="amqp://rabbit-server"></td>
-                <td><input type="text" id="txtBkendConnection" value="redis://redis-server"></td>
+                <td><div id="divBrokerConnection"></div></td>
+                <td><div id="divBackendConnection"></div></td>
+<!--
+                <td><input type="text" id="txtBrokerConnection" value="amqp://rabbit-server" readonly></td>
+                <td><input type="text" id="txtBkendConnection" value="redis://redis-server" readonly></td>
+-->
             </tr>
+<!-- -->
             <tr>
                 <th>Test</th>
-                <td><input type="button" id="btnBrokerTest" onclick="onBrokerTestClick()" value="Test Broker"></td>
-                <td>Backend Test</td>
+                <td style="text-align:center;" colspan="2">
+                    <input type="button" id="btnBrokerTest" onclick="onServersTestClick()" value="Test Servers">
+                </td>
             </tr>
             <tr>
                 <th>Results</th>
-                <td><div class="celery_result" id="broker_test_result">Broker Results</div></td>
-                <td><div class="celery_result" id="backend_test_result">Broker Message</div></td>
+                <td><div class="celery_result" id="broker_test_result"></div></td>
+                <td><div class="celery_result" id="backend_test_result"></div></td>
             </tr>
             <tr>
                 <th>Test Messages</th>
-                <td><div id="broker_test_message">Backend Results</div></td>
-                <td><div id="backend_test_message">Backend Message</div></td>
+                <td><div id="broker_test_message"></div></td>
+                <td><div id="backend_test_message"></div></td>
             </tr>
         </table>
-        <!--<div class="myclass">This is my class</div>
-        <table>
-            <tr>
-                <td class="myclass">Cell #1</td>
-                <td>Cell #2</td>
-            </tr>
-        </table>-->
+        <div id="divMsg"></div>
+        <hr>
+        <div id="ex1" class="modal">
+            <p>Thanks for clicking. That felt good.</p>
+            <a href="#" rel="modal:close">Close</a>
+        </div>
+          
+          <!-- Link to open the modal -->
+          <p><a href="#ex1" rel="modal:open">Open Modal</a></p>
+        <hr>
     </body>
 </html>

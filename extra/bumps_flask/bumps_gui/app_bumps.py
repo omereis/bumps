@@ -14,6 +14,7 @@ from oe_debug import print_debug
 # https://github.com/websocket-client/websocket-client/blob/master/examples/echo_client.py
 #------------------------------------------------------------------------------
 servers_file_name = 'bumps_celery/bumps_celery_servers.json'
+dct_servers_default = {'broker': {'type': 'rabbit', 'address': 'bumps:bumps@ncnr-r9nano.campus.nist.gov'}, 'backend': {'type': 'redis', 'address': 'ncnr-r9nano.campus.nist.gov'}}
 #------------------------------------------------------------------------------
 app = Flask(__name__)
 #------------------------------------------------------------------------------
@@ -137,37 +138,52 @@ def save_server_setup():
         if f:
             f.close()
     return servers
-    
+#------------------------------------------------------------------------------
+@app.route('/get_servers_default')
+def get_servers_default():
+    dct = add_connection_strings(dct_servers_default)
+    #return str(dct_servers_default)
+    return dct
 #------------------------------------------------------------------------------
 def read_servers():
-    dir = {}
+    dct = {}
     f = None
     try:
         f = open (servers_file_name, 'r')
         s = f.read()
-        dir = json.loads(s.replace("'",'"'))
+        dct = json.loads(s.lower().replace("'",'"'))
+        dct = add_connection_strings(dct)
+        #dctStrings = bumps_celery_setup.get_servers_string_from_dict(dct)
+        #dct[bumps_celery_setup.BROKER][bumps_celery_setup.STRING] = dctStrings[bumps_celery_setup.BROKER]
+        #dct[bumps_celery_setup.BACKEND][bumps_celery_setup.STRING] = dctStrings[bumps_celery_setup.BACKEND]
     except Exception as e:
         dir = f'{e}'
     finally:
         if f:
             f.close()
-    return dir
+    return dct
+#------------------------------------------------------------------------------
+def add_connection_strings(dct):
+    try:
+        dctStrings = bumps_celery_setup.get_servers_string_from_dict(dct)
+        dct[bumps_celery_setup.BROKER][bumps_celery_setup.STRING] = dctStrings[bumps_celery_setup.BROKER]
+        dct[bumps_celery_setup.BACKEND][bumps_celery_setup.STRING] = dctStrings[bumps_celery_setup.BACKEND]
+    except Exception as e:
+        print(f'add_connection_strings runtime error:\n{e}')
+    return dct
 #------------------------------------------------------------------------------
 @app.route('/celery_params')
 def show_celery_params():
-    dir_servers = read_servers()
-    servers = str(read_servers()).lower()
-    #jsonServers = bumps_celery_setup.get_servers_string()
-    return render_template('bumps_celery_setup.html', dir=dir_servers, servers=servers)
+    dct_servers = read_servers()
+    #dctStrings = bumps_celery_setup.get_servers_string_from_dict(dct_servers)
+    #dct_servers[bumps_celery_setup.BROKER][bumps_celery_setup.STRING] = dctStrings[bumps_celery_setup.BROKER]
+    #dct_servers[bumps_celery_setup.BACKEND][bumps_celery_setup.STRING] = dctStrings[bumps_celery_setup.BACKEND]
+    return render_template('bumps_celery_setup.html', servers=dct_servers)
 #------------------------------------------------------------------------------
 @app.route('/read_celery_params')
 def read_celery_params():
-    #dir_servers = read_servers()
-    #jsonServers = bumps_celery_setup.get_servers_string()
     strServers = str(read_servers()).lower()
     return strServers
-    #return read_servers()
-    #render_template('bumps_celery_setup.html', dir=dir_servers, servers=jsonServers)
 #------------------------------------------------------------------------------
 def get_cli_params():
     bumps_params = BumpsParams()
@@ -229,7 +245,8 @@ def main():
     pServer = multiprocessing.Process(name='bumps websockets server', target=ws_server_main, args=(bumps_params.server, bumps_params.mp_port, os.getcwd()))
     pServer.start()
     print('server started')
-    app.run(debug=False, host=bumps_params.server, port=bumps_params.port)
+    #app.run(debug=False, host=bumps_params.server, port=bumps_params.port)
+    app.run(debug=True, host=bumps_params.server, port=bumps_params.port)
     pServer.terminate()
     print('server terminated')
 #------------------------------------------------------------------------------

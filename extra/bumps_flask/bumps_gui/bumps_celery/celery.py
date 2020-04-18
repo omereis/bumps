@@ -11,9 +11,7 @@ app = Celery('bumps_celery',
 
 def celery_post_run(task, **kwargs):
     print(f'task content:\n{dir(task)}')
-#task_postrun.connect(celery_post_run)
 
-# Optional configuration, see the application user guide.
 app.conf.update(
     result_expires=3600,
 )
